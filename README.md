@@ -1,1 +1,1 @@
-# whyloop-madia
+# whyloop-media
