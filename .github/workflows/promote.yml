@@ -1,0 +1,26 @@
+name: promote-claude-branches
+# The scheduled routine can only push to branches named claude/*.
+# This workflow fast-forwards main to such a branch so media URLs on main work.
+on:
+  push:
+    branches: ['claude/**']
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fast-forward main
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            git push origin HEAD:main
+          else
+            git config user.name "promote-bot"; git config user.email "kits@proxom.co.uk"
+            git checkout -B main origin/main
+            git merge --no-edit "$GITHUB_SHA"
+            git push origin main
+          fi
