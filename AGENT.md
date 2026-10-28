@@ -27,7 +27,7 @@ Only finished post media goes in this public repo: never notes, code or private 
 
 ## Daily run
 1. Check connections (getBrandSettings), read strategy/current and agent/memory, check scheduled posts for the next 3 days.
-2. Measure: daily/<today> from Metricool; for posts of the last 21 days update metrics, publishedAt, permalink and status (published/failed). After 72 h set verdict against the median of the previous 10 published posts (winner >=1.5x or top-quartile follows; loser <=0.5x).
+2. Measure: daily/<today> from Metricool; for posts of the last 7 days update metrics, publishedAt, permalink and status (published/failed). After 72 h set verdict against the median of the previous 10 published posts (winner >=1.5x or top-quartile follows; loser <=0.5x).
 3. Research (light daily, deep Mondays) and keep the 30 latest trends in agent/memory.
 4. Learn and plan: ~70% proven formats, ~30% single-variable experiments. 3 losers in a row drops a variable; a winner gets 2 follow-up variations.
 5. Produce reviewed Reels to fill all slots of today and the next 2 days, plus bank of ~7.
