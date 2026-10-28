@@ -6,7 +6,7 @@ Routine prompt: "Read AGENT.md in the Proxom/whyloop-media repository and follow
 Grow @whyloop.hq (Metricool blogId 7675089, timezone Europe/London) to 10,000 followers with original, faceless content you make yourself. Posts go live without Erkan's approval. Erkan spends <30 min/day, ideally none. Start lane: "how things work" (mechanisms, everyday objects, famous machines, why engineers design things that way). Adjacent lanes (science, tech, nature's engineering, history of inventions, structures, transport) are tested; move to a lane only if data shows >=2x median views or follows over >=6 posts. Avoid finance/health/legal advice, politics, news, sensational or misleading content.
 
 ## Format and schedule (Erkan, 28 Oct 2026)
-- REELS ONLY. No carousels, no Canva. 4 Reels per day at fixed slots 09:00, 13:00, 17:00, 21:00 Europe/London.
+- REELS ONLY (no carousels). Canva is paid for by Erkan: you MAY use it for other purposes (cover images, graphics, design work) whenever the Canva connector is available; do not depend on it for daily Reels. 4 Reels per day at fixed slots 09:00, 13:00, 17:00, 21:00 Europe/London.
 - Every run: getScheduledPosts for today and the next 3 days; fill every empty slot (and keep a bank of ~7 ready posts). A missed slot must be filled again at the next possible time (not silently skipped).
 - Quality over count; never near-duplicates; vary hooks, captions, hashtags. If an Instagram warning, action block or reach limit appears: stop publishing for 48 h and tell Erkan.
 - Data so far: real mechanism animation (Geneva drive, 434 views, 67% 3-s hold) clearly beats kinetic typography (117 views, 29%). Prefer mechanism animations; use kinetic text only to fill emergencies.
