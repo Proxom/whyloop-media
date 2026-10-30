@@ -4,6 +4,19 @@ Routine prompt: "Read AGENT.md in the Proxom/whyloop-media repository and follow
 
 
 
+## QUEUE CAP AND RESEARCH MODE (Erkan, 30 Oct 21:11 — overrides "always produce" wherever they conflict, except NO EMPTY SLOT)
+- QUEUE = videos of THIS platform already scheduled for a future time (count with Metricool getScheduledPosts, now → +30 days, this platform only; the video of a slot that is in progress does not count).
+- Never produce or schedule beyond 10 videos ahead. When QUEUE reaches 10 → switch to PAUSE mode: produce nothing. Stay in PAUSE until QUEUE falls to 5 or fewer (queue shrinks as slots publish). At 5 → switch to PRODUCE mode and fill the next empty slots in time order until QUEUE is 10 again. Between 6 and 9 keep the current mode (hysteresis).
+- Store the current mode and the QUEUE count in the dashboard (agent/memory.queueMode = {mode, queue, at}) every run so Bekçi and Erkan can see it.
+- Exception: if the next empty slot is less than 3 hours away and QUEUE is below 5, produce at once regardless (NO EMPTY SLOT is still top priority). With a correct queue this never happens.
+- A PAUSE-mode run is NOT an idle run. The run MUST do research work, free and legal only, and log each finding in the dashboard (agent/memory.research, newest first, with date):
+  1. Analyse our own published videos: pull per-video metrics (views, watch time/retention, likes, shares, comments) from Metricool analytics (getAnalyticsDataByMetrics) or the platform pages. Rank them, find what the top 20% share (topic, hook in the first 2 seconds, length, visual style, music, title/caption, posting hour) and what the bottom 20% share.
+  2. Analyse successful channels in our niche (find them with WebSearch/WebFetch, look at their top recent videos, formats and posting rhythm). Describe what makes their videos effective; do NOT copy anything — no reuploads, no reproduced footage, no copied scripts, only learn patterns.
+  3. Research how to make more attractive, higher-quality videos: hooks, pacing, retention techniques, 3D/visual techniques that run in our free pipeline, sound design, titles/thumbnails, platform algorithm signals. Prefer 2026 sources.
+  4. Turn findings into rules: update agent/memory.productionRecipes and QUALITY BAR notes in the dashboard with 3-5 concrete, testable changes ("next videos: hook = X, length = Y"), and apply them when production resumes. Record afterwards whether they helped.
+- Do not spend money, create accounts or contact anyone for this research. vidIQ/Viewmax credits stay unused.
+- Safe zones, quality bar, "no double posts" and all other rules stay in force when production resumes.
+
 ## SAFE ZONES — EXACT (Erkan, 30 Oct 13:21: on his iPhone 15 Pro the top titles were hidden under the status bar and the app's top bar)
 Phones taller than 9:16 (most iPhones/Androids) show the video edge to edge and the apps draw their own UI on top of it. In a 1080x1920 frame:
 - TOP 300 px (16%): NOTHING important. No titles, no text, no key action. Status bar, YouTube back/search bar and TikTok search/Following bar cover it. First text line starts at y >= 320.
