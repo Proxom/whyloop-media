@@ -32,6 +32,12 @@ Routine prompt: "Read AGENT.md in the Proxom/whyloop-media repository and follow
 - Do not spend money, create accounts or contact anyone for this research. vidIQ/Viewmax credits stay unused.
 - Safe zones, quality bar, "no double posts" and all other rules stay in force when production resumes.
 
+## AUDIO LEVEL — GENTLE, NEVER LOUD (Erkan, 30 Oct 21:26)
+- Sound must never be loud, harsh or startling; the viewer must never have to turn the volume down. Slightly quiet is fine (viewers can raise their phone volume).
+- Target: integrated loudness about -20 LUFS (acceptable range -22 to -19), true peak at or below -3 dBTP, no clipping. Normalise every final mix with ffmpeg, e.g. `-af loudnorm=I=-20:TP=-3:LRA=7`, and measure the result (ebur128 or loudnorm print_format=json) before publishing; write the measured LUFS and peak in the post/video doc.
+- Shape the sound: soft attacks on impacts (no sharp clicks/pops), roll off harsh highs (low-pass around 9-10 kHz), no piercing high-pitched tones, no sudden loud hits or bass booms, even level from first to last second, short fade in/out. Music/ambience stays well below the sound effects/voice-like focus elements.
+- Applies to every video on every platform, together with the other quality rules.
+
 ## SAFE ZONES — EXACT (Erkan, 30 Oct 13:21: on his iPhone 15 Pro the top titles were hidden under the status bar and the app's top bar)
 Phones taller than 9:16 (most iPhones/Androids) show the video edge to edge and the apps draw their own UI on top of it. In a 1080x1920 frame:
 - TOP 300 px (16%): NOTHING important. No titles, no text, no key action. Status bar, YouTube back/search bar and TikTok search/Following bar cover it. First text line starts at y >= 320.
