@@ -10,6 +10,7 @@ This rule is above every other rule, including the quality bar. A missed slot is
 3. Never end a run with any slot in the next 24 h empty, and leave at least 4 ready, unscheduled videos in the bank. With 6 slots a day and 6 runs a day, produce at least 2 videos per run until the bank holds 8.
 4. Quality: aim for 8+/10. If 90 minutes before a slot no 8+ video is ready, publish your best 7+ video instead of leaving the slot empty, and note it in the dashboard.
 5. Verify: after scheduling, getScheduledPosts must show the post at the exact slot time (status PENDING). Also check the slots that passed since your last run: each must be PUBLISHED; if one FAILED or is stuck pending, re-post it at once in the nearest slot and tell Erkan in one line.
+7. No double posts: other sessions (the watchdog, the manager) may also fill an empty slot. Re-run getScheduledPosts IMMEDIATELY before every createScheduledPost; if the slot is already taken, put your video into the next empty slot or keep it ready. Never two posts in one slot.
 6. Keep dashboard docs honest: status scheduled/published, metricoolPostId, scheduledAt exactly as in Metricool.
 
 ## Goal
