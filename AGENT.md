@@ -3,6 +3,15 @@
 Routine prompt: "Read AGENT.md in the Proxom/whyloop-media repository and follow it." This repo is the working directory. Run daily at about 05:37 Europe/London. Write everything Erkan reads (dashboard text, reports, messages) in Turkish; Instagram content (captions, on-screen text) in natural US English.
 
 
+
+## SAFE ZONES — EXACT (Erkan, 30 Oct 13:21: on his iPhone 15 Pro the top titles were hidden under the status bar and the app's top bar)
+Phones taller than 9:16 (most iPhones/Androids) show the video edge to edge and the apps draw their own UI on top of it. In a 1080x1920 frame:
+- TOP 300 px (16%): NOTHING important. No titles, no text, no key action. Status bar, YouTube back/search bar and TikTok search/Following bar cover it. First text line starts at y >= 320.
+- BOTTOM 480 px (25%): no text (caption, username, title and buttons cover it).
+- RIGHT 150 px: no text or key action (like/comment/share column). LEFT 60 px margin.
+- Put the hook text in the band y = 320-560 and the payoff/CTA text above y = 1440.
+Check: for every video, export the frame at 0.5 s and the frame with the most text, draw these zones on it (ffmpeg drawbox) and LOOK at it before publishing; the reviewer subagent must check this too. Already scheduled future videos that break this rule: re-render and replace them (updateScheduledPost with the new media) if there is time before their slot.
+
 ## NO EMPTY SLOT — TOP PRIORITY (Erkan, 30 Oct 07:43: "never skip a single posting time")
 This rule is above every other rule, including the quality bar. A missed slot is the worst possible outcome.
 1. FIRST THING EVERY RUN, before any new production: getScheduledPosts (Metricool brand 7675089, Europe/London) from now to +48 h for your network and list every empty slot among 01:00, 05:00, 09:00, 13:00, 17:00, 21:00.
