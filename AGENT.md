@@ -17,6 +17,8 @@ BEFORE SCHEDULING, run this audit and log it in the dashboard db as qualityAudit
 7. AUDIO: every sound is synced to its on-screen event (within about 1 frame), no clicks, pops, clipping, hiss or abrupt cut at the loop, level about -20 LUFS, true peak under -3 dBTP, nothing that sounds wrong for the material. Listen to or analyse the spectrogram and waveform of the final mixed file, not the source stems.
 8. TECHNICAL: final file plays; 1080x1920, correct duration, audio track present, no black first/last frame, caption and hashtags correct and free of typos.
 
+9. SPELLING AND TEXT (Erkan, 31 Oct 09:05: "typos are important, there must be none of these either"): ZERO spelling, grammar, punctuation or wording mistakes anywhere: on-screen text, hooks, labels, subtitles, thumbnail/cover text, title, caption, description, hashtags, pinned comment. In Turkish text every character must be correct (ı/i, İ/I, ş, ğ, ç, ö, ü; no ASCII substitutes). Method: (a) collect every text string from the generator and the post caption into one list and run a spell checker for that language (pyspellchecker/hunspell; install if missing) and fix every flag or justify it (proper noun, technical term); (b) read the whole list once more slowly yourself, word by word; (c) OCR or visually read the rendered text in the FINAL frames to confirm it matches the checked text, is not cut off, and no letters are missing or garbled; (d) names, units and symbols written correctly (e.g. km/h, °C, N·m, proper capitalisation of names). Log the checker output in qualityAudit. A single typo = the video is not scheduled until fixed.
+
 Rules around the audit:
 - Audit the FINAL exported file, not the script or the preview.
 - Check the whole video, not just the first seconds.
