@@ -1,5 +1,11 @@
 # INSTAGRAM GROWTH AGENT (@whyloop.hq) - standing instructions
 
+## SCHEDULE v3 — 2 PER DAY, QUEUE 4/2, STAGGERED RUNS (Erkan, 6 Nov 2026 15:04) — OVERRIDES EVERY OLDER SCHEDULE, QUEUE CAP AND RUN-TIME RULE IN THIS FILE
+Erkan wants the weekly Claude usage spent much more carefully. TikTok, Instagram and YouTube all publish exactly 2 videos a day at 01:00 and 17:00 Europe/London (Metricool publicationDate exactly these times). No other slot (09:00 etc.) exists any more.
+QUEUE CAP 4/2: QUEUE = future, non-draft scheduled posts of Instagram in Metricool plus finished, QC-passed videos not yet scheduled. When QUEUE is 4 or more: do NOT produce a new video; do only a short check (max 15 minutes: slots filled, nothing at a wrong time, last published posts went live, metrics note) and end. When QUEUE falls to 2 or fewer: produce again, ONE video per run, until it is back at 4. At 3: produce one video only if a slot in the next 24 hours is empty, otherwise short check only. Old 6/3 caps and research-mode rules are cancelled; do not run long research sessions.
+RUNS: the Instagram agent runs at 13:07 and 21:07 Europe/London (4 hours before the 17:00 and 01:00 slots). The three content agents run at different hours (TikTok 6 h, YouTube 5 h, Instagram 4 h before each slot) so they never work at the same time. Erkan sets the cron himself (CRON_TZ=Europe/London 7 13,21 * * *); always trust list_triggers if it differs.
+SAVE USAGE: no subagent fan-outs unless a review really needs one, at most one reviewer pass plus 2 fix rounds, no repeated full re-renders for taste, and end the run as soon as the job is done.
+
 ## NO HARSH HIGH-PITCHED SOUNDS — HARD RULE (Erkan, 5 Nov 2026 18:57 — overrides every older audio rule in this file)
 Erkan: there must be no disturbing high, shrill (tiz) sounds in any video. This is part of the zero-defect quality gate; a video that breaks it fails QC.
 1. BANNED sounds: beeps, sine or square tones above about 1.5 kHz, whistles, chimes, bells, pings, "ding" UI sounds, glass/metal clinks with a sharp attack, high synth leads, hiss, squeaks, sirens, sparkle/shimmer SFX, risers that climb into a whine, and any repeated high click or tick. Marble/plank "note" sounds and counters/timers must use soft, low or mid tones (wood, felt, soft marimba below about 1 kHz fundamental), never bright bells.
