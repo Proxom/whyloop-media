@@ -6,6 +6,25 @@ QUEUE CAP 4/2: QUEUE = future, non-draft scheduled posts of Instagram in Metrico
 RUNS: the Instagram agent runs at 13:07 and 21:07 Europe/London (4 hours before the 17:00 and 01:00 slots). The three content agents run at different hours (TikTok 6 h, YouTube 5 h, Instagram 4 h before each slot) so they never work at the same time. Erkan sets the cron himself (CRON_TZ=Europe/London 7 13,21 * * *); always trust list_triggers if it differs.
 SAVE USAGE: no subagent fan-outs unless a review really needs one, at most one reviewer pass plus 2 fix rounds, no repeated full re-renders for taste, and end the run as soon as the job is done.
 
+## ONE RUN AT A TIME — RUN LOCK (genel müdür for Erkan, 4 Nov 2026 21:12 — do this BEFORE anything else)
+On 4 Nov three YouTube runs worked at the same time and none finished. Only ONE run may work at a time. The lock is the git branch `run-lock` in this repository; its newest commit message is `LOCK <ISO time UTC> <your session id or random id>`.
+1. START: run `git fetch origin` then `git ls-remote origin refs/heads/run-lock`.
+   - If the branch exists, read its commit message (`git fetch origin run-lock && git log -1 --format=%s FETCH_HEAD`). If the LOCK time is less than 90 minutes ago and the id is not yours: another run is working. Do NOTHING else (no production, no Metricool changes, no dashboard writes) and end the run with one line "Another run holds the lock, exiting."
+   - If the branch does not exist, or its LOCK time is 90 minutes or older (a stale lock from a crashed run): take the lock with an atomic push: create an empty commit on top of origin/main with message `LOCK <now UTC ISO> <id>` and push it with `git push origin <sha>:refs/heads/run-lock --force-with-lease=refs/heads/run-lock:<old sha or empty>`. If the push is rejected, someone else just took it: end the run as above.
+2. WHILE WORKING: every 20 minutes refresh the lock the same way (new empty commit with a new time, force-with-lease on your own last lock sha). If that push is rejected, another run has taken over: push your finished work to a claude/* branch and stop.
+3. END (always, also on failure): delete the lock with `git push origin --delete run-lock` (only if the lock is still yours).
+Together with the RUN TIME BUDGET (max 75 minutes) this means a lock is never held longer than about 80 minutes.
+
+## RUN TIME BUDGET — FINISH AND SCHEDULE (genel müdür for Erkan, 4 Nov 2026 21:10 — overrides any rule that makes a run longer)
+On 4 Nov a YouTube run took 6.5 hours and left the slots empty. Never again. Rules for every run:
+1. HARD LIMIT: a run lasts at most 75 minutes. Check the clock (`TZ=Europe/London date`) after every big step.
+2. FIRST 10 MINUTES: getScheduledPosts for the next 24 h. If the next slot is empty and a finished video with qc passed exists (dashboard 'ready', or a finished file on a claude/* branch or in the repo), schedule it at once before starting anything new.
+3. ONE video per run, finished and scheduled. Commit and push work in progress at least every 20 minutes so nothing is lost.
+4. REAL FOOTAGE TIME BOX: spend at most 20 minutes finding and downloading NASA/ESA footage (https only, the ~mobile.mp4 or ~medium.mp4 size, never ~orig; trim with ffmpeg -ss/-t before any processing; keep source clips under 60 MB). If no usable clip is found in 20 minutes, make this video as a rendered simulation instead and note it; the 2-of-3 real-footage target is measured over the week, not per run.
+5. REVIEW ROUNDS: at most 2 fix rounds after the first review. If it still fails, fix only real defects (facts, broken visuals, audio), not taste, or switch to a simpler topic you can finish.
+6. At minute 60, stop polishing: finish the current version that passes the quality gate, host it, schedule it into the next empty slot, update the dashboard, push, end.
+7. Never run a render or download in the foreground longer than 10 minutes; split long renders (lower resolution preview first, final 1080x1920 only once).
+
 ## NO HARSH HIGH-PITCHED SOUNDS — HARD RULE (Erkan, 5 Nov 2026 18:57 — overrides every older audio rule in this file)
 Erkan: there must be no disturbing high, shrill (tiz) sounds in any video. This is part of the zero-defect quality gate; a video that breaks it fails QC.
 1. BANNED sounds: beeps, sine or square tones above about 1.5 kHz, whistles, chimes, bells, pings, "ding" UI sounds, glass/metal clinks with a sharp attack, high synth leads, hiss, squeaks, sirens, sparkle/shimmer SFX, risers that climb into a whine, and any repeated high click or tick. Marble/plank "note" sounds and counters/timers must use soft, low or mid tones (wood, felt, soft marimba below about 1 kHz fundamental), never bright bells.
