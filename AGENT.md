@@ -16,6 +16,19 @@ NEW RULES FOR EVERY REEL FROM NOW ON:
 9. BREAK-OUT TARGET: one Reel above 10,000 views within 14 days, then every week at least one Reel above 10k. When a Reel beats 5,000 views, make a "Part 2" or a close variant within 2 days.
 10. MEASURE 48 h after posting (already required): also store shares/1k reach and comments; list the 3 best and 3 worst Reels with one reason each in the weekly report.
 
+## ANIMATION QUALITY UPGRADE (Erkan, 6 Nov 2026 15:52 — part of GROWTH RESET v2; applies to every new Reel)
+Goal: every Reel must look like a premium 3D product film, not a school diagram. Checklist (all items are part of QC; note in the dashboard doc which ones the Reel meets):
+1. MATERIALS: physically based materials (brushed or polished steel, painted metal, rubber, glass, oil sheen) with real roughness/metalness and reflections from an environment map. No flat single-colour plastic look. Use colour only to point at the ONE part that matters (e.g. one orange part), everything else realistic.
+2. LIGHT: dark, slightly graded background; dramatic key + rim light so edges glow; soft shadows and ambient occlusion so parts sit together; gentle vignette.
+3. CAMERA: never a static front view for long. Slow push-ins, orbits around the mechanism, a close macro shot of the key contact (teeth meshing, pin in slot), and a reveal. Shallow depth of field on close shots and motion blur on fast parts give the "expensive" look. Cut or move every 2-3 s.
+4. CUTAWAY REVEAL: show the familiar outside first (the car, the lock, the engine), then open it (cut, fade or explode the housing) to show the inside working. "What's inside?" is the strongest hook in this niche.
+5. HUMAN TOUCH AND SCALE: when it fits, show a simple stylised human hand or figure using the machine (turning the key, pressing the pedal, standing next to the crane) so viewers feel "this is in my life" and can judge the size. Keep it clean and tasteful; no faces needed.
+6. SOUND DESIGN: real-sounding mechanical sounds synced to every contact (clicks, gear whirr, hydraulic hiss, latch snap) plus a soft music bed; no shrill sounds (hard rule above). Sound must match the motion frame-accurately.
+7. TEXT: at most one short label on screen at a time, big and clean, inside the safe zone. No numbers walls, no formulas on screen.
+8. SMOOTHNESS: 30 fps minimum (60 fps if render time allows), no jitter, no z-fighting, no parts passing through each other, physically correct speeds/directions.
+9. RENDERER: keep using the current free code pipeline but push it with environment maps, PBR, bloom, depth of field and motion blur. If a free local renderer (e.g. Blender, installable with apt/pip) gives clearly better realism AND the Reel still fits the RUN TIME BUDGET, you may use it; never pay for tools or services.
+10. A/B/C TEST (extends rule 8 of GROWTH RESET v2): add a third track C = a recurring mascot, a small friendly robot mechanic (same look in every Reel, no text name needed) who uses or discovers the machine, with the same hook/loop/caption rules. Rotate A, B, C over the next 9-14 Reels, then report which track wins on 3-s hold %, watch %, shares per 1,000 reach, comments and follows.
+
 ## ONE-TIME EXTRA RUN (Erkan, 6 Nov 2026 15:18) — applies only to a run that starts on 6 Nov 2026 before 16:30 Europe/London
 There is NO Reel scheduled for TODAY 6 Nov 17:00. Erkan started this extra run for it. If a finished QC-passed Reel exists (dashboard or repo), schedule it for 2026-11-06 17:00 right away. Otherwise make ONE new-format Reel fast (story + voiceover, 30-90 s, no shrill sounds, full QC, keep it simple so it is done in time), re-check getScheduledPosts, and schedule it for 2026-11-06 17:00 before 16:55. If it cannot pass QC by 16:55, schedule it for 2026-11-07 01:00 instead. Then end the run. Ignore this block on any run that starts after 6 Nov 16:30.
 
