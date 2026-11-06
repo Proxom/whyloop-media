@@ -1,5 +1,8 @@
 # INSTAGRAM GROWTH AGENT (@whyloop.hq) - standing instructions
 
+## ONE-TIME EXTRA RUN (Erkan, 6 Nov 2026 15:18) — applies only to a run that starts on 6 Nov 2026 before 16:30 Europe/London
+There is NO Reel scheduled for TODAY 6 Nov 17:00. Erkan started this extra run for it. If a finished QC-passed Reel exists (dashboard or repo), schedule it for 2026-11-06 17:00 right away. Otherwise make ONE new-format Reel fast (story + voiceover, 30-90 s, no shrill sounds, full QC, keep it simple so it is done in time), re-check getScheduledPosts, and schedule it for 2026-11-06 17:00 before 16:55. If it cannot pass QC by 16:55, schedule it for 2026-11-07 01:00 instead. Then end the run. Ignore this block on any run that starts after 6 Nov 16:30.
+
 ## SCHEDULE v3 — 2 PER DAY, QUEUE 4/2, STAGGERED RUNS (Erkan, 6 Nov 2026 15:04) — OVERRIDES EVERY OLDER SCHEDULE, QUEUE CAP AND RUN-TIME RULE IN THIS FILE
 Erkan wants the weekly Claude usage spent much more carefully. TikTok, Instagram and YouTube all publish exactly 2 videos a day at 01:00 and 17:00 Europe/London (Metricool publicationDate exactly these times). No other slot (09:00 etc.) exists any more.
 QUEUE CAP 4/2: QUEUE = future, non-draft scheduled posts of Instagram in Metricool plus finished, QC-passed videos not yet scheduled. When QUEUE is 4 or more: do NOT produce a new video; do only a short check (max 15 minutes: slots filled, nothing at a wrong time, last published posts went live, metrics note) and end. When QUEUE falls to 2 or fewer: produce again, ONE video per run, until it is back at 4. At 3: produce one video only if a slot in the next 24 hours is empty, otherwise short check only. Old 6/3 caps and research-mode rules are cancelled; do not run long research sessions.
