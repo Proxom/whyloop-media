@@ -1,0 +1,359 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<canvas id="out" width="1080" height="1920"></canvas>
+<script src="kin.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+RectAreaLightUniformsLib.init();
+
+const W = 1080, H = 1920;
+const Q = new URLSearchParams(location.search);
+const SCALE = parseFloat(Q.get('scale') || '1');
+const USE_AO = Q.get('ao') !== '0';
+const KIN = window.KIN;
+const geo = await (await fetch('geom.json')).json();
+const kinT = await (await fetch('kin_240.json')).json(); // frames sampled at 240 Hz over the 12 s loop
+const LOOP = 12.0;
+
+const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(1);
+renderer.setSize(W * SCALE, H * SCALE, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f16);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.02, 0.1, 100, { size: 1024 }).texture;
+scene.environmentIntensity = 0.3;
+
+const camera = new THREE.PerspectiveCamera(30, W / H, 2, 3000);
+camera.up.set(0, 0, 1);
+
+// ---------- textures ----------
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function woodTex() {
+  const c = document.createElement('canvas'); c.width = 2048; c.height = 2048; const g = c.getContext('2d');
+  const r = rng(7);
+  g.fillStyle = '#6b4a2f'; g.fillRect(0, 0, 2048, 2048);
+  // planks along x
+  const plankH = 2048 / 6;
+  for (let p = 0; p < 6; p++) {
+    const y0 = p * plankH; const tone = 0.85 + r() * 0.3;
+    const base = [118 * tone, 82 * tone, 52 * tone];
+    g.fillStyle = `rgb(${base.map(v => v | 0).join(',')})`; g.fillRect(0, y0, 2048, plankH);
+    const ph = r() * 100;
+    for (let i = 0; i < 260; i++) {
+      const yy = y0 + r() * plankH; const a = 0.025 + r() * 0.06; const w = 0.8 + r() * 3.0;
+      g.strokeStyle = r() < 0.5 ? `rgba(40,24,12,${a})` : `rgba(190,150,105,${a * 0.6})`; g.lineWidth = w;
+      g.beginPath();
+      for (let x = 0; x <= 2048; x += 32) { const y = yy + Math.sin(x * 0.0021 + ph + i * 0.37) * 9 + Math.sin(x * 0.011 + i) * 2.5; if (x === 0) g.moveTo(x, y); else g.lineTo(x, y); }
+      g.stroke();
+    }
+    g.fillStyle = 'rgba(20,12,6,0.85)'; g.fillRect(0, y0, 2048, 3); // plank gap
+  }
+  // stains / scratches
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(30,20,10,${0.03 + r() * 0.05})`; g.beginPath(); g.ellipse(r() * 2048, r() * 2048, 30 + r() * 140, 20 + r() * 90, r() * 3, 0, 7); g.fill(); }
+  for (let i = 0; i < 160; i++) { g.strokeStyle = `rgba(220,190,150,${0.05 + r() * 0.08})`; g.lineWidth = 0.7; g.beginPath(); const x = r() * 2048, y = r() * 2048, a = r() * 3.14, l = 20 + r() * 90; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+function matTex() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 1024; const g = c.getContext('2d'); const r = rng(21);
+  g.fillStyle = '#25292e'; g.fillRect(0, 0, 1024, 1024);
+  const id = g.getImageData(0, 0, 1024, 1024); const d = id.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * 14; d[i] += n; d[i + 1] += n; d[i + 2] += n * 1.1; }
+  g.putImageData(id, 0, 0);
+  for (let i = 0; i < 90; i++) { g.strokeStyle = `rgba(200,205,215,${0.02 + r() * 0.04})`; g.lineWidth = 0.6 + r(); g.beginPath(); const x = r() * 1024, y = r() * 1024, a = r() * 3.14, l = 15 + r() * 70; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+  for (let i = 0; i < 0; i++) { g.fillStyle = `rgba(0,0,0,${0.04 + r() * 0.05})`; g.beginPath(); g.ellipse(r() * 1024, r() * 1024, 20 + r() * 80, 15 + r() * 60, r() * 3, 0, 7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+function brushedTex(seed, base = 128, amp = 30) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 512; const g = c.getContext('2d'); const r = rng(seed);
+  g.fillStyle = `rgb(${base},${base},${base})`; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 1400; i++) { const v = base + (r() - 0.5) * amp * 2; g.strokeStyle = `rgba(${v | 0},${v | 0},${v | 0},0.5)`; g.lineWidth = 0.5 + r(); const y = r() * 512; g.beginPath(); g.moveTo(0, y); g.lineTo(512, y + (r() - 0.5) * 3); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+
+// ---------- materials ----------
+const brushR = brushedTex(3, 118, 12); brushR.repeat.set(0.05, 0.05);
+const M = {
+  chrome: new THREE.MeshPhysicalMaterial({ color: 0xe3e6ea, metalness: 1, roughness: 0.13, clearcoat: 0.4, clearcoatRoughness: 0.08 }),
+  satin: new THREE.MeshPhysicalMaterial({ color: 0xb7bdc4, metalness: 1, roughness: 0.38, anisotropy: 0.7, roughnessMap: brushR }),
+  wall: new THREE.MeshPhysicalMaterial({ color: 0x9aa0a7, metalness: 1, roughness: 0.3 }),
+  floor: new THREE.MeshPhysicalMaterial({ color: 0x5d636b, metalness: 1, roughness: 0.48, roughnessMap: brushR }),
+  gearTop: new THREE.MeshPhysicalMaterial({ color: 0x9ba1a9, metalness: 1, roughness: 0.36, roughnessMap: brushR }),
+  gearSide: new THREE.MeshPhysicalMaterial({ color: 0xa6abb1, metalness: 1, roughness: 0.22, clearcoat: 0.5, clearcoatRoughness: 0.15 }),
+  pawl: new THREE.MeshPhysicalMaterial({ color: 0xff5a0a, metalness: 0.7, roughness: 0.24, clearcoat: 1.0, clearcoatRoughness: 0.06 }),
+  spring: new THREE.MeshPhysicalMaterial({ color: 0xd4d7db, metalness: 1, roughness: 0.2 }),
+  rubber: new THREE.MeshPhysicalMaterial({ color: 0x1b1d20, metalness: 0, roughness: 0.72, sheen: 0.3, sheenColor: new THREE.Color(0x30343a) }),
+  zinc: new THREE.MeshPhysicalMaterial({ color: 0xa2a7ad, metalness: 1, roughness: 0.34 }),
+  paint: new THREE.MeshPhysicalMaterial({ color: 0x4a5058, metalness: 0.8, roughness: 0.45, roughnessMap: brushR }),
+  wood: new THREE.MeshStandardMaterial({ map: woodTex(), roughness: 0.6, metalness: 0 }),
+  bar: new THREE.MeshPhysicalMaterial({ color: 0x5a5f66, metalness: 1, roughness: 0.78 }),
+  pin: new THREE.MeshPhysicalMaterial({ color: 0xd0d3d7, metalness: 1, roughness: 0.18 }),
+};
+M.wood.map.repeat.set(1.6, 1.6);
+
+const shadowAll = (o) => o.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+const toV2 = (a) => a.map(p => new THREE.Vector2(p[0], p[1]));
+function shapeOf(ring, holes = []) {
+  const s = new THREE.Shape(toV2(ring));
+  for (const h of holes) s.holes.push(new THREE.Path(toV2(h)));
+  return s;
+}
+function circle(cx, cy, r, n = 48) { const a = []; for (let i = 0; i < n; i++) { const t = -i / n * Math.PI * 2; a.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return a; }
+function extrude(shape, z0, z1, mats, bevel = 0, curve = 24) {
+  const g = new THREE.ExtrudeGeometry(shape, { depth: z1 - z0 - 2 * bevel, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelOffset: -bevel, bevelSegments: 3, curveSegments: curve });
+  g.translate(0, 0, z0 + bevel);
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, mats);
+}
+
+// ---------- wrench (handle frame group) ----------
+const handleG = new THREE.Group(); scene.add(handleG);
+const housing = (() => { const g = new THREE.ExtrudeGeometry(shapeOf(geo.head, [geo.pocket, ...geo.screws.map(s => circle(s[0], s[1], 1.35, 32))]), { depth: 5.5 - 0.6, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelOffset: 0, bevelSegments: 2, curveSegments: 24 }); g.translate(0, 0, -4.6 + 0.3); g.computeVertexNormals(); return new THREE.Mesh(g, [M.satin, M.chrome]); })();
+handleG.add(housing);
+const floorShell = extrude(shapeOf(geo.head), -8.2, -4.45, [M.floor, M.chrome], 0);
+handleG.add(floorShell);
+{ // rounded outer edges: tubes along the outline (top and bottom)
+  const pts = geo.head.filter((p, i) => i % 3 === 0).map(p => { const r = Math.hypot(p[0], p[1]); return p; });
+  const inset = (p, d) => { // move point inward along polygon normal approx (use centroid-free local normal)
+    return p; };
+  for (const [z, rad] of []) {
+    const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], z)), true);
+    const tg = new THREE.TubeGeometry(curve, 900, rad, 12, true);
+    handleG.add(new THREE.Mesh(tg, M.chrome));
+  }
+  // reversing lever on the head, next to the neck
+  const ls = new THREE.Shape(); ls.moveTo(-6.5, -19.0); ls.quadraticCurveTo(0, -17.2, 6.5, -19.0); ls.lineTo(4.2, -25.5); ls.quadraticCurveTo(0, -27.0, -4.2, -25.5); ls.closePath();
+  const lg = new THREE.ExtrudeGeometry(ls, { depth: 1.2, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.6, bevelOffset: -0.6, bevelSegments: 4, curveSegments: 24 }); lg.translate(0, 0, 1.5);
+
+
+}
+// handle bar (rounded steel) from the neck to the grip
+{ const s = new THREE.Shape(); s.moveTo(-6.4, -52); s.lineTo(6.4, -52); s.lineTo(5.6, -112); s.lineTo(-5.6, -112); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 6.4, bevelEnabled: true, bevelThickness: 0.9, bevelSize: 1.6, bevelOffset: -1.6, bevelSegments: 6 }); g.translate(0, 0, -7.4);
+  handleG.add(new THREE.Mesh(g, [M.bar, M.bar])); }
+// grip
+{ const s = new THREE.Shape(); const y0 = -104, y1 = -222, hw = 10.0;
+  s.moveTo(-hw * 0.82, y0); s.lineTo(hw * 0.82, y0); s.quadraticCurveTo(hw, y0 - 10, hw, y0 - 22); s.lineTo(hw, y1 + hw); s.absarc(0, y1 + hw, hw, 0, Math.PI, true); s.lineTo(-hw, y0 - 22); s.quadraticCurveTo(-hw, y0 - 10, -hw * 0.82, y0);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 7.5, bevelEnabled: true, bevelThickness: 2.0, bevelSize: 2.2, bevelOffset: -2.2, bevelSegments: 5, curveSegments: 32 }); g.translate(0, 0, -7.5);
+  const grip = new THREE.Mesh(g, [M.rubber, M.rubber]); handleG.add(grip);
+  // chrome collar between neck and grip
+  const cs = new THREE.Shape(); cs.moveTo(-8.4, -100); cs.lineTo(8.4, -100); cs.lineTo(9.2, -106); cs.lineTo(-9.2, -106); cs.closePath();
+  const cg = new THREE.ExtrudeGeometry(cs, { depth: 9.5, bevelEnabled: true, bevelThickness: 1, bevelSize: 1, bevelOffset: -1, bevelSegments: 3 }); cg.translate(0, 0, -7.8);
+  handleG.add(new THREE.Mesh(cg, [M.bar, M.bar]));
+  for (let y = -128; y > -206; y -= 6.5) { const rib = new THREE.Mesh(new THREE.CapsuleGeometry(1.3, 19.0, 4, 10).rotateZ(Math.PI / 2), M.rubber); rib.position.set(0, y, 2.25); rib.scale.set(1, 1, 0.55); handleG.add(rib); }
+}
+// pivot pin and spring anchor plug (in handle frame)
+const PIV = KIN.P.pivot;
+{ const pin = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 6.2, 32).rotateX(Math.PI / 2), M.pin); pin.position.set(PIV[0], PIV[1], -2.0); handleG.add(pin);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(1.25, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), M.pin); cap.scale.set(1, 1, 0.45); cap.position.set(PIV[0], PIV[1], 0.8); handleG.add(cap); }
+// pawl
+const pawlPivotG = new THREE.Group(); pawlPivotG.position.set(PIV[0], PIV[1], 0); handleG.add(pawlPivotG);
+{ const loc = KIN.nominal.map(p => [p[0] - PIV[0], p[1] - PIV[1]]);
+  const hole = circle(0, 0, 1.2, 32);
+  const m = extrude(shapeOf(loc, [hole]), -4.1, 0.75, [M.pawl, M.pawl], 0.2, 12); pawlPivotG.add(m); }
+// spring (rebuilt each frame)
+let springMesh = null;
+function buildSpring(a, b) {
+  const ax = new THREE.Vector3(b[0] - a[0], b[1] - a[1], 0); const L = ax.length(); ax.normalize();
+  const n1 = new THREE.Vector3(0, 0, 1); const n2 = new THREE.Vector3().crossVectors(ax, n1);
+  const R = 1.3, wire = 0.42, pts = []; const closedPitch = 2 * wire + 0.02;
+  const usable = L + 0.3; const activeTurns = 4.0; const activePitch = Math.max(closedPitch, (usable - 2 * closedPitch) / activeTurns);
+  const total = activeTurns + 2; const N = 260;
+  for (let i = 0; i <= N; i++) { const turn = i / N * total; const ang = turn * Math.PI * 2;
+    const along = -0.15 + (turn < 1 ? turn * closedPitch : turn < 1 + activeTurns ? closedPitch + (turn - 1) * activePitch : closedPitch + activeTurns * activePitch + (turn - 1 - activeTurns) * closedPitch);
+    pts.push(new THREE.Vector3(a[0], a[1], -1.2).addScaledVector(ax, along).addScaledVector(n1, Math.cos(ang) * R).addScaledVector(n2, Math.sin(ang) * R)); }
+  const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 520, wire, 10, false);
+  if (springMesh) { springMesh.geometry.dispose(); springMesh.geometry = g; } else { springMesh = new THREE.Mesh(g, M.spring); springMesh.castShadow = true; springMesh.receiveShadow = true; handleG.add(springMesh); }
+}
+
+// ---------- gear + socket (gear frame group) ----------
+const gearG = new THREE.Group(); scene.add(gearG);
+{ const ring = KIN.gearOutline();
+  const gm = extrude(shapeOf(ring, [circle(0, 0, 4.6, 64)]), -4.4, 0.6, [M.gearTop, M.gearSide], 0.12, 12); gearG.add(gm);
+  const btn = new THREE.Mesh(new THREE.CylinderGeometry(4.3, 4.3, 5.0, 64).rotateX(Math.PI / 2), M.chrome); btn.position.z = -2.0; gearG.add(btn);
+  const bs = new THREE.Shape(toV2(circle(0, 0, 4.0, 64))); const bg = new THREE.ExtrudeGeometry(bs, { depth: 0.5, bevelEnabled: true, bevelThickness: 0.35, bevelSize: 0.5, bevelOffset: -0.5, bevelSegments: 5, curveSegments: 64 }); bg.translate(0, 0, 0.55);
+  gearG.add(new THREE.Mesh(bg, [M.gearTop, M.chrome]));
+  // socket under the head
+  const sock = new THREE.Mesh(new THREE.CylinderGeometry(11.2, 11.2, 30, 96).rotateX(Math.PI / 2), M.chrome); sock.position.z = -8.2 - 15 - 0.1; gearG.add(sock);
+  for (const z of [-16, -18.5, -33]) { const groove = new THREE.Mesh(new THREE.TorusGeometry(11.2, 0.35, 10, 96), M.floor); groove.position.z = z; gearG.add(groove); }
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(8.0, 8.5, 1.2, 64).rotateX(Math.PI / 2), M.gearTop); neck.position.z = -8.6; gearG.add(neck);
+}
+// ---------- base: washer, bracket plate, bench, props ----------
+const BENCH_Z = -40.5;
+{ const washer = new THREE.Mesh(new THREE.CylinderGeometry(12.5, 12.5, 1.6, 96).rotateX(Math.PI / 2), M.zinc); washer.position.z = -39.7; scene.add(washer);
+  const ps = new THREE.Shape(); const w = 44, h = 34; ps.moveTo(-w, -h); ps.lineTo(w, -h); ps.lineTo(w, h); ps.lineTo(-w, h); ps.closePath();
+  
+  const bench = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), M.wood); bench.position.z = BENCH_Z - 0.01; bench.receiveShadow = true; scene.add(bench);
+  // props: spare socket lying on its side, two nuts, a bolt (kept away from the main action)
+  const s2 = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 26, 64), M.chrome); 
+  const hex = (af, h) => { const r = af / Math.sqrt(3); const sh = new THREE.Shape(toV2(circle(0, 0, r, 6))); sh.holes.push(new THREE.Path(toV2(circle(0, 0, af * 0.42, 40)))); return extrude(sh, 0, h, [M.zinc, M.zinc], 0.5, 40); };
+  
+  
+  const bolt = new THREE.Group(); const bh = hex(13, 5.3); bh.rotation.y = Math.PI / 2; bh.position.x = -2; bolt.add(bh);
+  const shank = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 40, 32).rotateZ(Math.PI / 2), M.zinc); shank.position.x = 20; bolt.add(shank);
+  
+}
+shadowAll(scene);
+
+// ---------- lights ----------
+const key = new THREE.DirectionalLight(0xfff1df, 2.0); key.position.set(-70, 90, 320); key.target.position.set(0, -60, 0);
+key.castShadow = true; key.shadow.mapSize.set(4096, 4096); const sc = key.shadow.camera; sc.left = -170; sc.right = 170; sc.top = 170; sc.bottom = -170; sc.near = 50; sc.far = 700; key.shadow.bias = -0.0004; key.shadow.normalBias = 0.05; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 1.3); rim.position.set(160, 260, 70); scene.add(rim);
+const fill = new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.25); scene.add(fill);
+const softbox = new THREE.RectAreaLight(0xfff0e0, 3.5, 200, 90); softbox.position.set(-150, 40, 150); softbox.lookAt(0, 0, 0); scene.add(softbox);
+const rimbox = new THREE.RectAreaLight(0xcfe0ff, 7, 220, 60); rimbox.position.set(90, -160, 90); rimbox.lookAt(0, 0, 0); scene.add(rimbox);
+
+
+// ---------- post ----------
+const rt = new THREE.WebGLRenderTarget(W * SCALE, H * SCALE, { type: THREE.HalfFloatType, samples: 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.setPixelRatio(1); composer.setSize(W * SCALE, H * SCALE);
+composer.addPass(new RenderPass(scene, camera));
+let gtao = null;
+if (USE_AO) { gtao = new GTAOPass(scene, camera, W * SCALE, H * SCALE); gtao.output = GTAOPass.OUTPUT.Default; gtao.blendIntensity = 0.9; gtao.updateGtaoMaterial({ radius: 2.5, distanceExponent: 1.5, thickness: 2.0, scale: 1.0, samples: 12 }); gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 }); composer.addPass(gtao); }
+const bloom = new UnrealBloomPass(new THREE.Vector2(W * SCALE / 2, H * SCALE / 2), 0.12, 0.45, 0.96); composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// ---------- animation ----------
+function kinAt(t) {
+  t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i;
+  const A = kinT[i % kinT.length], B = kinT[(i + 1) % kinT.length];
+  const lerp = (a, b) => a + (b - a) * u;
+  let thB = B.thg; if (i + 1 >= kinT.length) thB = B.thg - 2 * Math.PI / 3; // loop wrap: gear has turned -120 deg
+  return { phi: lerp(A.phi, B.phi), thg: lerp(A.thg, thB), db: lerp(A.db, B.db) };
+}
+// camera keyframes: [t, target x,y,z, dist, elevDeg, azimDeg, followPhi]
+const KEYS = [
+  [0.0, -3.5, 1.0, 0, 160, 64, 186, 0.0],
+  [2.4, -3.5, 1.0, 0, 152, 63, 182, 0.0],
+  [4.2, 0, -8, -4, 262, 66, 172, 0.0],
+  [5.4, 0, -7, -4, 254, 65, 166, 0.0],
+  [7.8, -1.0, 13.8, -1.0, 70, 54, 166, 0.45],
+  [9.8, -0.8, 14.0, -1.0, 66, 56, 174, 0.45],
+  [12.0, -3.5, 1.0, 0, 160, 64, 186, 0.0],
+];
+function smooth(u) { return u * u * (3 - 2 * u); }
+function camAt(t, phi) {
+  t = ((t % LOOP) + LOOP) % LOOP;
+  let k = 0; while (k < KEYS.length - 2 && t > KEYS[k + 1][0]) k++;
+  const A = KEYS[k], B = KEYS[k + 1]; const u = smooth((t - A[0]) / (B[0] - A[0]));
+  const L = (i) => A[i] + (B[i] - A[i]) * u;
+  const dist = Math.exp(Math.log(A[4]) + (Math.log(B[4]) - Math.log(A[4])) * u);
+  const fp = L(7) * phi;
+  const tx = L(1), ty = L(2);
+  const c = Math.cos(fp), s = Math.sin(fp);
+  const target = new THREE.Vector3(c * tx - s * ty, s * tx + c * ty, L(3));
+  const el = L(5) * Math.PI / 180, az = L(6) * Math.PI / 180 + fp;
+  const pos = new THREE.Vector3(Math.sin(az) * Math.cos(el), -Math.cos(az) * Math.cos(el), Math.sin(el)).multiplyScalar(dist).add(target);
+  return { pos, target };
+}
+function setScene(t) {
+  const k = kinAt(t);
+  handleG.rotation.z = k.phi;
+  gearG.rotation.z = k.thg;
+  pawlPivotG.rotation.z = k.db;
+  const seat = KIN.rotP(KIN.seatNominal, k.db);
+  buildSpring(KIN.P.spring.anchor, seat);
+  const c = camAt(t, k.phi); camera.position.copy(c.pos); camera.lookAt(c.target);
+  camera.updateMatrixWorld();
+  return k;
+}
+function noseScreen(k) {
+  const n = KIN.rotP([-0.13, 12.25], k.db); const v = new THREE.Vector3(n[0], n[1], 0.9).applyAxisAngle(new THREE.Vector3(0, 0, 1), k.phi);
+  v.project(camera); return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H];
+}
+
+// ---------- 2D overlay ----------
+const out = document.getElementById('out'); const g2 = out.getContext('2d');
+await document.fonts.load('120px Anton');
+function overlay(t, k) {
+  // vignette
+  const vg = g2.createRadialGradient(W / 2, H * 0.48, H * 0.28, W / 2, H * 0.5, H * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.42)'); g2.fillStyle = vg; g2.fillRect(0, 0, W, H);
+  const tg = g2.createLinearGradient(0, 0, 0, 560); tg.addColorStop(0, 'rgba(8,6,4,0.55)'); tg.addColorStop(1, 'rgba(8,6,4,0)'); g2.fillStyle = tg; g2.fillRect(0, 0, W, 560);
+  const hookA = Math.max(0, Math.min(1, (2.75 - t) / 0.15), Math.min(1, (t - 10.95) / 0.15));
+  if (hookA > 0) drawHook(hookA, k);
+  const lab = Math.max(0, Math.min(1, (t - 7.6) / 0.15, (10.3 - t) / 0.15));
+  if (lab > 0) drawLabel('THE PAWL', lab, k);
+  // watermark
+  g2.save(); g2.globalAlpha = 0.0; g2.font = '30px Anton'; g2.fillStyle = '#ffffff'; g2.textAlign = 'center'; g2.letterSpacing = '6px'; g2.shadowColor='rgba(0,0,0,0.6)'; g2.shadowBlur=8; g2.fillText('WHYLOOP', W / 2, 1420); g2.restore();
+}
+function outlined(text, x, y, size, fill) {
+  g2.font = `${size}px Anton`; g2.textAlign = 'center'; g2.textBaseline = 'alphabetic'; g2.lineJoin = 'round';
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 18; g2.shadowOffsetY = 6;
+  g2.lineWidth = size * 0.14; g2.strokeStyle = '#000'; g2.strokeText(text, x, y);
+  g2.shadowColor = 'transparent'; g2.fillStyle = fill; g2.fillText(text, x, y);
+}
+function drawHook(a, k) {
+  g2.save(); g2.globalAlpha = a;
+  // badge
+  g2.font = '40px Anton'; const bw = g2.measureText('INSIDE IT').width + 44; const bx = 495 - bw / 2, by = 330;
+  g2.fillStyle = '#ffd21f'; roundRect(bx, by, bw, 58, 12); g2.fill(); g2.fillStyle = '#10141c'; g2.textAlign = 'center'; g2.fillText('INSIDE IT', 495, by + 45);
+  outlined('WHY DOES IT', 495, 500, 124, '#ffffff');
+  outlined('CLICK ONE WAY?', 495, 628, 124, '#ffd21f');
+  g2.font = '36px Anton'; g2.letterSpacing = '8px'; g2.lineWidth = 6; g2.strokeStyle = '#000'; g2.strokeText('WHYLOOP', 495, 692); g2.fillStyle = '#ffffff'; g2.fillText('WHYLOOP', 495, 692); g2.letterSpacing = '0px';
+  // red circle around the pawl nose + arrow
+  const [nx, ny] = noseScreen(k); const R = 74;
+  g2.lineWidth = 9; g2.strokeStyle = '#ff2a2a'; g2.shadowColor = 'rgba(0,0,0,0.5)'; g2.shadowBlur = 10;
+  g2.beginPath(); g2.arc(nx, ny, R, 0, Math.PI * 2); g2.stroke();
+  // arrow from lower right
+  const ax = nx - 290, ay = ny + 120, ex = nx - R * 0.93 - 6, ey = ny + R * 0.37 + 3;
+  g2.lineWidth = 11; g2.lineCap = 'round'; const ux = (ex - ax), uy = (ey - ay), ul = Math.hypot(ux, uy); g2.beginPath(); g2.moveTo(ax, ay); g2.lineTo(ex - ux / ul * 26, ey - uy / ul * 26); g2.stroke();
+  const ang = Math.atan2(ey - ay, ex - ax); g2.fillStyle = '#ff2a2a'; g2.beginPath(); g2.moveTo(ex, ey); g2.lineTo(ex - 40 * Math.cos(ang - 0.45), ey - 40 * Math.sin(ang - 0.45)); g2.lineTo(ex - 40 * Math.cos(ang + 0.45), ey - 40 * Math.sin(ang + 0.45)); g2.closePath(); g2.fill();
+  g2.restore();
+}
+function drawLabel(text, a, k) {
+  g2.save(); g2.globalAlpha = a; outlined(text, 495, 470, 96, '#ffd21f');
+  const pv = KIN.rotP([-4.5, 15.6], k.db); const v = new THREE.Vector3(pv[0], pv[1], 0.75).applyAxisAngle(new THREE.Vector3(0, 0, 1), k.phi); v.project(camera);
+  const px = (v.x * 0.5 + 0.5) * W, py = (-v.y * 0.5 + 0.5) * H;
+  if (py > 520 && py < 1440 && px > 60 && px < 930) { g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath(); g2.moveTo(495, 495); g2.lineTo(px, py - 18); g2.stroke(); g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.arc(px, py, 11, 0, Math.PI * 2); g2.fill(); }
+  g2.restore();
+}
+function roundRect(x, y, w, h, r) { g2.beginPath(); g2.moveTo(x + r, y); g2.arcTo(x + w, y, x + w, y + h, r); g2.arcTo(x + w, y + h, x, y + h, r); g2.arcTo(x, y + h, x, y, r); g2.arcTo(x, y, x + w, y, r); g2.closePath(); }
+
+window.motionPx = (t, fps = 30) => {
+  const pts = (k) => { const P = [];
+    const add = (x, y, z, rot) => { const v = new THREE.Vector3(x, y, z).applyAxisAngle(new THREE.Vector3(0, 0, 1), rot); v.project(camera); P.push([(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H]); };
+    for (let a = 0; a < 6; a++) add(14.4 * Math.cos(a), 14.4 * Math.sin(a), 0.6, k.thg);
+    add(0, -215, 2, k.phi); add(0, -110, 2, k.phi); add(26, 0, 1.5, k.phi); add(-26, 0, 1.5, k.phi);
+    const n = KIN.rotP([-0.13, 12.3], k.db); add(n[0], n[1], 0.7, k.phi);
+    return P; };
+  const A = pts(setScene(t)); const B = pts(setScene(t + 1 / fps));
+  let m = 0; for (let i = 0; i < A.length; i++) { const inside = (p) => p[0] > -200 && p[0] < W + 200 && p[1] > -200 && p[1] < H + 200; if (inside(A[i]) || inside(B[i])) m = Math.max(m, Math.hypot(A[i][0] - B[i][0], A[i][1] - B[i][1])); }
+  return m;
+};
+window.renderFrame = (t, sub = 1, shutter = 0.5, fps = 30) => {
+  g2.globalAlpha = 1; g2.clearRect(0, 0, W, H);
+  let k;
+  for (let i = 0; i < sub; i++) {
+    const ts = t + (sub > 1 ? ((i + 0.5) / sub - 0.5) * shutter / fps : 0);
+    k = setScene(ts); composer.render();
+    g2.globalAlpha = 1 / (i + 1); g2.drawImage(renderer.domElement, 0, 0, W * SCALE, H * SCALE, 0, 0, W, H);
+  }
+  g2.globalAlpha = 1; k = setScene(t);
+  overlay(((t % LOOP) + LOOP) % LOOP, k);
+  return out.toDataURL('image/png');
+};
+window.ready = true;
+</script></body></html>
