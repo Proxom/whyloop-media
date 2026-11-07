@@ -1,0 +1,161 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script src="kin.js"></script>
+<script type="module">
+import * as S from '/tools/render/lib/studio.js';
+const { THREE } = S; const K = window.KIN; const P = K.P; const LOOP = K.LOOP;
+const st = S.makeStudio({ fov: 30, bg: 0x0d1017, envIntensity: 0.4, bloom: 0.08 });
+const { scene, camera, g2 } = st;
+S.studioLights(scene, new THREE.Vector3(0, 0, 0), 90, 'y');
+S.bench(scene, -37.5, 'y', 3000, 3);
+const lamp = new THREE.PointLight(0xfff4e6, 9000, 0, 2); lamp.position.set(-30, 40, 120); scene.add(lamp);
+
+// ---------- materials ----------
+const rough = S.noiseTex(5, 150, 18, 256); rough.repeat.set(4, 4);
+const M = {
+  case: new THREE.MeshPhysicalMaterial({ color: 0xf2b705, roughness: 0.42, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.35, roughnessMap: rough }),
+  rubber: new THREE.MeshPhysicalMaterial({ color: 0x1c1d20, roughness: 0.78, metalness: 0, sheen: 0.4, sheenColor: new THREE.Color(0x3a3d44) }),
+  inside: new THREE.MeshStandardMaterial({ color: 0x3b3e44, roughness: 0.7, metalness: 0 }),
+  drum: new THREE.MeshPhysicalMaterial({ color: 0x23252a, roughness: 0.45, metalness: 0, clearcoat: 0.3 }),
+  blade: new THREE.MeshPhysicalMaterial({ color: 0xf7d21c, roughness: 0.35, metalness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
+  bladeEdge: new THREE.MeshPhysicalMaterial({ color: 0xc9a10f, roughness: 0.4, metalness: 0.3 }),
+  steel: new THREE.MeshPhysicalMaterial({ color: 0xdfe3e8, roughness: 0.2, metalness: 1 }),
+  spring: new THREE.MeshPhysicalMaterial({ color: 0xe6ecf2, roughness: 0.28, metalness: 0.8, clearcoat: 0.5, emissive: 0x161a20 }),
+  chrome: new THREE.MeshPhysicalMaterial({ color: 0xe8ebef, roughness: 0.1, metalness: 1 }),
+};
+// ruler print on the extended blade: 12 inches, 1/16" ticks, numbers every inch (mirrored: blade coordinate grows to the left)
+const SPAN = 12 * 25.4;
+function rulerTex() {
+  const c = document.createElement('canvas'); c.width = 6096; c.height = 400; const g = c.getContext('2d');
+  g.fillStyle = '#f7d21c'; g.fillRect(0, 0, c.width, c.height); const px = c.width / SPAN;
+  g.fillStyle = '#111';
+  for (let i = 0; i < 12 * 16; i++) { const x = i * 25.4 / 16 * px; const L = i % 16 === 0 ? 0.62 : i % 8 === 0 ? 0.42 : i % 4 === 0 ? 0.3 : i % 2 === 0 ? 0.22 : 0.14;
+    g.fillRect(x - 2.5, 0, 5, c.height * L); g.fillRect(x - 2.5, c.height * (1 - L * 0.55), 5, c.height * L * 0.55); }
+  g.font = 'bold 150px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let i = 1; i < 12; i++) { const x = i * 25.4 * px; g.save(); g.translate(x + 70, c.height * 0.64); g.scale(-1, 1); g.fillStyle = i % 12 === 0 ? '#c00' : '#111'; g.fillText(String(i), 0, 0); g.restore(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+const rTex = rulerTex();
+const M_ruler = new THREE.MeshPhysicalMaterial({ map: rTex, roughness: 0.35, metalness: 0.1, clearcoat: 0.6, clearcoatRoughness: 0.2 });
+
+// ---------- case ----------
+const X0 = -40, X1 = 38, Y0 = -37.5, Y1 = 36.5, RC = 10, WT = 2.2, ZB = -15, ZF = 15;
+const outer = rr4(X0, Y0, X1, Y1, [RC, RC, RC, 3]);
+const inner = rr4(X0 + WT, Y0 + WT, X1 - WT, Y1 - WT, [RC - WT, RC - WT, RC - WT, 1.2]);
+const caseG = new THREE.Group(); scene.add(caseG);
+caseG.add(S.extrude(S.shapeOf(outer), ZB, ZB + 2.0, [M.case, M.case], 0.6));
+caseG.add(S.extrude(S.shapeOf(inner), ZB + 2.0, ZB + 2.25, [M.inside, M.inside], 0));
+// side wall with a gap (the mouth) on the right, y in [-34.2, -28.0]
+function rr4(x0, y0, x1, y1, rs, n = 12) { const a = []; const c = [[x1 - rs[0], y1 - rs[0], 0, rs[0]], [x0 + rs[1], y1 - rs[1], 90, rs[1]], [x0 + rs[2], y0 + rs[2], 180, rs[2]], [x1 - rs[3], y0 + rs[3], 270, rs[3]]];
+  for (const [cx, cy, d, r] of c) for (let i = 0; i <= n; i++) { const t = (d + 90 * i / n) * Math.PI / 180; a.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return a; }
+const GAP = [-34.0, -28.0];
+function wallRing() {
+  const O = [[X1, GAP[1]], ...rr4(X0, Y0, X1, Y1, [RC, RC, RC, 3]), [X1, GAP[0]]];
+  const I = [[X1 - WT, GAP[1]], ...rr4(X0 + WT, Y0 + WT, X1 - WT, Y1 - WT, [RC - WT, RC - WT, RC - WT, 1.2]), [X1 - WT, GAP[0]]];
+  return [...O, ...I.reverse()];
+}
+const wall = S.extrude(S.shapeOf(wallRing()), ZB + 1.5, ZF - 1.5, [M.case, M.case], 0.5, 12); caseG.add(wall);
+// thumb lock button on top
+{ const b = new THREE.Mesh(new THREE.BoxGeometry(14, 4.5, 9), M.rubber); b.position.set(10, Y1 + 1.6, 0); caseG.add(b);
+  for (let i = -2; i <= 2; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 9.4), M.rubber); r.position.set(10 + i * 2.4, Y1 + 4.0, 0); caseG.add(r); } }
+// mouth guard plate (steel) under the opening
+{ const g = new THREE.Mesh(new THREE.BoxGeometry(5, 1.2, 24), M.steel); g.position.set(X1 - 1.5, -34.9, 0); caseG.add(g); }
+// front cover (clipped away by a sweeping plane for the cutaway)
+const clipCover = new THREE.Plane(new THREE.Vector3(1, 0, 0), 60);
+const coverMats = [M.case.clone(), M.case.clone(), M.rubber.clone(), M.chrome.clone(), M.inside.clone()];
+for (const m of coverMats) { m.clippingPlanes = [clipCover]; m.clipShadows = true; }
+const coverG = new THREE.Group(); caseG.add(coverG);
+coverG.add(S.extrude(S.shapeOf(outer), ZF - 2.2, ZF, [coverMats[0], coverMats[1]], 0.7));
+{ const grip = S.extrude(S.shapeOf(S.circle(-1, 0, 20, 96, false), [S.circle(-1, 0, 16.5, 96)]), ZF - 0.2, ZF + 0.9, [coverMats[2], coverMats[2]], 0.3, 64); coverG.add(grip);
+  const disc = S.extrude(S.shapeOf(S.circle(-1, 0, 16.5, 96, false)), ZF - 0.2, ZF + 0.25, [coverMats[4], coverMats[4]], 0, 64); coverG.add(disc);
+  const scr = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 1.2, 40).rotateX(Math.PI / 2), coverMats[3]); scr.position.set(-1, 0, ZF + 0.6); coverG.add(scr);
+}
+
+// ---------- fixed post ----------
+{ const post = new THREE.Mesh(new THREE.CylinderGeometry(P.post, P.post, 24, 48).rotateX(Math.PI / 2), M.chrome); post.position.z = -1.5; scene.add(post);
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.5, P.post * 1.2, 24.2), M.inside); slot.position.set(0, P.post * 0.45, -1.5); scene.add(slot); }
+
+// ---------- drum (rotates) ----------
+const drumG = new THREE.Group(); scene.add(drumG);
+drumG.add(S.extrude(S.shapeOf(S.circle(0, 0, 26.4, 128, false), [S.circle(0, 0, P.post + 0.6, 48)]), -12.6, -11.4, [M.drum, M.drum], 0.3, 64));
+drumG.add(S.extrude(S.shapeOf(S.circle(0, 0, P.rd, 128, false), [S.circle(0, 0, P.rd - 1.0, 128)]), -11.6, 10.6, [M.drum, M.drum], 0.2, 64));
+for (let i = 0; i < 3; i++) { const a = i * 2 * Math.PI / 3 + 0.4; const rib = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 21.5), M.drum); rib.position.set((P.rd - 0.5) * Math.cos(a), (P.rd - 0.5) * Math.sin(a), -0.5); rib.rotation.z = a; drumG.add(rib); }
+{ const riv = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.0, 24), M.chrome); const a = P.sTurns * 2 * Math.PI + Math.PI / 2; riv.position.set((P.s1 + 0.45) * Math.cos(a), (P.s1 + 0.45) * Math.sin(a), 0); riv.rotation.z = a + Math.PI / 2; drumG.add(riv);
+  for (let i = 0; i < 6; i++) { const b = i * Math.PI / 3; const d = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.6, 24).rotateX(Math.PI / 2), M.chrome); d.position.set(21 * Math.cos(b), 21 * Math.sin(b), -11.2); drumG.add(d); } }
+let tapeMesh = null, springMesh = null;
+function spiralStrip(pts, half) { // pts: [x,y] centerline with outward normals from the origin -> closed strip polygon
+  const o = [], n = [];
+  for (const p of pts) { const r = Math.hypot(p[0], p[1]); o.push([p[0] * (r + half) / r, p[1] * (r + half) / r]); n.push([p[0] * (r - half) / r, p[1] * (r - half) / r]); }
+  return [...o, ...n.reverse()];
+}
+function buildTape(s) {
+  const pts = []; const N = Math.ceil(s.Phi / (2 * Math.PI) * 120);
+  for (let i = 0; i <= N; i++) { const ph = s.Phi * i / N; const r = P.rd + P.tBlade / 2 + 0.02 + P.pitch * ph / (2 * Math.PI); const a = s.c + ph; pts.push([r * Math.cos(a), r * Math.sin(a)]); }
+  const g = new THREE.ExtrudeGeometry(S.shapeOf(spiralStrip(pts, P.tBlade / 2)), { depth: 20, bevelEnabled: false, curveSegments: 1 }); g.translate(0, 0, -10);
+  if (tapeMesh) { tapeMesh.geometry.dispose(); tapeMesh.geometry = g; } else { tapeMesh = new THREE.Mesh(g, [M.blade, M.bladeEdge]); tapeMesh.castShadow = tapeMesh.receiveShadow = true; drumG.add(tapeMesh); }
+}
+function buildSpring(alpha) {
+  const pts = K.spring(alpha, 1400).map(p => [p[0], p[1]]); // world-fixed frame (inner end on the post)
+  const g = new THREE.ExtrudeGeometry(S.shapeOf(spiralStrip(pts, P.sThick / 2)), { depth: 17, bevelEnabled: false, curveSegments: 1 }); g.translate(0, 0, -9.0);
+  if (springMesh) { springMesh.geometry.dispose(); springMesh.geometry = g; } else { springMesh = new THREE.Mesh(g, [M.spring, M.spring]); springMesh.castShadow = springMesh.receiveShadow = true; scene.add(springMesh); }
+}
+// ---------- free blade + hook ----------
+const inc = new THREE.Mesh(new THREE.BoxGeometry(1, P.tBlade, 20), [M.bladeEdge, M.bladeEdge, M.blade, M.blade, M.blade, M.blade]); scene.add(inc);
+const flat = new THREE.Mesh(new THREE.BoxGeometry(1, P.tBlade, 20), [M.bladeEdge, M.bladeEdge, M_ruler, M.blade, M.bladeEdge, M.bladeEdge]); scene.add(flat);
+const hookG = new THREE.Group(); scene.add(hookG);
+{ const v = new THREE.Mesh(new THREE.BoxGeometry(P.hookT, 7.6, 21), M.steel); v.position.set(P.hookT / 2, -3.3, 0); hookG.add(v);
+  const tab = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 18), M.steel); tab.position.set(-5, P.tBlade / 2 + 0.25, 0); hookG.add(tab);
+  for (const z of [-5, 5]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.8, 20), M.chrome); r.position.set(-6, P.tBlade / 2 + 0.6, z); r.scale.y = 0.6; hookG.add(r); } }
+S.shadowAll(scene);
+const YB = P.G[1];
+function setBlade(s) {
+  const [px, py] = s.P, [gx, gy] = P.G; const L = Math.hypot(gx - px, gy - py);
+  inc.scale.x = L; inc.position.set((px + gx) / 2, (py + gy) / 2 - P.tBlade / 2 * 0, 0); inc.rotation.z = Math.atan2(gy - py, gx - px);
+  const xEnd = P.mouthX + 0.05 + s.e; const x0 = gx - 0.3; const L2 = xEnd - x0; flat.scale.x = L2; flat.position.set((x0 + xEnd) / 2, gy, 0);
+  rTex.repeat.x = -L2 / SPAN; rTex.offset.x = (xEnd - x0) / SPAN;
+  hookG.position.set(xEnd, gy, 0);
+  return xEnd;
+}
+// ---------- camera ----------
+const KEYS = [
+  [0.0, 4, 14, 0, 380, 14, 20],
+  [2.0, 4, 14, 0, 372, 14, 18],
+  [3.9, 2, 9, 0, 262, 10, 8],
+  [8.4, 2, 9, 0, 250, 10, 3],
+  [11.6, 3, 10, 0, 270, 11, 9],
+  [14.2, 4, 14, 0, 372, 14, 18],
+  [18.0, 4, 14, 0, 380, 14, 20],
+];
+let cur = null;
+function setScene(t) {
+  const tt = ((t % LOOP) + LOOP) % LOOP;
+  const e = K.eAt(tt); const s = K.tape(e);
+  drumG.rotation.z = s.alpha; buildTape(s); buildSpring(s.alpha); const xEnd = setBlade(s);
+  const cv = K.coverAt(tt); clipCover.constant = -(-44 + cv * 86); // keep x > xc
+  coverG.visible = cv < 0.999;
+  const c = S.orbitCam(KEYS, tt, LOOP); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
+  cur = { tt, e, s, xEnd, cv }; return cur;
+}
+window.motionPx = (t, fps) => { const a = setScene(t), b0 = a.s.alpha, e0 = a.e; const b = setScene(t + 1 / fps); return Math.max(Math.abs(b.s.alpha - b0) * 25 * 15.5, Math.abs(b.e - e0) * 15.5); };
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const scr = (x, y, z) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+const win = (t, a, b, f = 0.15) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+function overlay(t) {
+  const tt = ((t % LOOP) + LOOP) % LOOP;
+  S.vignette(g2, 560);
+  const hookA = Math.max(win(tt, -1, 2.05), win(tt, 17.62, 19));
+  if (hookA > 0) { S.hookCard(g2, hookA, 'WHY DOES IT', 'SNAP BACK?', 118); const [x, y] = scr(-1, 0, ZF + 1); S.redCircle(g2, hookA, x, y, 125, [-150, 300]); }
+  const labA = win(tt, 3.75, 8.1);
+  if (labA > 0) { const pts = K.spring(cur.s.alpha, 400); const p = pts[Math.round(pts.length * 0.55)]; const [x, y] = scr(p[0], p[1], 8.5); S.label(g2, labA, 'THE SPRING', x, y, 480, 96); }
+  const pa = K.pullAt(tt);
+  if (pa > 0) { const [gx, gy] = scr(P.G[0] + 6, YB, 10); const x1 = Math.min(905, gx + 170), x0 = x1 - 220; S.forceArrow(g2, pa, x0, gy - 70, x1, gy - 70, 30); }
+}
+S.install(st, setScene, overlay);
+</script></body></html>

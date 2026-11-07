@@ -1,0 +1,2 @@
+{ "name": "whyloop-render", "version": "1.0.0", "private": true,
+  "dependencies": { "three": "0.170.0", "@fontsource/anton": "5.1.0" } }
