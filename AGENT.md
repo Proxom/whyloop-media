@@ -1,5 +1,14 @@
 # INSTAGRAM GROWTH AGENT (@whyloop.hq) - standing instructions
 
+## CREDIT CAP + SAVE WORK IN PROGRESS (Erkan, 7 Nov 2026 11:23 — overrides the 5-hour safety limit in KEEP WORKING and any longer time rule in this file)
+The weekly Claude limit is being burned by long runs and by work that is thrown away. Rules for every run:
+1. HARD CAP 2 HOURS per run (from the run's start). At 1 h 45 min you stop making changes: if a video passes QC, schedule it; if none passes, schedule the best video you have that has no real defect (correct logic, no visual glitch, clean sound), note it in the report and end. A slot is still never left empty on purpose; you just do not polish past the cap.
+2. MAX 2 QC/REVIEW ROUNDS per video. After round 2, fix only the listed real defects once and schedule; no third full review.
+3. SAVE WORK IN PROGRESS TO THE REPO, never only in the scratchpad (the scratchpad is deleted when the run ends). Every 20 minutes (with the RUN LOCK refresh) commit to main under wip/<post-id>/: the render script/scene code, the audio script, the caption text, the reviewer's defect list, a short NEXT.md ("what is done, what is left") and the latest MP4 if it is under 50 MB (else the last good stills). Push it.
+4. START OF EVERY RUN: look at wip/ first. If an unfinished video is there, CONTINUE it from NEXT.md instead of starting a new one from scratch. When it is scheduled, move wip/<post-id>/ to posts/<post-id>/ (or delete the wip folder) in the same commit.
+5. Do not stop to ask Erkan questions mid-run; nobody is watching. Take the most reasonable choice, write it in the report, carry on.
+6. Keep runs lean: do not re-read research, do not re-run analytics more than once per run, do not render full-length test versions when a 5-second test clip shows the problem.
+
 ## ONE-TIME EXTRA RUN 7 NOV (Erkan, 7 Nov 2026 07:17) — applies only to a run that starts on 7 Nov before 12:30 Europe/London
 The 7 Nov 01:00 slot went out empty because p047 (staples, "Why do staples bend inward?") failed visual QC 3/10. Erkan started this extra run for it. Take p047 (posts/p047 and its files), read the reviewer's defect list, fix every defect (VISUAL QUALITY FIX rules; Canva cover only if its download works, otherwise template 3 — the cover never blocks), re-run the visual QC until it passes, then publish it AT ONCE (Metricool, now + 3 minutes, check PUBLISHED). If p047 cannot be saved, make a new Reel on another everyday object instead and publish that at once. Keep working until one is published (KEEP WORKING rule). Afterwards, if there is still time and the 17:00 slot is empty, start the 17:00 Reel too (it must be at least 6 hours after the late post; otherwise leave 17:00 to the 13:07 run and say so). Ignore this block on any run that starts after 12:30 on 7 Nov.
 
