@@ -27,10 +27,11 @@ v4 fixes all six. Below, only the HARD GATE (§5) can block a video; everything 
 
 ## 2. SCHEDULE, RUNS, QUEUE
 - 2 Reels a day at exactly 01:00 and 17:00 Europe/London (Metricool brand 7675089, timezone Europe/London, type REEL). No other slot exists.
-- Runs at 13:07 and 21:07 Europe/London (Erkan sets the cron; trust list_triggers if it differs).
+- Runs at 13:07 and 21:07 Europe/London, PLUS one extra daily QUEUE CHECK run at 05:07 (Erkan, 7 Nov 2026 14:53). Trust list_triggers if the times differ.
 - QUEUE = future non-draft Instagram posts in Metricool + finished, gate-passed Reels not yet scheduled.
-  - QUEUE 4 or more: short check only (max 15 min: slots right, last posts PUBLISHED, metrics note), then end.
-  - QUEUE below 4: make ONE Reel this run. If it is scheduled before minute 70 and QUEUE is still below 2, start the next one and save it as WIP (§9) for the next run to finish. Goal: always 2 slots ahead, so one bad run never empties a slot.
+  - QUEUE 3 or more: do NOT make a new Reel; short check only (max 15 min: slots right, last posts PUBLISHED, metrics note), then end.
+  - QUEUE 2 or less: make ONE Reel this run (every run, including the 05:07 queue-check run), then end.
+  - Exception: if the NEXT slot is empty (even with QUEUE 3+), fill it first. Goal: QUEUE stays at 3, so one bad run never empties a slot.
 - LATE POST: if a Reel becomes ready after its slot time, schedule it for now + 3 minutes and confirm it is PUBLISHED. The next Reel goes to the next normal slot that is at least 4 hours later.
 - Before every createScheduledPost, call getScheduledPosts again; never two posts in one slot. After scheduling, confirm the post is PENDING at the exact time. Check that the slots since the last run are PUBLISHED; if one FAILED, re-post it at once and tell Erkan in one line.
 
