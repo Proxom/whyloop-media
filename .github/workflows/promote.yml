@@ -3,7 +3,7 @@ name: promote-claude-branches
 # This workflow fast-forwards main to such a branch so media URLs on main work.
 on:
   push:
-    branches: ['claude/**']
+    branches: ['claude/**', '!claude/run-lock']
 permissions:
   contents: write
 jobs:
