@@ -1,0 +1,27 @@
+{
+ "id": "p050",
+ "track": "B",
+ "topic": "Reversible ratchet wrench (Part 2 of p048): the reversing lever rocks a double pawl",
+ "principle": "A spring plunger on the reversing lever presses one end of a rocking double pawl into the gear; that end jams against the teeth in one swing direction and slides over them in the other, so flipping the lever to the other side swaps which end engages and reverses the drive direction.",
+ "caption": "Part 2 of the ratchet 🔧 How does one switch make it work both ways?\nWhich way loosens a bolt: left or right? 👇\nFollow @whyloop.hq for a new machine every day\n#ratchet #howitworks #engineering #mechanism #tools",
+ "firstComment": "Answer: left (counterclockwise) 👈 Most bolts have right-hand threads: clockwise tightens, counterclockwise loosens.\n\nInside many ratchets the pawl has teeth on both ends and rocks on a pin. The reversing lever turns a small spring-loaded plunger that pushes one end of the pawl into the gear.\n\nThat end jams against the teeth when you swing one way, so the gear and the socket turn with the handle. Swing back, and it slides over the teeth and clicks.\n\nFlip the lever: the plunger pushes the other end in, the first end lifts out, and now the ratchet drives the opposite way. Same tool, tighten or loosen.\n\n(Simplified 3D model: 24 teeth, slowed down. Some ratchets use two separate pawls instead of one double pawl, but the idea is the same.)\n\nSources:\nUS patent US3881376A (double pawl urged to forward or reverse drive by a selector with a spring plunger): https://patents.google.com/patent/US3881376A/en\nWikipedia, Socket wrench (a small lever on the head switches between tightening and loosening): https://en.wikipedia.org/wiki/Socket_wrench\nWikipedia, Ratchet (device) (spring-loaded pawl, the click): https://en.wikipedia.org/wiki/Ratchet_(device)\nUS patent US8720308B2 (dual-pawl ratchet: the reversing lever engages one pawl and lifts the other): https://patents.google.com/patent/US8720308B2/en\nWikipedia, Screw thread (right-hand threads are the default; clockwise moves the part away from you): https://en.wikipedia.org/wiki/Screw_thread",
+ "altText": "3D animation of a ratchet wrench on a wooden workbench with its cover removed. Inside the head, an orange double-ended pawl rocks on a pin above a 24-tooth gear, and a small black reversing lever behind it holds a spring-loaded plunger against the pawl. With the lever to one side, the handle swings and the gear and socket turn clockwise (TIGHTEN), while the swing back clicks over the teeth. The lever flips, the plunger pushes the other end of the pawl into the teeth, and now the gear turns counterclockwise (LOOSEN). The lever flips back and the loop repeats. Text on screen: One switch. Both ways? Tighten. Flip the lever. Loosen. Other side.",
+ "onScreen": [
+  "INSIDE IT",
+  "ONE SWITCH.",
+  "BOTH WAYS?",
+  "WHYLOOP",
+  "TIGHTEN",
+  "FLIP THE LEVER",
+  "LOOSEN",
+  "OTHER SIDE"
+ ],
+ "sources": [
+  "https://patents.google.com/patent/US3881376A/en",
+  "https://patents.google.com/patent/US8720308B2/en",
+  "https://en.wikipedia.org/wiki/Socket_wrench",
+  "https://en.wikipedia.org/wiki/Ratchet_(device)",
+  "https://en.wikipedia.org/wiki/Screw_thread"
+ ],
+ "learningApplied": "Part 2 rule (AGENT.md 4.9 + Erkan's one-time topic); p049 reviewer lessons: before/after state of the hero part clearly different (pawl rocks side to side), camera close on the hero during the flip."
+}
