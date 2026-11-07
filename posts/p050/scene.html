@@ -309,9 +309,9 @@ function overlay(t, k) {
   const hookA = Math.max(0, Math.min(1, (2.35 - t) / 0.15), Math.min(1, (t - 15.05) / 0.15));
   if (hookA > 0) drawHook(hookA, k);
   let a;
-  if ((a = win(t, 3.3, 6.5)) > 0) { drawTurn(a, k, -1); drawLabel('TIGHTEN', a, null); }
+  if ((a = win(t, 3.3, 5.95)) > 0) { drawTurn(a, k, -1); drawLabel('TIGHTEN', a, null); }
   if ((a = win(t, 6.75, 8.0)) > 0) drawLabel('FLIP THE LEVER', a, leverScreen(k));
-  if ((a = win(t, 9.1, 12.7)) > 0) { drawTurn(a, k, 1); drawLabel('LOOSEN', a, null); }
+  if ((a = win(t, 9.1, 12.25)) > 0) { drawTurn(a, k, 1); drawLabel('LOOSEN', a, null); }
   if ((a = win(t, 13.05, 14.4)) > 0) drawLabel('OTHER SIDE', a, noseScreen(k, -1));
 }
 function drawTurn(a, k, dir) { // curved arrow around the socket showing the gear's turning direction
