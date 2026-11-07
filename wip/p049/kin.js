@@ -10,7 +10,7 @@
     mouthX: 38.0,      // outer face of the case wall at the mouth
     hookT: 0.8,        // hook plate thickness
     post: 2.6,         // fixed center post radius
-    s0: 2.95, s1: 13.6, sTurns: 6.0, sThick: 0.42, // spiral spring: inner radius, outer radius, turns at rest, thickness
+    s0: 3.0, s1: 13.55, sTurns: 3.6, sThick: 0.62, // spiral spring: inner radius, outer radius, turns at rest, thickness
     eMax1: 180, eMax0: 150,
   };
   // wound length when fully retracted

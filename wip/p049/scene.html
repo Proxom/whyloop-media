@@ -13,7 +13,7 @@ const { THREE } = S; const K = window.KIN; const P = K.P; const LOOP = K.LOOP;
 const st = S.makeStudio({ fov: 30, bg: 0x0d1017, envIntensity: 0.4, bloom: 0.08 });
 const { scene, camera, g2 } = st;
 S.studioLights(scene, new THREE.Vector3(0, 0, 0), 90, 'y');
-S.bench(scene, -37.5, 'y', 3000, 3);
+S.bench(scene, -37.5, 'y', 4000, 4);
 const lamp = new THREE.PointLight(0xfff4e6, 9000, 0, 2); lamp.position.set(-30, 40, 120); scene.add(lamp);
 
 // ---------- materials ----------
@@ -26,7 +26,8 @@ const M = {
   blade: new THREE.MeshPhysicalMaterial({ color: 0xf7d21c, roughness: 0.35, metalness: 0.15, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
   bladeEdge: new THREE.MeshPhysicalMaterial({ color: 0xc9a10f, roughness: 0.4, metalness: 0.3 }),
   steel: new THREE.MeshPhysicalMaterial({ color: 0xdfe3e8, roughness: 0.2, metalness: 1 }),
-  spring: new THREE.MeshPhysicalMaterial({ color: 0xe6ecf2, roughness: 0.28, metalness: 0.8, clearcoat: 0.5, emissive: 0x161a20 }),
+  spring: new THREE.MeshPhysicalMaterial({ color: 0x8f9aa8, roughness: 0.3, metalness: 1, clearcoat: 0.4, emissive: 0x0c0f14 }),
+  springFace: new THREE.MeshPhysicalMaterial({ color: 0xf1f5fa, roughness: 0.16, metalness: 0.85, clearcoat: 0.8, clearcoatRoughness: 0.05, emissive: 0x2a3038 }),
   chrome: new THREE.MeshPhysicalMaterial({ color: 0xe8ebef, roughness: 0.1, metalness: 1 }),
 };
 // ruler print on the extended blade: 12 inches, 1/16" ticks, numbers every inch (mirrored: blade coordinate grows to the left)
@@ -64,6 +65,8 @@ const wall = S.extrude(S.shapeOf(wallRing()), ZB + 1.5, ZF - 1.5, [M.case, M.cas
 // thumb lock button on top
 { const b = new THREE.Mesh(new THREE.BoxGeometry(14, 4.5, 9), M.rubber); b.position.set(10, Y1 + 1.6, 0); caseG.add(b);
   for (let i = -2; i <= 2; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 9.4), M.rubber); r.position.set(10 + i * 2.4, Y1 + 4.0, 0); caseG.add(r); } }
+// chrome visor over the mouth (clear of the hook: hook top -30.65, visor bottom -28.2)
+{ const v = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.3, 25), M.chrome); v.position.set(X1 + 0.15, -27.55, 0); caseG.add(v); }
 // mouth guard plate (steel) under the opening
 { const g = new THREE.Mesh(new THREE.BoxGeometry(5, 1.2, 24), M.steel); g.position.set(X1 - 1.5, -34.9, 0); caseG.add(g); }
 // front cover (clipped away by a sweeping plane for the cutaway)
@@ -79,14 +82,15 @@ coverG.add(S.extrude(S.shapeOf(outer), ZF - 2.2, ZF, [coverMats[0], coverMats[1]
 
 // ---------- fixed post ----------
 { const post = new THREE.Mesh(new THREE.CylinderGeometry(P.post, P.post, 24, 48).rotateX(Math.PI / 2), M.chrome); post.position.z = -1.5; scene.add(post);
-  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.5, P.post * 1.2, 24.2), M.inside); slot.position.set(0, P.post * 0.45, -1.5); scene.add(slot); }
+  }
 
+{ const tab = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.2, 17), M.spring); const a = Math.PI / 2; tab.position.set((P.post + 0.25) * Math.cos(a), (P.post + 0.25) * Math.sin(a), -0.5); tab.rotation.z = a; scene.add(tab); }
 // ---------- drum (rotates) ----------
 const drumG = new THREE.Group(); scene.add(drumG);
 drumG.add(S.extrude(S.shapeOf(S.circle(0, 0, 26.4, 128, false), [S.circle(0, 0, P.post + 0.6, 48)]), -12.6, -11.4, [M.drum, M.drum], 0.3, 64));
 drumG.add(S.extrude(S.shapeOf(S.circle(0, 0, P.rd, 128, false), [S.circle(0, 0, P.rd - 1.0, 128)]), -11.6, 10.6, [M.drum, M.drum], 0.2, 64));
-for (let i = 0; i < 3; i++) { const a = i * 2 * Math.PI / 3 + 0.4; const rib = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 21.5), M.drum); rib.position.set((P.rd - 0.5) * Math.cos(a), (P.rd - 0.5) * Math.sin(a), -0.5); rib.rotation.z = a; drumG.add(rib); }
-{ const riv = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.0, 24), M.chrome); const a = P.sTurns * 2 * Math.PI + Math.PI / 2; riv.position.set((P.s1 + 0.45) * Math.cos(a), (P.s1 + 0.45) * Math.sin(a), 0); riv.rotation.z = a + Math.PI / 2; drumG.add(riv);
+
+{ const riv = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.0, 24), M.chrome); const a = P.sTurns * 2 * Math.PI + Math.PI / 2; riv.position.set((P.s1 + 0.55) * Math.cos(a), (P.s1 + 0.45) * Math.sin(a), 0); riv.rotation.z = a + Math.PI / 2; drumG.add(riv);
   for (let i = 0; i < 6; i++) { const b = i * Math.PI / 3; const d = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.6, 24).rotateX(Math.PI / 2), M.chrome); d.position.set(21 * Math.cos(b), 21 * Math.sin(b), -11.2); drumG.add(d); } }
 let tapeMesh = null, springMesh = null;
 function spiralStrip(pts, half) { // pts: [x,y] centerline with outward normals from the origin -> closed strip polygon
@@ -103,13 +107,13 @@ function buildTape(s) {
 function buildSpring(alpha) {
   const pts = K.spring(alpha, 1400).map(p => [p[0], p[1]]); // world-fixed frame (inner end on the post)
   const g = new THREE.ExtrudeGeometry(S.shapeOf(spiralStrip(pts, P.sThick / 2)), { depth: 17, bevelEnabled: false, curveSegments: 1 }); g.translate(0, 0, -9.0);
-  if (springMesh) { springMesh.geometry.dispose(); springMesh.geometry = g; } else { springMesh = new THREE.Mesh(g, [M.spring, M.spring]); springMesh.castShadow = springMesh.receiveShadow = true; scene.add(springMesh); }
+  if (springMesh) { springMesh.geometry.dispose(); springMesh.geometry = g; } else { springMesh = new THREE.Mesh(g, [M.springFace, M.spring]); springMesh.castShadow = false; springMesh.receiveShadow = false; scene.add(springMesh); }
 }
 // ---------- free blade + hook ----------
 const inc = new THREE.Mesh(new THREE.BoxGeometry(1, P.tBlade, 20), [M.bladeEdge, M.bladeEdge, M.blade, M.blade, M.blade, M.blade]); scene.add(inc);
 const flat = new THREE.Mesh(new THREE.BoxGeometry(1, P.tBlade, 20), [M.bladeEdge, M.bladeEdge, M_ruler, M.blade, M.bladeEdge, M.bladeEdge]); scene.add(flat);
 const hookG = new THREE.Group(); scene.add(hookG);
-{ const v = new THREE.Mesh(new THREE.BoxGeometry(P.hookT, 7.6, 21), M.steel); v.position.set(P.hookT / 2, -3.3, 0); hookG.add(v);
+{ const v = new THREE.Mesh(new THREE.BoxGeometry(P.hookT, 6.6, 21), M.steel); v.position.set(P.hookT / 2, -2.95, 0); hookG.add(v);
   const tab = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 18), M.steel); tab.position.set(-5, P.tBlade / 2 + 0.25, 0); hookG.add(tab);
   for (const z of [-5, 5]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.8, 20), M.chrome); r.position.set(-6, P.tBlade / 2 + 0.6, z); r.scale.y = 0.6; hookG.add(r); } }
 S.shadowAll(scene);
@@ -124,13 +128,13 @@ function setBlade(s) {
 }
 // ---------- camera ----------
 const KEYS = [
-  [0.0, 4, 14, 0, 380, 14, 20],
-  [2.0, 4, 14, 0, 372, 14, 18],
-  [3.9, 2, 9, 0, 262, 10, 8],
-  [8.4, 2, 9, 0, 250, 10, 3],
-  [11.6, 3, 10, 0, 270, 11, 9],
-  [14.2, 4, 14, 0, 372, 14, 18],
-  [18.0, 4, 14, 0, 380, 14, 20],
+  [0.0, 4, 6, 0, 385, 27, 20],
+  [2.0, 4, 6, 0, 378, 27, 18],
+  [3.9, 0, 3, 0, 338, 24, 8],
+  [8.4, 0, 3, 0, 332, 24, 3],
+  [11.6, 1, 5, 0, 345, 25, 9],
+  [14.2, 4, 6, 0, 378, 27, 18],
+  [18.0, 4, 6, 0, 385, 27, 20],
 ];
 let cur = null;
 function setScene(t) {
@@ -151,11 +155,11 @@ function overlay(t) {
   const tt = ((t % LOOP) + LOOP) % LOOP;
   S.vignette(g2, 560);
   const hookA = Math.max(win(tt, -1, 2.05), win(tt, 17.62, 19));
-  if (hookA > 0) { S.hookCard(g2, hookA, 'WHY DOES IT', 'SNAP BACK?', 118); const [x, y] = scr(-1, 0, ZF + 1); S.redCircle(g2, hookA, x, y, 125, [-150, 300]); }
+  if (hookA > 0) { S.hookCard(g2, hookA, 'WHY DOES IT', 'SNAP BACK?', 118, false); const [x, y] = scr(-1, 0, ZF + 1); S.redCircle(g2, hookA, x, y, 125, [-150, 300]); }
   const labA = win(tt, 3.75, 8.1);
   if (labA > 0) { const pts = K.spring(cur.s.alpha, 400); const p = pts[Math.round(pts.length * 0.55)]; const [x, y] = scr(p[0], p[1], 8.5); S.label(g2, labA, 'THE SPRING', x, y, 480, 96); }
   const pa = K.pullAt(tt);
-  if (pa > 0) { const [gx, gy] = scr(P.G[0] + 6, YB, 10); const x1 = Math.min(905, gx + 170), x0 = x1 - 220; S.forceArrow(g2, pa, x0, gy - 70, x1, gy - 70, 30); }
+  if (pa > 0) { const [mx, my] = scr(P.mouthX + 4, YB, 10); let x0 = mx, x1 = Math.min(925, x0 + 190); if (x1 - x0 < 130) x0 = x1 - 130; S.forceArrow(g2, pa, x0, my - 58, x1, my - 58, 28); }
 }
 S.install(st, setScene, overlay);
 </script></body></html>

@@ -128,11 +128,11 @@ export function outlined(g2, text, x, y, size, fill, font = 'Anton') {
 export function rrect(g2, x, y, w, h, r) { g2.beginPath(); g2.moveTo(x + r, y); g2.arcTo(x + w, y, x + w, y + h, r); g2.arcTo(x + w, y + h, x, y + h, r); g2.arcTo(x, y + h, x, y, r); g2.arcTo(x, y, x + w, y, r); g2.closePath(); }
 // Series hook template: INSIDE IT badge, two-line question (white then yellow), WHYLOOP tag. Centered at x=495 (right 150 px kept free).
 export const CX = (DW - SAFE.right + SAFE.left) / 2 - 10; // 495
-export function hookCard(g2, a, line1, line2, size = 124) {
+export function hookCard(g2, a, line1, line2, size = 124, tag = true) {
   g2.save(); g2.globalAlpha = a; g2.font = '40px Anton'; const bw = g2.measureText('INSIDE IT').width + 44; const by = 332;
   g2.fillStyle = '#ffd21f'; rrect(g2, CX - bw / 2, by, bw, 58, 12); g2.fill(); g2.fillStyle = '#10141c'; g2.textAlign = 'center'; g2.fillText('INSIDE IT', CX, by + 45);
   outlined(g2, line1, CX, 502, size, '#ffffff'); outlined(g2, line2, CX, 502 + size * 1.03, size, '#ffd21f');
-  g2.font = '36px Anton'; g2.letterSpacing = '8px'; g2.lineWidth = 6; g2.strokeStyle = '#000'; const ty = 502 + size * 1.03 + 64; g2.strokeText('WHYLOOP', CX, ty); g2.fillStyle = '#fff'; g2.fillText('WHYLOOP', CX, ty); g2.letterSpacing = '0px';
+  if (tag) { g2.font = '36px Anton'; g2.letterSpacing = '8px'; g2.lineWidth = 6; g2.strokeStyle = '#000'; const ty = 502 + size * 1.03 + 64; g2.strokeText('WHYLOOP', CX, ty); g2.fillStyle = '#fff'; g2.fillText('WHYLOOP', CX, ty); g2.letterSpacing = '0px'; }
   g2.restore();
 }
 export function redCircle(g2, a, x, y, R = 80, from = [-280, 130]) {
