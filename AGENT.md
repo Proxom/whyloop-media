@@ -2,6 +2,13 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## ONE-TIME TOPIC FOR 8 NOV 01:00 (Erkan, 7 Nov 2026 14:46) — applies to the Reel for the 2026-11-08 01:00 slot only
+Erkan chose the topic: "How does the two way ratchet work?" — the reversible ratchet wrench (Part 2 of the 7 Nov 12:02 ratchet Reel p048, whose first comment already mentioned the reversing lever).
+- Build on posts/p048 (same wrench model, same look, same gear) and tools/render. Show the small reversing lever on the head flipping the pawl (or the double pawl) to the other side, so the same tool tightens one way and loosens the other way. Show both directions clearly: the gear turns with the handle one way and the pawl clicks over the teeth the other way, then the lever flips and it is the opposite.
+- Hook (frame 1, white + yellow, red circle on the reversing lever): e.g. "ONE SWITCH. / BOTH WAYS?" Comment bait: "Which way loosens a bolt: left or right? 👇". Caption says it is Part 2 ("Part 2 of the ratchet 🔧").
+- Verify how a reversible ratchet works from a reliable source (e.g. Wikipedia "Ratchet (device)" / "Socket wrench" plus one more) and put the sources in firstCommentText.
+- Schedule it for 2026-11-08 01:00. If the 01:00 slot is already filled when you read this, use this topic for the next empty slot instead. All v4 rules apply. Ignore this block after the topic has been published.
+
 ## 0. WHY v4 (Erkan, 7 Nov 2026 12:15: "find every limit that caused the missed 01:00 post and the forced 12:02 post, and fix it")
 The 7 Nov 01:00 slot went out empty and the next Reel was only forced out at 12:02. Causes found in the old rules:
 1. A visual gate of 8/10 from a reviewer that judges against top accounts, while our renderer is three.js on a CPU (swiftshader). p047 scored 3/10, p048 scored 5, 4, 6. The gate was close to unreachable, so runs looped fix → re-render → review.
