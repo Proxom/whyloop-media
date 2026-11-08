@@ -2,6 +2,13 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## MAIN GOAL: 10,000 FOLLOWERS AS FAST AS POSSIBLE (Erkan, 8 Nov 2026 09:18) — this goal decides between options; views only matter when they turn into follows
+1. FOLLOW CALL ON SCREEN: the last 1-1.5 s of every video shows a short follow line in the lower safe area (e.g. "Follow → next one tomorrow"). It must not break the loop: keep it small, then cut back to the first frame. The caption/description still carries the follow line.
+2. SERIES + PART 2 PROMISE: when a topic clearly has a sequel, end with "Part 2 tomorrow 👀" (on screen and in the caption) and keep the promise: the Part 2 goes out in the next 1-2 slots (it takes priority over other topics and over rotation, but still counts toward the max-3-in-a-row rule). Never promise a Part 2 you cannot deliver.
+3. FOLLOWER-WINNER FOLLOW-UP: a video that gains clearly more followers than the median (or 3x the median views) gets a follow-up or Part 2 within 2 slots.
+4. MEASURE FOLLOWS: in the performance loop also pull the account follower count (find the metric with getAnalyticsAvailableMetrics; per-post follows if the platform gives them, otherwise the daily follower change on the day the post went out). Rank topics, styles and groups by follows per 1,000 views, not only by views. Put in every daily report (reports/daily-<date>.md): followers now, change since yesterday, change in the last 7 days, and the best video for follows.
+5. Profile changes (bio, pinned posts, highlights) are account settings: do not touch them; suggest them to Erkan in the daily report under "Erkan için öneri" when useful (e.g. which 3 videos to pin).
+
 ## WEEKLY MARKET SCAN + REPORTS FOR THE GENERAL MANAGER (Erkan, 8 Nov 2026 08:38)
 Erkan reads only the general manager's (Claude's) combined report, not each agent. So every agent writes its reports as files in THIS REPO too (the general manager reads them with git), in addition to the dashboard:
 1. DAILY: the daily report also goes to reports/daily-<YYYY-MM-DD>.md (Turkish, max 25 lines: yesterday's posts with views / watch % / shares / comments, the best and worst and why, today's decision, problems, open approvals).
