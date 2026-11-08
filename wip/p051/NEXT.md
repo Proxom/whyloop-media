@@ -1,9 +1,11 @@
-# p051 plan (for 8 Nov 17:00, next run = 05:07 queue check) - not started
-Track: A (short voiceover, Kokoro af_heart as in posts/p049/vo.py) - alternates after p050 (B).
-Topic: retractable click pen - "WHY DOES IT / STAY IN?" Tiny-part mystery: the rotating cam that turns a little on every click,
-so the refill alternates between locked-out and released. Verify (Wikipedia "Retractable pen" + a patent) before use.
-Toolkit: tools/render (render.js, stills.js, master.sh, qc_audio.sh, qc_video.sh, encode.sh) + posts/p050 as the latest scene
-(kin sim + check.js pattern, 3 workers at 0.85 scale with AO ~17 min for 474 frames).
-Reviewer lessons p050 (5 -> 6.5/10): dark parts must separate in value from the housing; add an index mark so rotation reads;
-open on a 3/4 low angle, not top-down; keep arrows/labels clear of camera pushes; tighten shadow frustum (still a bit stair-stepped);
-close the gap between moving parts and their bore; consider a warmer key light.
+# p051 bike freehub "WHY DOES IT / TICK?" - track A (Kokoro af_heart VO) - for Instagram 8 Nov 2026 17:00
+Why this topic: the ratchet Reel p048 became the first winner (10.8K views, reach 7.3K) -> AGENT.md 4.9 close variant (same pawl + sawtooth idea).
+Done: geom.py (24 internal teeth Ri 15 / Ro 16.6, 2 wedge pawls on pivots, driver pockets via shapely), kin.js (one loop 18.5 s: coast 0-10.3,
+driver catches the ring at 11.02 s, drive to 14.0, coast again; ring exactly 4 turns, driver 1 turn, warm start so the pawl state loops),
+check.js (HARD GATE 5.2), scene.html (tools/render/lib/studio.js; cog with upper half cut away by a clipping plane), vo.py, audio.py, post.json.
+Rebuild: python3 -m pip install shapely; python3 geom.py; node runkin.js 79.6,53; node check.js
+Render: python3 -m http.server 8765 (repo root); node tools/render/render.js wip/p051/scene.html <out> 30 1 0 555 0.85 1 <w> 3
+Audio: Kokoro venv (kokoro-onnx 0.6.1, model = cat kokoro-q8-shards@1.0.0 parts, voices.npz from kokoro-js@1.2.1 voices/*.bin as float32 (-1,1,256));
+  <venv>/python vo.py <ttsdir> <vodir>; python3 audio.py <vodir>; tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15
+  -> -15.1 LUFS, -3.1 dBTP, HP4k gap 19.8 dB.
+Left: final render (started 05:43 UTC), encode, HARD GATE, reviewer, schedule 17:00.
