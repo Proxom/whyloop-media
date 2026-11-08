@@ -8,4 +8,6 @@ Render: python3 -m http.server 8765 (repo root); node tools/render/render.js wip
 Audio: Kokoro venv (kokoro-onnx 0.6.1, model = cat kokoro-q8-shards@1.0.0 parts, voices.npz from kokoro-js@1.2.1 voices/*.bin as float32 (-1,1,256));
   <venv>/python vo.py <ttsdir> <vodir>; python3 audio.py <vodir>; tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15
   -> -15.1 LUFS, -3.1 dBTP, HP4k gap 19.8 dB.
-Left: final render (started 05:43 UTC), encode, HARD GATE, reviewer, schedule 17:00.
+Reviewer round 1 = 4/10 (flat grey, wood bench cheap, pawl tiny in wide shots, cut not readable, labels crossing arcs) -> fixes: dark gradient backdrop, env 0.6 + exposure 1.1, no locknut, closer cameras, red section cap on the cut gear, labels at y 1390, coasting arc, dark index dots.
+Speed: RectAreaLights cost ~1.5 s/frame and the MSAA half-float composer target ~3 s on swiftshader -> directional fills + samples 0 at full res = 2.8 s/frame (parallel workers do not help: swiftshader already uses all 4 cores).
+Left: final render (round 2, started 06:07 UTC), encode, HARD GATE, reviewer round 2, schedule 17:00.

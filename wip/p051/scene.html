@@ -16,7 +16,8 @@ const geo = await (await fetch('geom.json')).json(); KIN.init(geo);
 const kinT = await (await fetch('kin_240.json')).json();
 const LOOP = KIN.P.LOOP; const DW = S.DW, DH = S.DH;
 
-const st = S.makeStudio({ fov: 32, bg: 0x0d1118, envIntensity: 0.32, bloom: 0.1, near: 2, far: 6000 });
+const st = S.makeStudio({ fov: 32, bg: 0x0b0e14, envIntensity: 0.6, bloom: 0, near: 2, far: 6000, samples: 0 });
+st.renderer.toneMappingExposure = 1.1;
 const { scene, camera } = st;
 
 // ---------- materials ----------
@@ -26,8 +27,8 @@ const brush = (() => { const c = document.createElement('canvas'); c.width = c.h
 const M = {
   shell: new THREE.MeshPhysicalMaterial({ color: 0xc9ced6, metalness: 1, roughness: 0.32, roughnessMap: brush }),
   shellSide: new THREE.MeshPhysicalMaterial({ color: 0xdfe3e8, metalness: 1, roughness: 0.2 }),
-  teeth: new THREE.MeshPhysicalMaterial({ color: 0xe8ebee, metalness: 1, roughness: 0.14, clearcoat: 0.5 }),
-  driver: new THREE.MeshPhysicalMaterial({ color: 0x4d535c, metalness: 1, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.15 }),
+  teeth: new THREE.MeshPhysicalMaterial({ color: 0xf2f4f6, metalness: 1, roughness: 0.12, clearcoat: 0.5, emissive: 0x2a2c30 }),
+  driver: new THREE.MeshPhysicalMaterial({ color: 0x2c3036, metalness: 0.9, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.12 }),
   driverSide: new THREE.MeshPhysicalMaterial({ color: 0x6d737c, metalness: 1, roughness: 0.22 }),
   pawl: new THREE.MeshPhysicalMaterial({ color: 0xff5a0a, metalness: 0.7, roughness: 0.24, clearcoat: 1.0, clearcoatRoughness: 0.06 }),
   spring: new THREE.MeshPhysicalMaterial({ color: 0xd6dade, metalness: 1, roughness: 0.3 }),
@@ -37,7 +38,7 @@ const M = {
   spoke: new THREE.MeshPhysicalMaterial({ color: 0xb9bec4, metalness: 1, roughness: 0.25 }),
   rim: new THREE.MeshPhysicalMaterial({ color: 0x24272c, metalness: 0.8, roughness: 0.4 }),
   tire: new THREE.MeshPhysicalMaterial({ color: 0x1a1b1d, metalness: 0, roughness: 0.82 }),
-  mark: new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.5 }),
+  mark: new THREE.MeshStandardMaterial({ color: 0x1c1f24, roughness: 0.6 }),
 };
 const { shapeOf, circle, extrude, shadowAll, toV2 } = S;
 
@@ -48,7 +49,7 @@ const ringG = new THREE.Group(); scene.add(ringG);
   const ring = extrude(shapeOf(circle(0, 0, 22.5, 128, false), [pts]), -6.5, 0, [M.shell, M.teeth], 0.25, 16); ringG.add(ring);
   // shell barrel and flange behind the ratchet
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(22.5, 22.5, 9, 128).rotateX(Math.PI / 2), M.shell); barrel.position.z = -11; ringG.add(barrel);
-  const holes = []; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; holes.push(circle(28.5 * Math.cos(a), 28.5 * Math.sin(a), 1.3, 20)); }
+  const holes = []; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; holes.push(circle(28.5 * Math.cos(a), 28.5 * Math.sin(a), 1.3, 36)); }
   const flange = extrude(shapeOf(circle(0, 0, 32, 128, false), holes), -18.5, -15.5, [M.shell, M.shellSide], 0.6, 48); ringG.add(flange);
   const barrel2 = new THREE.Mesh(new THREE.CylinderGeometry(13, 16, 70, 96).rotateX(Math.PI / 2), M.shell); barrel2.position.z = -53; ringG.add(barrel2);
   // index marks so the ring's turning reads
@@ -57,8 +58,8 @@ const ringG = new THREE.Group(); scene.add(ringG);
   const RIM = 300;
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; const side = i % 2 ? 1 : -1; const h = new THREE.Vector3(28.5 * Math.cos(a), 28.5 * Math.sin(a), -17 + side * 1.6);
     const b = a + side * 0.62; const e = new THREE.Vector3(RIM * Math.cos(b), RIM * Math.sin(b), -26); const d = new THREE.Vector3().subVectors(e, h); const L = d.length();
-    const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, L, 10), M.spoke); sp.position.copy(h).addScaledVector(d, 0.5); sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()); ringG.add(sp);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 10), M.spoke); head.position.copy(h); ringG.add(head); }
+    const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, L, 16), M.spoke); sp.position.copy(h).addScaledVector(d, 0.5); sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()); ringG.add(sp);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(1.6, 32, 16), M.spoke); head.position.copy(h); ringG.add(head); }
   const rim = new THREE.Mesh(new THREE.TorusGeometry(RIM + 6, 9, 16, 256), M.rim); rim.position.z = -26; ringG.add(rim);
   const tire = new THREE.Mesh(new THREE.TorusGeometry(RIM + 30, 18, 20, 256), M.tire); tire.position.z = -26; ringG.add(tire);
 }
@@ -88,17 +89,21 @@ function buildSpring(P, side, db) {
 // ---------- cog (16 T), shown pulled off along the axis (exploded view), turns with the driver ----------
 const cogG = new THREE.Group(); scene.add(cogG); const COG_Z = 2.2;
 // cutaway: the upper part of the cog is removed (world plane y > 2) so the top pawl is visible
-const CUT = new THREE.Plane(new THREE.Vector3(0, -1, 0), 2.0); for (const m of [M.cog, M.cogSide]) { m.clippingPlanes = [CUT]; m.side = THREE.DoubleSide; m.clipShadows = true; }
+const CUT = new THREE.Plane(new THREE.Vector3(0, -1, 0), 2.0); for (const m of [M.cog, M.cogSide]) { m.clippingPlanes = [CUT]; m.side = THREE.DoubleSide; m.clipShadows = true;
+  m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n if (!gl_FrontFacing) gl_FragColor = vec4(0.36, 0.07, 0.06, 1.0);'); }; }
 { const T = 16, Rp = 32.6, pts = []; for (let k = 0; k < T; k++) for (let i = 0; i < 24; i++) { const u = i / 24; const a = (k + u) * Math.PI * 2 / T; const w = Math.cos(u * Math.PI * 2); const r = Rp - 1.2 + 3.4 * Math.max(0, w) ** 0.8 - 2.2 * Math.max(0, -w) ** 1.5; pts.push([r * Math.cos(a), r * Math.sin(a)]); }
   const holes = [circle(0, 0, 12.6, 9 * 6)]; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + 0.3; holes.push(circle(21 * Math.cos(a), 21 * Math.sin(a), 4.2, 32)); }
   cogG.add(extrude(shapeOf(pts, holes), -1.0, 1.0, [M.cog, M.cogSide], 0.3, 12));
   const ringStep = extrude(shapeOf(circle(0, 0, 17, 96, false), [circle(0, 0, 12.6, 96)]), 1.0, 3.2, [M.cog, M.cogSide], 0.3, 48); cogG.add(ringStep);
 }
 // axle + locknut (fixed)
-{ const axle = new THREE.Mesh(new THREE.CylinderGeometry(4.9, 4.9, 120, 48).rotateX(Math.PI / 2), M.chrome); axle.position.z = -32.5; scene.add(axle);
-  const nut = extrude(shapeOf(circle(0, 0, 7.4, 6, false), [circle(0, 0, 4.9, 32)]), 22.6, 26.6, [M.chrome, M.chrome], 0.5, 6); scene.add(nut); }
+{ const axle = new THREE.Mesh(new THREE.CylinderGeometry(4.9, 4.9, 106, 64).rotateX(Math.PI / 2), M.chrome); axle.position.z = -30; scene.add(axle);
+  }
 // floor far below (the tire stands on it) and a back wall
-{ const fl = S.bench(scene, -350, 'y', 5000, 3); fl.position.z = -100; }
+{ // dark studio backdrop: radial-gradient card far behind the wheel
+  const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); const gr = g.createRadialGradient(512, 430, 40, 512, 512, 700);
+  gr.addColorStop(0, '#3a4250'); gr.addColorStop(0.45, '#1a1f28'); gr.addColorStop(1, '#07090d'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const bd = new THREE.Mesh(new THREE.PlaneGeometry(4200, 4200), new THREE.MeshBasicMaterial({ map: t })); bd.position.z = -900; scene.add(bd); }
 shadowAll(scene);
 // ---------- lights ----------
 const key = new THREE.DirectionalLight(0xfff0dc, 2.4); key.position.set(-140, 260, 300); key.target.position.set(0, 0, 0); key.castShadow = true;
@@ -106,8 +111,9 @@ key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -70;
 scene.add(key, key.target);
 const rim = new THREE.DirectionalLight(0xcfe0ff, 1.4); rim.position.set(260, 120, -160); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.28));
-const soft = new THREE.RectAreaLight(0xfff0e0, 3.2, 260, 120); soft.position.set(-200, 60, 220); soft.lookAt(0, 0, 0); scene.add(soft);
-const top = new THREE.RectAreaLight(0xe8f0ff, 3.0, 200, 80); top.position.set(60, 240, 120); top.lookAt(0, 0, 0); scene.add(top);
+// (RectAreaLights cost ~1.5 s/frame on swiftshader -> plain directional fills)
+const soft = new THREE.DirectionalLight(0xfff0e0, 0.9); soft.position.set(-200, 60, 220); scene.add(soft);
+const top = new THREE.DirectionalLight(0xe8f0ff, 0.7); top.position.set(60, 240, 120); scene.add(top);
 
 // ---------- animation ----------
 function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = kinT[i % kinT.length], B = kinT[(i + 1) % kinT.length];
@@ -118,13 +124,13 @@ function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i =
 const KEYS = [
   [0.0, -1, 12, -2, 104, 36, 18],
   [2.3, -1, 12, -2, 98, 37, 16],
-  [4.4, 0, 2, -2, 150, 24, 14],
-  [5.6, 0, 2, -2, 146, 24, 12],
-  [7.0, -1.0, 13.6, -2.5, 56, 30, 8],
-  [10.0, -1.0, 13.6, -2.5, 54, 30, 4],
-  [11.2, 0, -4, -2, 150, 22, 10],
-  [14.6, 0, -4, -2, 140, 23, 14],
-  [15.8, 0, 4, 0, 175, 24, 18],
+  [4.4, -1, 9, -2, 100, 30, 12],
+  [5.6, -1, 9, -2, 96, 31, 10],
+  [7.0, -1.0, 14.2, -2.5, 54, 40, 8],
+  [10.0, -1.0, 14.2, -2.5, 52, 40, 4],
+  [11.2, 0, 0, -2, 118, 26, 10],
+  [14.6, 0, 0, -2, 112, 27, 14],
+  [15.8, -1, 8, -2, 104, 29, 16],
   [17.3, -1, 12, -2, 108, 35, 19],
   [18.5, -1, 12, -2, 104, 36, 18],
 ];
@@ -145,9 +151,9 @@ function overlay(t, k) {
   if (hookA > 0) { S.hookCard(g2, hookA, 'WHY DOES IT', 'TICK?', 112); const [x, y] = pawlTip(k); S.redCircle(g2, hookA, x - 10, y, 62, [-250, 190]); }
   let a;
   if ((a = win(t, 4.5, 6.6)) > 0) S.label(g2, a, 'PAWLS', ...pawlTip(k), 470, 96);
-  if ((a = win(t, 7.0, 10.1)) > 0) S.label(g2, a, 'COASTING', null, null, 470, 96);
-  if ((a = win(t, 11.0, 14.5)) > 0) { S.label(g2, a, 'PEDALING', null, null, 470, 96); turnArrow(a, 27, 3.6, 320, 225, '#ff7a1a'); turnArrow(a, 19.5, 0.4, 160, 25, '#ffd21f'); }
-  if ((a = win(t, 15.0, 17.4)) > 0) { S.label(g2, a, 'COASTING', null, null, 470, 96); turnArrow(a, 19.5, 0.4, 160, 25, '#ffd21f'); }
+  if ((a = win(t, 7.0, 10.1)) > 0) S.label(g2, a, 'COASTING', null, null, 1390, 96);
+  if ((a = win(t, 10.85, 14.45)) > 0) { S.label(g2, a, 'PEDALING', null, null, 1390, 96); turnArrow(a, 27, 3.6, 320, 225, '#ff7a1a'); turnArrow(a, 19.5, 0.4, 160, 25, '#ffd21f'); }
+  if ((a = win(t, 14.6, 17.4)) > 0) { S.label(g2, a, 'COASTING', null, null, 1390, 96); turnArrow(a, 19.5, 0.4, 160, 25, '#ffd21f'); }
 }
 // curved arrow (clockwise from a0 to a1 deg) around the axis at radius R, plane z
 function turnArrow(a, R, z, a0, a1, col) { const pts = []; const n = 48; for (let i = 0; i <= n; i++) { const th = (a0 + (a1 - a0) * i / n) * Math.PI / 180; pts.push(scr(R * Math.cos(th), R * Math.sin(th), z, 0)); }
@@ -155,6 +161,7 @@ function turnArrow(a, R, z, a0, a1, col) { const pts = []; const n = 48; for (le
   g2.beginPath(); pts.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke();
   const e = pts[n], q = pts[n - 3]; const ang = Math.atan2(e[1] - q[1], e[0] - q[0]); g2.fillStyle = col; g2.beginPath();
   g2.moveTo(e[0] + 30 * Math.cos(ang), e[1] + 30 * Math.sin(ang)); g2.lineTo(e[0] + 26 * Math.cos(ang + 2.2), e[1] + 26 * Math.sin(ang + 2.2)); g2.lineTo(e[0] + 26 * Math.cos(ang - 2.2), e[1] + 26 * Math.sin(ang - 2.2)); g2.closePath(); g2.fill(); g2.restore(); }
+window._st = st; window._set = setScene; window._ov = overlay; window._kin = kinAt;
 S.install(st, setScene, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
 window.motionPx = (t, fps = 30) => { const pts = () => { const k = kinAt(t); return [pawlTip(k), scr(20, 0, 0, -k.ar), scr(0, 30, COG_Z, -k.ad)]; };
   setScene(t); const A = pts(); setScene(t + 1 / fps); const B = pts(); let m = 0; for (let i = 0; i < A.length; i++) m = Math.max(m, Math.hypot(A[i][0] - B[i][0], A[i][1] - B[i][1])); return m; };

@@ -26,7 +26,7 @@ export function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 
 const Sanitize = { uniforms: { tDiffuse: { value: null } }, vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
   fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); if(any(isnan(c))||any(isinf(c))) c=vec4(0.0,0.0,0.0,1.0); gl_FragColor=c; }' };
 
-export function makeStudio({ fov = 32, bg = 0x0b0f16, envIntensity = 0.35, bloom = 0.1, near = 2, far = 4000 } = {}) {
+export function makeStudio({ fov = 32, bg = 0x0b0f16, envIntensity = 0.35, bloom = 0.1, near = 2, far = 4000, samples = 4 } = {}) {
   RectAreaLightUniformsLib.init();
   const P = params(); const W = P.w, H = P.h; const RW = Math.round(W * P.scale), RH = Math.round(H * P.scale);
   const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
@@ -40,7 +40,7 @@ export function makeStudio({ fov = 32, bg = 0x0b0f16, envIntensity = 0.35, bloom
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.02, 0.1, 100, { size: 512 }).texture;
   scene.environmentIntensity = envIntensity;
   const camera = new THREE.PerspectiveCamera(fov, W / H, near, far);
-  const rt = new THREE.WebGLRenderTarget(RW, RH, { type: THREE.HalfFloatType, samples: 4 });
+  const rt = new THREE.WebGLRenderTarget(RW, RH, { type: THREE.HalfFloatType, samples });
   const composer = new EffectComposer(renderer, rt); composer.setPixelRatio(1); composer.setSize(RW, RH);
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(new ShaderPass(Sanitize));
@@ -129,10 +129,10 @@ export function rrect(g2, x, y, w, h, r) { g2.beginPath(); g2.moveTo(x + r, y); 
 // Series hook template: INSIDE IT badge, two-line question (white then yellow), WHYLOOP tag. Centered at x=495 (right 150 px kept free).
 export const CX = (DW - SAFE.right + SAFE.left) / 2 - 10; // 495
 export function hookCard(g2, a, line1, line2, size = 124, tag = true) {
-  g2.save(); g2.globalAlpha = a; g2.font = '40px Anton'; const bw = g2.measureText('INSIDE IT').width + 44; const by = 332;
+  g2.save(); g2.globalAlpha = a; g2.font = '40px Anton'; const bw = g2.measureText('INSIDE IT').width + 44; const by = 368;
   g2.fillStyle = '#ffd21f'; rrect(g2, CX - bw / 2, by, bw, 58, 12); g2.fill(); g2.fillStyle = '#10141c'; g2.textAlign = 'center'; g2.fillText('INSIDE IT', CX, by + 45);
-  outlined(g2, line1, CX, 502, size, '#ffffff'); outlined(g2, line2, CX, 502 + size * 1.03, size, '#ffd21f');
-  if (tag) { g2.font = '36px Anton'; g2.letterSpacing = '8px'; g2.lineWidth = 6; g2.strokeStyle = '#000'; const ty = 502 + size * 1.03 + 64; g2.strokeText('WHYLOOP', CX, ty); g2.fillStyle = '#fff'; g2.fillText('WHYLOOP', CX, ty); g2.letterSpacing = '0px'; }
+  outlined(g2, line1, CX, 540, size, '#ffffff'); outlined(g2, line2, CX, 540 + size * 1.03, size, '#ffd21f');
+  if (tag) { g2.font = '36px Anton'; g2.letterSpacing = '8px'; g2.lineWidth = 6; g2.strokeStyle = '#000'; const ty = 540 + size * 1.03 + 64; g2.strokeText('WHYLOOP', CX, ty); g2.fillStyle = '#fff'; g2.fillText('WHYLOOP', CX, ty); g2.letterSpacing = '0px'; }
   g2.restore();
 }
 export function redCircle(g2, a, x, y, R = 80, from = [-280, 130]) {
