@@ -16,7 +16,7 @@ const geo = await (await fetch('geom.json')).json(); KIN.init(geo);
 const kinT = await (await fetch('kin_240.json')).json();
 const LOOP = KIN.P.LOOP; const DW = S.DW, DH = S.DH;
 
-const st = S.makeStudio({ fov: 32, bg: 0x0b0e14, envIntensity: 0.6, bloom: 0, near: 2, far: 6000, samples: 0 });
+const st = S.makeStudio({ fov: 32, bg: 0x0b0e14, envIntensity: 0.95, bloom: 0, near: 2, far: 6000, samples: 0 });
 st.renderer.toneMappingExposure = 1.1;
 const { scene, camera } = st;
 
@@ -25,15 +25,16 @@ const brush = (() => { const c = document.createElement('canvas'); c.width = c.h
   for (let i = 0; i < 1600; i++) { const v = 122 + (r() - 0.5) * 26; g.strokeStyle = `rgba(${v | 0},${v | 0},${v | 0},0.5)`; g.lineWidth = 0.5 + r(); const y = r() * 512; g.beginPath(); g.moveTo(0, y); g.lineTo(512, y + (r() - 0.5) * 3); g.stroke(); }
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.04, 0.04); return t; })();
 // woven webbing texture: fine twill + a stitched band every 60 mm so the belt's motion reads (tileable)
-function webTex(rep) { const c = document.createElement('canvas'); c.width = 256; c.height = 512; const g = c.getContext('2d'); g.fillStyle = '#3a3e45'; g.fillRect(0, 0, 256, 512);
-  for (let y = -256; y < 768; y += 6) { g.strokeStyle = 'rgba(20,22,26,0.55)'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, y); g.lineTo(256, y + 128); g.stroke(); }
+function webTex(rep) { const c = document.createElement('canvas'); c.width = 256; c.height = 512; const g = c.getContext('2d'); g.fillStyle = '#50565f'; g.fillRect(0, 0, 256, 512);
+  for (let y = -256; y < 768; y += 10) { g.strokeStyle = 'rgba(22,24,28,0.6)'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, y); g.lineTo(256, y + 128); g.stroke(); }
   for (let x = 0; x < 256; x += 8) { g.strokeStyle = 'rgba(90,96,106,0.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 512); g.stroke(); }
   g.fillStyle = '#c9a227'; for (const y of [236, 268]) g.fillRect(0, y, 256, 8);
+  g.fillStyle = '#2a2d33'; g.fillRect(0, 0, 14, 512); g.fillRect(242, 0, 14, 512); g.fillStyle = '#8a9099'; for (let y = 0; y < 512; y += 16) { g.fillRect(18, y, 3, 9); g.fillRect(235, y, 3, 9); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, rep); t.anisotropy = 4; return t; }
 const M = {
-  plate: new THREE.MeshPhysicalMaterial({ color: 0xd2ad55, metalness: 1, roughness: 0.3, roughnessMap: brush }),
-  teeth: new THREE.MeshPhysicalMaterial({ color: 0xffe2a0, metalness: 1, roughness: 0.14, clearcoat: 0.5, emissive: 0x3a2c10 }),
-  frame: new THREE.MeshPhysicalMaterial({ color: 0x8e949c, metalness: 1, roughness: 0.4, roughnessMap: brush }),
+  plate: new THREE.MeshPhysicalMaterial({ color: 0xd9b25a, metalness: 1, roughness: 0.2, roughnessMap: brush, clearcoat: 0.6, clearcoatRoughness: 0.08 }),
+  teeth: new THREE.MeshPhysicalMaterial({ color: 0xb08a3a, metalness: 1, roughness: 0.18, clearcoat: 0.5 }),
+  frame: new THREE.MeshPhysicalMaterial({ color: 0x9aa0a8, metalness: 1, roughness: 0.26, roughnessMap: brush, clearcoat: 0.3 }),
   frameSide: new THREE.MeshPhysicalMaterial({ color: 0xc8cdd3, metalness: 1, roughness: 0.22 }),
   driver: new THREE.MeshPhysicalMaterial({ color: 0x2c3036, metalness: 0.9, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.12 }),
   driverSide: new THREE.MeshPhysicalMaterial({ color: 0x6d737c, metalness: 1, roughness: 0.22 }),
@@ -42,8 +43,8 @@ const M = {
   chrome: new THREE.MeshPhysicalMaterial({ color: 0xe6e9ec, metalness: 1, roughness: 0.12, clearcoat: 0.4 }),
   roll: new THREE.MeshStandardMaterial({ map: webTex(1), roughness: 0.85, metalness: 0 }),
   strap: new THREE.MeshStandardMaterial({ map: webTex(1), roughness: 0.85, metalness: 0, side: THREE.DoubleSide }),
-  mark: new THREE.MeshStandardMaterial({ color: 0xffd21f, roughness: 0.5 }),
-  disc: new THREE.MeshPhysicalMaterial({ color: 0x9aa1aa, metalness: 1, roughness: 0.3, roughnessMap: brush, clearcoat: 0.3 }),
+  mark: new THREE.MeshStandardMaterial({ color: 0x3a3f46, roughness: 0.5 }),
+  disc: new THREE.MeshPhysicalMaterial({ color: 0x949ca6, metalness: 1, roughness: 0.2, roughnessMap: brush, clearcoat: 0.6, clearcoatRoughness: 0.06 }),
   gap: new THREE.MeshStandardMaterial({ color: 0x15171b, roughness: 0.7, metalness: 0.2 }),
 };
 const { shapeOf, circle, extrude, shadowAll, roundRect } = S;
@@ -98,7 +99,7 @@ shadowAll(scene); strap.castShadow = true;
 const key = new THREE.DirectionalLight(0xfff0dc, 2.4); key.position.set(-140, 260, 300); key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -90; c.right = 90; c.top = 120; c.bottom = -90; c.near = 150; c.far = 900; } key.shadow.bias = -0.0003; key.shadow.normalBias = 0.03; key.shadow.radius = 3;
 scene.add(key, key.target);
-const rim = new THREE.DirectionalLight(0xcfe0ff, 1.4); rim.position.set(260, 120, -160); scene.add(rim);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 2.2); rim.position.set(260, 120, -160); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.28));
 const soft = new THREE.DirectionalLight(0xfff0e0, 0.9); soft.position.set(-220, 60, 160); scene.add(soft);
 const top = new THREE.DirectionalLight(0xe8f0ff, 0.7); top.position.set(60, 240, 120); scene.add(top);
@@ -111,7 +112,9 @@ const KEYS = [
   [0.0, 2, 4, -20, 245, 18, -44],
   [2.2, 2, 4, -20, 232, 19, -42],
   [3.5, -1, -7, -3, 138, 13, -8],
-  [7.2, -1, -7, -3, 130, 14, -5],
+  [4.2, -1, -7, -3, 134, 13, -8],
+  [5.8, -8, 2, -3, 78, 12, -6],
+  [7.2, -4, -4, -3, 118, 14, -5],
   [8.6, 2, 4, -20, 236, 19, -40],
   [11.4, 2, 4, -20, 252, 18, -45],
   [13.0, 2, 4, -20, 245, 18, -44],
