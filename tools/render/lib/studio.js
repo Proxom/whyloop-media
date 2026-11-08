@@ -175,3 +175,16 @@ export function install(st, setScene, overlay) {
   };
   window.ready = true;
 }
+
+// ---------- vehicle cue (group V): passing road-light streaks behind the subject ----------
+// Returns { mesh, setTravel(u) }: u = car travel as a fraction of the loop's total travel (0..1); repeats seamlessly 'reps' times per loop.
+// Scroll it from the car's speed integral so the streaks slow down and stop exactly when the car brakes (first used in p053).
+export function streakBackdrop(scene, { seed = 11, count = 26, z = -700, y = 40, w = 2400, h = 1200, reps = 3, opacity = 0.9 } = {}) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const g = c.getContext('2d'); const r = rng(seed);
+  for (let i = 0; i < count; i++) { const yy = 20 + r() * 472, x = r() * 1024, L = 90 + r() * 260, hh = 2 + r() * 5; const a = 0.10 + r() * 0.22; const col = r() < 0.35 ? '255,190,120' : '190,215,255';
+    for (const dx of [0, -1024, 1024]) { const gg = g.createLinearGradient(x + dx, 0, x + dx + L, 0); gg.addColorStop(0, `rgba(${col},0)`); gg.addColorStop(0.7, `rgba(${col},${a})`); gg.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gg; g.fillRect(x + dx, yy, L, hh); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity }));
+  mesh.position.set(0, y, z); scene.add(mesh);
+  return { mesh, setTravel: (u) => { t.offset.x = ((u * reps) % 1 + 1) % 1; } };
+}
