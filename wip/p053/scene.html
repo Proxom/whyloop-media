@@ -97,12 +97,12 @@ const streaks = new THREE.Mesh(new THREE.PlaneGeometry(2400, 1200), new THREE.Me
 streaks.position.set(0, 40, -700); scene.add(streaks);
 shadowAll(scene); strap.castShadow = true; streaks.castShadow = false; streaks.receiveShadow = false;
 // ---------- lights ----------
-const key = new THREE.DirectionalLight(0xfff0dc, 2.4); key.position.set(-140, 260, 300); key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -90; c.right = 90; c.top = 120; c.bottom = -90; c.near = 150; c.far = 900; } key.shadow.bias = -0.0003; key.shadow.normalBias = 0.03; key.shadow.radius = 3;
+const key = new THREE.DirectionalLight(0xfff0dc, 2.9); key.position.set(-140, 260, 300); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -90; c.right = 90; c.top = 120; c.bottom = -90; c.near = 150; c.far = 900; } key.shadow.bias = -0.0003; key.shadow.normalBias = 0.03; key.shadow.radius = 2;
 scene.add(key, key.target);
-const rim = new THREE.DirectionalLight(0xcfe0ff, 2.2); rim.position.set(260, 120, -160); scene.add(rim);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 2.8); rim.position.set(260, 120, -160); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.28));
-const soft = new THREE.DirectionalLight(0xfff0e0, 0.9); soft.position.set(-220, 60, 160); scene.add(soft);
+const soft = new THREE.DirectionalLight(0xfff0e0, 0.55); soft.position.set(-220, 60, 160); scene.add(soft);
 const topL = new THREE.DirectionalLight(0xe8f0ff, 0.7); topL.position.set(60, 240, 120); scene.add(topL);
 
 // ---------- animation ----------
@@ -113,15 +113,15 @@ const S_LOOP = kinT[kinT.length - 1].s + kinT[kinT.length - 1].v / 240; // car t
 // camera: [t, tx, ty, tz, dist, elev, azim]
 const CATCH = [10.5, -15.5, -2.5];
 const KEYS = [
-  [0.0, 8, -24, -12, 205, 12, -26],
-  [2.6, 8, -24, -12, 198, 12, -24],
+  [0.0, 4, -20, -18, 215, 13, -36],
+  [2.6, 4, -20, -18, 208, 13, -34],
   [4.6, 6, -28, -4, 128, 9, -14],
   [6.2, 7, -26, -2, 100, 8, -8],
   [8.6, 7, -26, -2, 95, 8, -7],
   [10.2, 6, -27, -4, 112, 9, -10],
   [11.4, 6, -27, -4, 118, 9, -12],
-  [13.2, 8, -24, -12, 200, 12, -24],
-  [15.0, 8, -24, -12, 205, 12, -26],
+  [13.2, 4, -20, -18, 210, 13, -34],
+  [15.0, 4, -20, -18, 215, 13, -36],
 ];
 const T_BRAKE = 2.7;
 function setScene(t) { const k = kinAt(t);
@@ -145,11 +145,12 @@ const win = (t, a, b, f = 0.18) => Math.max(0, Math.min(1, (t - a) / f, (b - t) 
 function overlay(t, k) {
   S.vignette(g2, 560);
   const hookA = Math.max(0, Math.min(1, (2.35 - t) / 0.18), Math.min(1, (t - 14.82) / 0.16));
-  if (hookA > 0) { S.hookCard(g2, hookA, 'BRAKE HARD.', 'WHAT LOCKS?', 116); const [x, y] = bobPt(k); S.redCircle(g2, hookA, x, y, 62, [-230, 170]); }
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.62; const bg = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); bg.addColorStop(0, 'rgba(6,8,12,0.95)'); bg.addColorStop(0.6, 'rgba(6,8,12,0.6)'); bg.addColorStop(1, 'rgba(6,8,12,0)'); g2.fillStyle = bg; g2.fillRect(0, 300, 1080, 560); g2.restore();
+    S.hookCard(g2, hookA, 'BRAKE HARD.', 'WHAT LOCKS?', 116); const [x, y] = bobPt(k); S.redCircle(g2, hookA, x, y, 62, [-230, 170]); }
   let a;
   if ((a = win(t, 2.7, 3.9, 0.08)) > 0) S.label(g2, a, 'BRAKE!', null, null, 430, 110);
   if ((a = win(t, 4.0, 5.3)) > 0) { S.label(g2, a, 'PENDULUM SWINGS FORWARD', null, null, 430, 70); }
-  if ((a = win(t, 3.0, 6.6)) > 0 && k.a > 0.05) { const [x, y] = bobPt(k); S.forceArrow(g2, a * Math.min(1, k.a / 0.4), x + 40, y, x + 150, y, 20); }
+  if ((a = win(t, 3.0, 6.6)) > 0 && k.a > 0.05) { const [x, y] = bobPt(k); S.forceArrow(g2, a * Math.min(1, k.a / 0.4), x + 30, y, x + 190, y, 30); }
   if ((a = win(t, 5.4, 6.95)) > 0) S.label(g2, a, 'CATCH INTO THE TEETH', null, null, 430, 74);
   if ((a = win(t, 7.08, 8.85)) > 0) { S.label(g2, a, 'LOCKED', null, null, 430, 96); const p = catchPt(k); S.redCircle(g2, a, p[0], p[1], 48, [-170, 150]); }
   if ((a = win(t, 9.0, 10.55)) > 0) S.label(g2, a, 'STOPPED. BELT GOES SLACK', null, null, 430, 68);
