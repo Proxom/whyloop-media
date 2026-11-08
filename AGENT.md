@@ -66,7 +66,7 @@ Benchmark: @seethroughworks (16.4K followers, Reels with 3.5M, 208K and 206K vie
    - A red circle and arrow on the key part, and a small "INSIDE IT" badge.
    - The mechanism is already moving or about to move. No title card and no slow build.
 3. STRUCTURE: the familiar outside → cutaway or fade of the housing → the hidden part working (slow macro on the key contact) → the answer in the last seconds → the last frame flows back into the first (loop).
-4. LENGTH: 15-35 s. Shorter is better; never pad.
+4. LENGTH: 10-25 s (the 12 s ratchet Reel beat every 35-60 s Reel). Shorter is better; never pad.
 5. TWO TRACKS, alternating (A, B, A, B…):
    - A: short English voiceover made with free local TTS (Kokoro or Piper; if install fails within 5 minutes, make it a B Reel).
    - B: wordless, with soft music and mechanical sounds.
@@ -79,6 +79,13 @@ Benchmark: @seethroughworks (16.4K followers, Reels with 3.5M, 208K and 206K vie
    - Alt text is always set.
 8. SERIES: the same template every time (badge, hook position, end frame), so the account is recognisable.
 9. If a Reel reaches 3x the median views, or more than 5,000 views, its Part 2 or a close variant is the next Reel.
+10. TOPIC GROUPS AND ROTATION (Erkan, 8 Nov 2026 09:11):
+   - E. EVERYDAY OBJECTS: the current topics in item 1 (pen, tape measure, stapler, ratchet, zipper, lock...).
+   - V. VEHICLES (new): one tiny hidden mechanism inside a car, bike, train, plane, helicopter or ship. Never a broad "how a plane flies" topic. Same formula: one part, one question, 10-20 s, the familiar outside first, then the cutaway.
+     - Examples: why a bike clicks when you pedal backwards (freewheel pawls); why a seatbelt locks on a sudden pull; how a car door latch holds; how a helicopter tilts forward (swashplate); why plane windows are round; how a train steers with no steering wheel (coned wheels, redo it in the new short format); how a ship's propeller pushes; how disc brakes grip; how a gearbox synchro matches speeds; how a car's wipers park.
+   - ROTATION: at most 3 Reels in a row from the same group, then switch. Reels already scheduled stay as they are. The 8 Nov 01:00 two-way ratchet counts as E.
+   - Technical accuracy matters even more here (car and plane fans comment fast): animate real proportions and directions, and keep the facts sourced.
+   - PERFORMANCE PER GROUP: tag every post doc with group E or V. Judge each Reel after 72 h against the account median (views, average watch time, 3-s hold, shares, saves, comments). After the first 3 V Reels, compare V with E in the daily report. A group whose batch of 3 is above 1.2x the median gets more turns (never more than 3 in a row); one below 0.7x is paused for a week. Explain each decision in one Turkish line.
 
 ## 5. HARD GATE — the ONLY things that can block a Reel (fix and re-check; never schedule a Reel that fails one)
 1. TECHNICAL:
