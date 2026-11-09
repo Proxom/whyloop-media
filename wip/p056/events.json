@@ -1,0 +1,34 @@
+[
+ {
+  "type": "snap_off",
+  "t": 9.5
+ },
+ {
+  "type": "bar_off",
+  "t": 9.528
+ },
+ {
+  "type": "lever_off",
+  "t": 9.565
+ },
+ {
+  "type": "snap_on",
+  "t": 14.6
+ },
+ {
+  "type": "bar_on",
+  "t": 14.628
+ },
+ {
+  "type": "lever_on",
+  "t": 14.665
+ },
+ {
+  "type": "push1",
+  "t": 1.0
+ },
+ {
+  "type": "push2",
+  "t": 13.0
+ }
+]

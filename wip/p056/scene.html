@@ -1,0 +1,152 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p056 light switch: why does it snap even when you push it slowly? mm, y up, x = out of the wall, z = toward the side camera.
+// The section plane is z = 0: everything at z > 0 (plate, wall, near half of the body) fades away for the inside view.
+import * as S from '/tools/render/lib/studio.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const TL = await (await fetch('timeline.json')).json();
+const LOOP = G.LOOP;
+const [AX, AY] = G.A, [BX, BY] = G.B;
+
+const st = S.makeStudio({ fov: 32, bg: 0x0d1016, envIntensity: 0.55, bloom: 0, near: 5, far: 3000, samples: 0 });
+st.renderer.toneMappingExposure = 0.95;
+const { scene, camera } = st;
+const { shapeOf, extrude, roundRect } = S;
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+
+// ---------- materials ----------
+const grain = S.noiseTex(3, 150, 14, 256); grain.repeat.set(0.05, 0.05);
+const M = {
+  ivory: new THREE.MeshPhysicalMaterial({ color: 0xf0e9db, roughness: 0.38, roughnessMap: grain, metalness: 0, clearcoat: 0.45, clearcoatRoughness: 0.25, sheen: 0.2 }),
+  wall: new THREE.MeshStandardMaterial({ color: 0x7f8c8f, roughness: 0.92, roughnessMap: grain, metalness: 0 }),
+  body: new THREE.MeshPhysicalMaterial({ color: 0x3a2a22, roughness: 0.42, roughnessMap: grain, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.35 }),
+  copper: new THREE.MeshPhysicalMaterial({ color: 0xd9825a, metalness: 1.0, roughness: 0.26, clearcoat: 0.2, clearcoatRoughness: 0.3 }),
+  brass: new THREE.MeshStandardMaterial({ color: 0xc9a050, metalness: 1.0, roughness: 0.3 }),
+  silver: new THREE.MeshStandardMaterial({ color: 0xd8dde3, metalness: 1.0, roughness: 0.22 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 1.0, roughness: 0.3 }),
+  spring: new THREE.MeshStandardMaterial({ color: 0xb8c0c8, metalness: 1.0, roughness: 0.25 }),
+  plunger: new THREE.MeshPhysicalMaterial({ color: 0xff8a1e, roughness: 0.35, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.2 }),
+};
+const fades = []; // meshes that fade out for the inside view
+const fadeMesh = (m) => { m.userData.base = m.material; const f = m.material.clone(); f.transparent = true; f.depthWrite = false; m.userData.fade = f; fades.push(m); return m; };
+
+// ---------- wall + cover plate (exterior) ----------
+{ const w = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), M.wall); w.rotation.y = Math.PI / 2; w.position.x = G.PLATE[0] - 0.02; w.receiveShadow = true; scene.add(fadeMesh(w)); }
+function plateShape() { // in (u = -z, v = y), slot hole for the lever
+  const s = shapeOf(roundRect(-35, -57, 35, 57, 4)); s.holes.push(new THREE.Path(S.toV2(roundRect(-4.5, -G.SLOT, 4.5, G.SLOT, 1.2).slice().reverse()))); return s; }
+{ const p = extrude(plateShape(), 0, -G.PLATE[0], M.ivory, 0.7, 12); p.rotation.y = Math.PI / 2; p.position.x = G.PLATE[0]; p.castShadow = true; p.receiveShadow = true; scene.add(fadeMesh(p));
+  for (const yy of [-30, 30]) { const sc = new THREE.Mesh(new THREE.CylinderGeometry(3.3, 3.3, 0.9, 40), M.ivory); sc.rotation.z = Math.PI / 2; sc.position.set(0.45, yy, 0); sc.castShadow = true; scene.add(fadeMesh(sc));
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 5.2), new THREE.MeshStandardMaterial({ color: 0x8d877b, roughness: 0.6 })); slot.position.set(0.82, yy, 0); slot.rotation.x = 0.5; scene.add(fadeMesh(slot)); } }
+
+// ---------- switch body: far half stays (z < 0), near half fades ----------
+const BODY = rect(-36, -23, -2.6, 23);
+function bodyPart(ring, holes, z0, z1, near) { const m = extrude(shapeOf(ring, holes || []), z0, z1, M.body, 0, 12); m.castShadow = true; m.receiveShadow = true; scene.add(near ? fadeMesh(m) : m); return m; }
+bodyPart(BODY, [], -13, -6.6, false); bodyPart(BODY, [], 6.6, 13, true);
+for (const [ring, near] of [[rect(-36, 20, -2.6, 23), 0], [rect(-36, -23, -2.6, -20), 0], [rect(-36, -19.95, -33, 19.95), 0]]) {
+  bodyPart(ring, [], -6.55, 0, false); bodyPart(ring, [], 0.05, 6.55, true); }
+// a faint backdrop behind the section
+S.gradientFloor(scene, -14, 600, -10, 0, ['#2a3039', '#161a21', '#0b0d12']);
+
+// ---------- fixed parts: rod, ON contact (silver on a brass terminal), OFF stop (plastic) ----------
+{ const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 19.2, 32), M.steel); rod.rotation.x = Math.PI / 2; rod.position.set(BX, BY, 0); rod.castShadow = true; scene.add(rod);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 19.2, 32), M.steel); pin.rotation.x = Math.PI / 2; pin.position.set(AX, AY, 0); pin.castShadow = true; scene.add(pin); }
+const padOn = extrude(shapeOf(G.ON_PAD), -5, 5, M.silver, 0.25, 8); padOn.castShadow = padOn.receiveShadow = true; scene.add(padOn);
+const offStop = extrude(shapeOf(G.OFF_STOP), -5, 5, M.body, 0.25, 8); offStop.castShadow = offStop.receiveShadow = true; scene.add(offStop);
+function strip(pad, mat, w) { const xs = pad.map(p => p[0]), ys = pad.map(p => p[1]); const x1 = Math.min(...xs) + 0.6, yc = ys.reduce((a, b) => a + b) / ys.length;
+  const m = extrude(shapeOf(rect(-33.05, yc - w, x1, yc + w)), -4, 4, mat, 0.2, 6); m.castShadow = m.receiveShadow = true; scene.add(m); }
+strip(G.ON_PAD, M.brass, 1.0); strip(G.OFF_STOP, M.body, 1.2);
+{ // brass screw terminal on the back wall for the ON contact (the wire to the lamp)
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 2.0, 6), M.brass); t.rotation.z = Math.PI / 2; t.position.set(-37.1, -10.6, 0); t.castShadow = true; scene.add(t); }
+
+// ---------- copper contact bar (rocks on the rod) ----------
+const bar = new THREE.Group(); bar.position.set(BX, BY, 0); scene.add(bar);
+{ const h = G.BAR_H, L = G.BAR_L; const m = extrude(shapeOf(roundRect(-h, -L, h, L, 0.6, 6), [S.circle(0, 0, 1.0, 32, true)]), -6, 6, M.copper, 0.3, 16); m.castShadow = m.receiveShadow = true; bar.add(m); }
+
+// ---------- lever (toggle) with its inner leg, plunger and spring ----------
+const lever = new THREE.Group(); lever.position.set(AX, AY, 0); scene.add(lever);
+{ const W = G.LEVER_W; const pad = [...rect(0, -W, 22, W)]; // paddle with a rounded, slightly wider tip
+  const prof = []; for (let i = 0; i <= 24; i++) { const a = -Math.PI / 2 + Math.PI * i / 24; prof.push([20 + 2.9 * Math.cos(a), 2.9 * Math.sin(a)]); }
+  const paddle = [[0, -W], [13, -W], [20, -2.9], ...prof, [13, W], [0, W]];
+  const pm = extrude(shapeOf(paddle), -3.5, 3.5, M.ivory, 0.6, 16); pm.castShadow = pm.receiveShadow = true; lever.add(pm);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 9, 40), M.ivory); hub.rotation.x = Math.PI / 2; hub.castShadow = true; lever.add(hub);
+  const HW = G.HOUSE_W, BR = G.BORE_R, HE = G.HOUSE_END, FL = G.FLOOR;
+  for (const sg of [1, -1]) { const r = sg > 0 ? rect(-HE, BR + 0.05, -3, HW) : rect(-HE, -HW, -3, -BR - 0.05); const m = extrude(shapeOf(r), -2.8, 2.8, M.ivory, 0.25, 6); m.castShadow = m.receiveShadow = true; lever.add(m); }
+  const back = extrude(shapeOf(rect(-HE + 0.05, -HW + 0.05, -3.05, HW - 0.05)), -2.75, -1.95, M.ivory, 0, 6); back.receiveShadow = true; lever.add(back);
+  const fl = extrude(shapeOf(rect(-FL, -HW + 0.05, -2.0, HW - 0.05)), -2.75, 2.75, M.ivory, 0.2, 6); fl.castShadow = true; lever.add(fl); }
+const plunger = new THREE.Group(); lever.add(plunger);
+{ const r = G.PL_R, LP = G.LP; const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, LP, 40), M.plunger); cyl.rotation.z = Math.PI / 2; cyl.position.x = LP / 2; cyl.castShadow = true; plunger.add(cyl);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(G.R_TIP, 40, 20, Math.PI / 2, Math.PI), M.plunger); tip.rotation.y = 0; tip.rotation.z = 0; plunger.add(tip);
+  tip.geometry.rotateY(Math.PI); // hemisphere facing -x (toward the bar)
+  tip.castShadow = true; }
+const springG = new THREE.Group(); lever.add(springG); let springMesh = null, springLen = -1;
+function buildSpring(x0, x1) { const len = x1 - x0; if (Math.abs(len - springLen) < 0.005) return; springLen = len; if (springMesh) { springG.remove(springMesh); springMesh.geometry.dispose(); }
+  const turns = 6.5, R = 1.22; const pts = []; for (let i = 0; i <= 360; i++) { const u = i / 360; const a = u * turns * Math.PI * 2; pts.push(new THREE.Vector3(x0 + 0.3 + u * (len - 0.6), R * Math.cos(a), R * Math.sin(a))); }
+  springMesh = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 500, 0.28, 10, false), M.spring); springMesh.castShadow = true; springG.add(springMesh); }
+
+// ---------- lights ----------
+const key = new THREE.DirectionalLight(0xfff0dc, 2.3); key.position.set(160, 160, 190); key.target.position.set(-8, 0, 0); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -90; c.right = 90; c.top = 90; c.bottom = -90; c.near = 50; c.far = 700; } key.shadow.bias = -0.0004; key.shadow.normalBias = 0.05; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 1.1); rim.position.set(-120, 140, -160); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe8d0, 0.5); fill.position.set(60, -90, 120); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.25));
+S.shadowAll(lever); S.shadowAll(bar);
+
+// ---------- animation ----------
+function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[i % K.length], B = K[(i + 1) % K.length];
+  // no interpolation across the snap (bar flips in 28 ms): use the nearest sample when the bar angle jumps
+  const o = {}; for (const k of ['phi', 'beta', 's']) o[k] = Math.abs(B.beta - A.beta) > 0.02 ? (u < 0.5 ? A[k] : B[k]) : A[k] + (B[k] - A[k]) * u; return o; }
+const fadeU = (t) => { const [a0, a1] = TL.FADE_OUT, [b0, b1] = TL.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
+// camera keys [t, tx, ty, tz, dist, elev, azim]  (azim 90 = facing the wall, 0 = side view of the section)
+const EXT = [7.5, 4.5, 0, 98, 10, 58], SEC = [-7.5, 2.0, 0, 192, 3, 0], SEC2 = [-7.5, 1.5, 0, 180, 3, 0];
+const KEYS = [[0, ...EXT], [TL.FADE_OUT[0], 6.5, 4.0, 0, 95, 10, 56], [TL.FADE_OUT[1] + 0.25, ...SEC], [TL.PUSH1[1], ...SEC2], [TL.FADE_IN[0], ...SEC], [TL.FADE_IN[1] + 0.2, ...EXT], [LOOP, ...EXT]];
+
+function poseSpring(k) { buildSpring(-(k.s - G.LP), -G.FLOOR); }
+function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt); lever.rotation.z = k.phi; bar.rotation.z = k.beta; plunger.position.x = -k.s; poseSpring(k);
+  const fu = fadeU(tt); for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; m.material.opacity = 1 - fu; } }
+  key.intensity = 1.55 + 0.75 * fu; st.renderer.toneMappingExposure = 0.82 + 0.13 * fu;
+  const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos);
+  const j = (t0, a) => (tt > t0 && tt < t0 + 0.35) ? a * Math.exp(-(tt - t0) * 14) * Math.sin((tt - t0) * 70) : 0;
+  const jolt = j(TL.PUSH1[1] + 0.03, 0.5) + j(TL.PUSH2[1] + 0.03, 0.35); camera.position.y += jolt;
+  camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
+const levPt = (k, xl, yl = 0, z = 0) => { const c = Math.cos(k.phi), s = Math.sin(k.phi); return new THREE.Vector3(AX + c * xl - s * yl, AY + s * xl + c * yl, z); };
+const barPt = (k, xl, yl, z = 0) => { const c = Math.cos(k.beta), s = Math.sin(k.beta); return new THREE.Vector3(BX + c * xl - s * yl, BY + s * xl + c * yl, z); };
+const scr = (v) => S.toScreen(camera, v);
+
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const win = (t, a, b, f = 0.18) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+function pushArrow(k, a, dir) { // finger push on the paddle tip, perpendicular to the lever
+  const p = scr(levPt(k, 19, 0, 3.5)); const n = scr(levPt(k, 19, dir * -9, 3.5)); const dx = n[0] - p[0], dy = n[1] - p[1], L = Math.hypot(dx, dy);
+  const ux = dx / L, uy = dy / L; S.forceArrow(g2, a, p[0] - ux * 190, p[1] - uy * 190, p[0] - ux * 18, p[1] - uy * 18, 24); }
+function overlay(t, k) {
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (TL.FADE_OUT[0] - t) / 0.18), Math.min(1, (t - (LOOP - 0.12)) / 0.12));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'WHY DOES IT', 'SNAP?', 128); const [x, y] = scr(levPt(k, 14, 0, 3.5)); S.redCircle(g2, hookA, x, y, 110, [-250, -170]); }
+  const P1 = TL.PUSH1, P2 = TL.PUSH2; let a;
+  if ((a = win(t, P1[0] + 0.1, P1[1] - 0.05, 0.25)) > 0) pushArrow(k, a * 0.95, 1);
+  if ((a = win(t, P2[0] + 0.1, P2[1] - 0.05, 0.25)) > 0) pushArrow(k, a * 0.95, -1);
+  for (const L of TL.LABELS) { if ((a = win(t, L[1], L[2])) > 0) { let p = [null, null];
+      if (L[3] === 'spring') p = scr(levPt(k, -(k.s - G.LP + G.FLOOR) / 2 - 0.0, 0, 1.6));
+      if (L[3] === 'on') p = scr(new THREE.Vector3(...G.ON_PAD.reduce((s, q) => [s[0] + q[0] / 4, s[1] + q[1] / 4], [0, 0]), 5));
+      if (L[3] === 'tip') p = scr(levPt(k, -k.s, 0, 1.5));
+      if (L[3] === 'bar') p = scr(barPt(k, 1, 6, 6));
+      S.label(g2, a, L[0], p[0], p[1], 450, L[4] || 88); } }
+  if ((a = win(t, TL.FOLLOW[0], TL.FOLLOW[1], 0.15)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+window._st = st; window._set = setAll; window._kin = kinAt; window._scr = scr; window._levPt = levPt;
+S.install(st, setAll, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
+window.motionPx = (t, fps = 30) => { const pts = () => { const k = kinAt(t); return [scr(levPt(k, 20, 0)), scr(levPt(k, -k.s, 0)), scr(barPt(k, 0, 12))]; };
+  setAll(t); const A = pts(); setAll(t + 1 / fps); const B = pts(); let m = 0; for (let i = 0; i < A.length; i++) m = Math.max(m, Math.hypot(A[i][0] - B[i][0], A[i][1] - B[i][1])); return m; };
+</script></body></html>
