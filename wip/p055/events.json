@@ -1,0 +1,26 @@
+[
+{
+"t": 4.0075,
+"type": "contact"
+},
+{
+"t": 6.34,
+"type": "snap"
+},
+{
+"t": 6.4033,
+"type": "stop"
+},
+{
+"t": 8.3783,
+"type": "hold"
+},
+{
+"t": 10.0,
+"type": "handle"
+},
+{
+"t": 12.35,
+"type": "handle_back"
+}
+]
