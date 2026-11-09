@@ -2,6 +2,23 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## 17:00 = OUR VERSION OF A PROVEN 1M+ MECHANISM VIDEO, IN ORDER (Erkan, 9 Nov 2026 21:12) — from 10 Nov, every day; overrides topic choice and E/V rotation for the 17:00 slot only
+1. The 17:00 Reel every day is OUR OWN VERSION of a mechanism/"how it works" video that already reached 1,000,000+ views (Instagram, YouTube or TikTok). Topics are free to use; the Reel must be 100% ours: our 3D model and animation, our script and on-screen words, our title wording, our sound. Never copy footage, frames, script lines, captions word for word or covers. Keep our format: one part, one question, 10-30 s, cutaway, loop, follow line. Log `outlier: <original title + link + views>` in the post doc.
+2. ORDER (most viewed first; one per day: 10 Nov = #1, 11 Nov = #2, ...; skip an item only if the hard gate cannot be met, then come back to it):
+   1. Manual gearbox: how the synchro lets you change gear (Sabin Civil Engineering "Manual Transmission, How it works?", 48M).
+   2. Handcuff double lock (YouTube Short "Double lock handcuffs lock unlock mechanism", 25M) → why the second click stops it tightening.
+   3. Car differential (Sabin Civil Engineering, 25M) → redo in our short format: why the outer wheel turns faster.
+   4. Four-stroke car engine (Animagraffs "How a Car Engine Works", 19M) → one cylinder, one question: what happens in one turn?
+   5. Combination lock (Jared Owen, 7.5M) → redo short: why the first spins pick up the wheels.
+   6. Self-locking door lever (Instagram reel by @Kaliza_queen, 6M+, 11 s) → a latch that locks itself as the door closes.
+   7. Pin tumbler key lock (YouTube Short "How Lock Works 3D Animation", 4.6M) → why only the right key lines up the pins.
+   8. Mechanical spring scale (Jared Owen, 2.2M) → how a spring turns weight into a needle turn.
+   9. Car clutch (Physics and animation, 1.8M) → how the pedal lets the engine keep running while the wheels stop.
+   (Seatbelt 7.6M is skipped: we just made both parts on 9 Nov.)
+3. WHEN THE LIST ENDS (or earlier, in each Monday market scan): find new mechanism / engineering / "how it works" videos above 1,000,000 views (free web search; YouTube and Instagram pages show view counts), add them to reports/outliers.md (link, views, why it worked, our twist), sorted by views, and continue in that order. Never repeat a topic we already made in the new short format.
+4. The 01:00 Reel keeps the normal topic choice and the E/V rotation.
+5. In every daily report: the 17:00 Reel's views, 3-s hold, shares and follows at 24 h and 72 h vs our median, so we can see whether proven topics win.
+
 ## MAIN GOAL: 10,000 FOLLOWERS AS FAST AS POSSIBLE (Erkan, 8 Nov 2026 09:18) — this goal decides between options; views only matter when they turn into follows
 1. FOLLOW CALL ON SCREEN: the last 1-1.5 s of every video shows a short follow line in the lower safe area (e.g. "Follow → next one tomorrow"). It must not break the loop: keep it small, then cut back to the first frame. The caption/description still carries the follow line.
 2. SERIES + PART 2 PROMISE: when a topic clearly has a sequel, end with "Part 2 tomorrow 👀" (on screen and in the caption) and keep the promise: the Part 2 goes out in the next 1-2 slots (it takes priority over other topics and over rotation, but still counts toward the max-3-in-a-row rule). Never promise a Part 2 you cannot deliver.
