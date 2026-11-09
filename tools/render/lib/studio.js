@@ -95,7 +95,7 @@ export function circle(cx, cy, r, n = 48, cw = true) { const a = []; for (let i 
 export function roundRect(x0, y0, x1, y1, r, n = 10) { const a = []; const c = [[x1 - r, y1 - r, 0], [x0 + r, y1 - r, 90], [x0 + r, y0 + r, 180], [x1 - r, y0 + r, 270]];
   for (const [cx, cy, d] of c) for (let i = 0; i <= n; i++) { const t = (d + 90 * i / n) * Math.PI / 180; a.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return a; }
 export function extrude(shape, z0, z1, mats, bevel = 0, curve = 24) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.001, z1 - z0 - 2 * bevel), bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelOffset: -bevel, bevelSegments: 3, curveSegments: curve });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(0.001, z1 - z0 - 2 * bevel), bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelOffset: -bevel, bevelSegments: 5, curveSegments: curve });
   g.translate(0, 0, z0 + bevel); g.computeVertexNormals(); return new THREE.Mesh(g, mats);
 }
 export const shadowAll = (o) => o.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
