@@ -188,3 +188,19 @@ export function streakBackdrop(scene, { seed = 11, count = 26, z = -700, y = 40,
   mesh.position.set(0, y, z); scene.add(mesh);
   return { mesh, setTravel: (u) => { t.offset.x = ((u * reps) % 1 + 1) % 1; } };
 }
+
+// ---------- cutaway helpers (first used in p054) ----------
+// Engineering cross-section texture for cut faces (extrude caps use world-unit UVs: repeat ~0.45 for mm scenes).
+export function hatchTex(base = '#3c4552', line = '#56606f', repeat = 0.45) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = line; g.lineWidth = 10; for (let i = -256; i < 512; i += 42) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 256, 256); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); return t;
+}
+// Clean dark radial-gradient floor that receives shadows (reviewer preferred it to the wood bench). Plane normal = +z.
+export function gradientFloor(scene, z, size = 150, cx = 0, cy = 0, stops = ['#4a5262', '#262c37', '#0c0f14']) {
+  const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); const gr = g.createRadialGradient(512, 470, 30, 512, 512, 620);
+  gr.addColorStop(0, stops[0]); gr.addColorStop(0.5, stops[1]); gr.addColorStop(1, stops[2]); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: t, roughness: 0.85, metalness: 0 }));
+  m.position.set(cx, cy, z); m.receiveShadow = true; scene.add(m); return m;
+}
