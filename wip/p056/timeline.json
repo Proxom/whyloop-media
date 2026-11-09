@@ -1,0 +1,5 @@
+{"LOOP": 18.3, "PUSH1": [1.0, 9.5], "PUSH2": [13.0, 14.6], "FADE_OUT": [2.6, 3.6], "FADE_IN": [15.4, 16.5], "FOLLOW": [16.1, 18.15],
+ "VO_AT": [0.15, 3.55, 6.85, 9.45, 12.5, 16.1],
+ "LABELS": [["INSIDE THE SWITCH", 3.65, 4.6, null, 88], ["SPRING SQUEEZES", 4.7, 6.75, "spring", 88], ["STILL ON", 6.85, 7.9, "on", 96],
+            ["TIP NEARS THE MIDDLE", 8.0, 9.42, "tip", 80], ["SNAP!", 9.5, 10.4, null, 130], ["THE SPRING FLIPS IT", 10.5, 12.35, "bar", 80],
+            ["TOO FAST FOR A SPARK", 12.5, 14.4, null, 80], ["SNAP! ON AGAIN", 14.65, 15.4, null, 88]]}
