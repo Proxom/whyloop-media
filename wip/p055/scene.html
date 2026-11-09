@@ -32,18 +32,19 @@ function mdfTex() { const c = document.createElement('canvas'); c.width = c.heig
   g.fillStyle = '#c9a77a'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '120,86,50' : '235,205,160'},${0.05 + r() * 0.12})`; g.fillRect(r() * 512, r() * 512, 1 + r() * 3, 1 + r() * 2); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.03, 0.03); return t; }
 function pineTex() { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); const r = S.rng(4);
-  g.fillStyle = '#d8b582'; g.fillRect(0, 0, 512, 512); for (let i = 0; i < 26; i++) { g.strokeStyle = `rgba(150,100,55,${0.25 + r() * 0.3})`; g.lineWidth = 2 + r() * 5; const y = r() * 512; g.beginPath();
-    for (let x = 0; x <= 512; x += 16) { const yy = y + Math.sin(x * 0.02 + i) * 6; x ? g.lineTo(x, yy) : g.moveTo(x, yy); } g.stroke(); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.012, 0.012); return t; }
+  const gr = g.createLinearGradient(0, 0, 512, 512); gr.addColorStop(0, '#d9b787'); gr.addColorStop(1, '#cfa874'); g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 140; i++) { g.strokeStyle = `rgba(${r() < 0.7 ? '165,118,70' : '235,205,160'},${0.06 + r() * 0.12})`; g.lineWidth = 0.6 + r() * 2.2; const y = r() * 512; g.beginPath();
+    for (let x = 0; x <= 512; x += 8) { const yy = y + Math.sin(x * 0.012 + i * 0.3) * 4; x ? g.lineTo(x, yy) : g.moveTo(x, yy); } g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.02, 0.02); return t; }
 const M = {
   paint: new THREE.MeshPhysicalMaterial({ color: 0xeeebe4, roughness: 0.5, roughnessMap: grain, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
   jamb: new THREE.MeshPhysicalMaterial({ color: 0x6d7683, roughness: 0.5, metalness: 0, clearcoat: 0.15, clearcoatRoughness: 0.5 }),
   mdf: new THREE.MeshStandardMaterial({ map: mdfTex(), roughness: 0.85, metalness: 0 }),
   pine: new THREE.MeshStandardMaterial({ map: pineTex(), roughness: 0.8, metalness: 0 }),
   nickel: new THREE.MeshStandardMaterial({ color: 0xc3c8cf, metalness: 1.0, roughness: 0.32 }),
-  hatch: new THREE.MeshStandardMaterial({ map: S.hatchTex('#5b636f', '#7a8390', 0.25), roughness: 0.55, metalness: 0.2 }),
-  brass: new THREE.MeshStandardMaterial({ color: 0xe0a23a, metalness: 1.0, roughness: 0.26 }),
-  brassCut: new THREE.MeshStandardMaterial({ map: S.hatchTex('#b9802a', '#d9a24a', 0.25), roughness: 0.4, metalness: 0.5 }),
+  hatch: new THREE.MeshStandardMaterial({ color: 0x5d6570, roughness: 0.45, metalness: 0.55 }),
+  brass: new THREE.MeshPhysicalMaterial({ color: 0xd9a03c, metalness: 1.0, roughness: 0.22, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
+  brassCut: new THREE.MeshStandardMaterial({ color: 0xc28a2e, roughness: 0.3, metalness: 0.85 }),
   spring: new THREE.MeshStandardMaterial({ color: 0x3a4250, metalness: 0.9, roughness: 0.35 }),
   lever: new THREE.MeshStandardMaterial({ color: 0xbfc4cb, metalness: 1.0, roughness: 0.28 }),
 };
@@ -69,6 +70,9 @@ const slabM = [[-320, 0], [0, 0], [0, 6], [-1.6, 6], [-1.6, 34], [0, 34], [0, T]
 layered(door, [[0, 12, slabB], [12, 30, slabM], [30, 600, slab]], M.paint, M.mdf, U.paint);
 // wall behind the casing (dark) so the frame reads
 { const w = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1600), new THREE.MeshStandardMaterial({ color: 0x23272e, roughness: 0.9 })); w.rotation.x = Math.PI / 2; w.position.set(700, geo.JY1 + 14, 0); w.receiveShadow = true; }
+for (const yy of [-0.03, T + 0.03]) { for (const [z0, z1, mat] of [[-600, 0, M.paint], [0.05, 600, U.paint]]) {
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(318, z1 - z0), mat); p.rotation.x = yy > 0 ? -Math.PI / 2 : Math.PI / 2; p.position.set(-161, yy, (z0 + z1) / 2); p.receiveShadow = true; if (mat === U.paint) p.userData.upper = true; door.add(p); } }
+S.gradientFloor(scene, -560, 2400, 0, 40, ['#3a414d', '#20252e', '#0c0f14']);
 // faceplate (nickel) with the bolt opening
 const fp = rect(-1.6, 6, 0, 34);
 layered(door, [[0, 11.6, [[-1.6, 6], [0, 6], [0, 13.3], [-1.6, 13.3]]], [0, 11.6, [[-1.6, 26.7], [0, 26.7], [0, 34], [-1.6, 34]]], [11.6, 28.5, fp]], M.nickel, M.hatch, U.nickel);
@@ -121,21 +125,23 @@ layered(frame, [[0, 600, rect(G + 20, geo.JY1, 150, geo.JY1 + 14)]], M.jamb, M.p
 S.shadowAll(scene);
 // ---------- lights ----------
 const key = new THREE.DirectionalLight(0xfff0dc, 2.0); key.position.set(-120, 220, 300); key.castShadow = true; key.target.position.set(0, 20, 0);
-key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -160; c.right = 160; c.top = 160; c.bottom = -160; c.near = 100; c.far = 900; } key.shadow.bias = -0.0005; key.shadow.normalBias = 0.05; key.shadow.radius = 3;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -160; c.right = 160; c.top = 160; c.bottom = -160; c.near = 100; c.far = 900; } key.shadow.bias = -0.0005; key.shadow.normalBias = 0.12; key.shadow.radius = 3;
 scene.add(key, key.target);
 const rim = new THREE.DirectionalLight(0xcfe0ff, 1.4); rim.position.set(300, -120, 160); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.25));
 const fill = new THREE.DirectionalLight(0xfff0e0, 0.45); fill.position.set(-200, -100, 120); scene.add(fill);
-const uppers = []; scene.traverse(o => { if (o.userData.upper) uppers.push(o); });
+const uppers = []; scene.traverse(o => { if (o.userData.upper) { uppers.push(o); o.castShadow = false; o.userData.mat = o.material; } });
+const fadeOf = new Map(); for (const m of Object.values(U)) { const f = m.clone(); f.onBeforeCompile = () => {}; f.customProgramCacheKey = () => "fade"; f.side = THREE.FrontSide; f.transparent = true; f.depthWrite = false; f.clippingPlanes = []; fadeOf.set(m, f); }
+const fadeU = (t) => t < 2.45 ? 0 : t < 3.4 ? S.smooth((t - 2.45) / 0.95) : t < 12.55 ? 1 : t < 13.45 ? 1 - S.smooth((t - 12.55) / 0.9) : 0;
 
 // ---------- animation ----------
 function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = kinT[i % kinT.length], B = kinT[(i + 1) % kinT.length];
   const o = {}; for (const k of ['d', 'th', 'e', 'phi']) o[k] = A[k] + (B[k] - A[k]) * u; return o; }
 // camera keys [t, tx, tz, dist, elev, azim, w]  (ty = 22 + w*d: follows the door in the outside shots)
 const KEYS = [
-  [0.0, -20, 4, 480, 17, 104, 1], [2.45, -18, 4, 450, 19, 108, 1], [3.55, -12, 0, 250, 66, 178, 0.25], [4.0, -12, 0, 250, 68, 180, 0],
-  [9.6, -12, 0, 250, 68, 180, 0], [10.05, -26, 0, 262, 66, 180, 0], [10.6, -26, 0, 262, 66, 180, 0.3], [12.3, -20, 0, 262, 66, 180, 0.6],
-  [12.6, -16, 0, 270, 58, 160, 0.6], [13.9, -20, 4, 490, 16, 102, 1], [15.0, -20, 4, 480, 17, 104, 1]];
+  [0.0, -14, 4, 330, 17, 104, 1], [2.45, -12, 4, 310, 20, 110, 1], [3.55, -12, 0, 250, 64, 176, 0.25], [4.0, -12, 0, 250, 68, 180, 0],
+  [9.6, -12, 0, 250, 68, 180, 0], [10.05, -26, 0, 262, 66, 180, 0], [10.6, -22, 0, 262, 66, 180, 0.3], [12.3, -16, 0, 262, 66, 180, 0.9],
+  [12.6, -14, 0, 270, 58, 160, 0.95], [13.9, -14, 4, 340, 16, 102, 1], [15.0, -14, 4, 330, 17, 104, 1]];
 function cam(t, d) {
   let k = 0; while (k < KEYS.length - 2 && t > KEYS[k + 1][0]) k++; const A = KEYS[k], B = KEYS[k + 1]; const u = S.smooth((t - A[0]) / (B[0] - A[0])); const L = (i) => A[i] + (B[i] - A[i]) * u;
   const dist = Math.exp(Math.log(A[3]) + (Math.log(B[3]) - Math.log(A[3])) * u); const el = L(4) * Math.PI / 180, az = L(5) * Math.PI / 180;
@@ -143,12 +149,13 @@ function cam(t, d) {
   return { pos: new THREE.Vector3(Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)).multiplyScalar(dist).add(tgt), tgt };
 }
 const cutZ = (t) => { const u = t < 2.45 ? 0 : t < 3.5 ? S.smooth((t - 2.45) / 1.05) : t < 12.55 ? 1 : t < 13.45 ? 1 - S.smooth((t - 12.55) / 0.9) : 0;
-  return u <= 0 ? 1000 : 160 - u * 160; };
+  return u <= 0 ? 1000 : 70 - u * 70; };
 let jolt = 0;
 function setScene(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
   doorPivot.rotation.z = k.th; bolt.position.x = k.e - EM; buildSpring(k.e - geo.BL + 50);
   spindle.rotation.y = -k.phi; for (const a of levers) a.rotation.y = -k.phi;
-  const zc = cutZ(tt); cutPlane.constant = zc; for (const o of uppers) o.visible = zc > 0.3; springMesh.material = zc < 999 ? U.spring : U.spring;
+  cutPlane.constant = 1000; const fu = fadeU(tt);
+  for (const o of uppers) { o.visible = fu < 0.999; const base = o.userData.mat; if (fu > 0.001 && fu < 0.999) { const f = fadeOf.get(base) || base; f.opacity = 1 - fu; o.material = f; } else o.material = base; } 
   const c = cam(tt, k.d);
   const j = (t0, a) => (tt > t0 && tt < t0 + 0.3) ? a * Math.exp(-(tt - t0) * 16) * Math.sin((tt - t0) * 60) : 0;
   jolt = j(6.34, 0.6) + j(6.40, 0.8) + j(8.378, 0.7);
@@ -164,14 +171,16 @@ function overlay(t, k) {
   S.vignette(g2, 560);
   const hookA = Math.max(0, Math.min(1, (2.45 - t) / 0.18), Math.min(1, (t - 14.78) / 0.15));
   if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.55; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
-    S.hookCard(g2, hookA, 'WHY DOES IT', 'CLICK?', 124); const [x, y] = scr(doorPt(k, k.e - 4, 20, 11)); S.redCircle(g2, hookA, x, y, 74, [-230, 210]); }
+    S.hookCard(g2, hookA, 'WHY DOES IT', 'CLICK?', 124); const [x, y] = scr(doorPt(k, k.e - 4, 20, 11)); S.redCircle(g2, hookA, x, y, 92, [-230, 210]); }
   let a;
-  if ((a = win(t, 4.05, 5.75)) > 0) { const p = scr(doorPt(k, k.e - 5, 19, 0)); S.label(g2, a, 'SLANT GETS PUSHED IN', p[0], p[1], 440, 84); }
-  if ((a = win(t, 6.3, 7.75)) > 0) { S.label(g2, a, 'CLICK!', null, null, 450, 120); g2.save(); g2.globalAlpha = a; S.outlined(g2, 'A SPRING SNAPS IT IN', S.CX, 540, 60, '#ffffff'); g2.restore();
+  if ((a = win(t, 2.75, 3.85)) > 0) S.label(g2, a, 'INSIDE THE LATCH', null, null, 440, 92);
+  if ((a = win(t, 3.95, 6.2)) > 0) { const p = scr(doorPt(k, k.e - 5, 19, 0)); S.label(g2, a, 'SLANT GETS PUSHED IN', p[0], p[1], 440, 84); }
+  if ((a = win(t, 6.3, 7.9)) > 0) { S.label(g2, a, 'CLICK!', null, null, 450, 120); g2.save(); g2.globalAlpha = a; S.outlined(g2, 'A SPRING SNAPS IT IN', S.CX, 540, 60, '#ffffff'); g2.restore();
     const p = scr(doorPt(k, -38, 20, 0)); S.redCircle(g2, Math.min(a, (t - 6.3) / 0.12), p[0], p[1], 70, [-200, 180]); }
   if ((a = win(t, 8.0, 9.75)) > 0) { const p = scr(doorPt(k, k.e - 2, geo.BY1, 0)); S.label(g2, a, 'FLAT SIDE HOLDS', p[0], p[1], 440, 96);
-    const q = scr(doorPt(k, -8, T + 4, 0)); if (t > 8.2) S.forceArrow(g2, 0.9 * a, Math.max(240, q[0] + 150), q[1], Math.max(90, q[0] - 20), q[1], 24); }
-  if ((a = win(t, 10.0, 11.6)) > 0) { const p = scr(doorPt(k, SPX, 20, 0)); S.label(g2, a, 'HANDLE PULLS IT BACK', p[0], p[1], 440, 84); }
+    const q = scr(doorPt(k, -30, T, 0)); if (t > 8.2) { S.forceArrow(g2, 0.9 * a, q[0] + 10, q[1], Math.max(80, q[0] - 190), q[1], 26); g2.save(); g2.globalAlpha = a; S.outlined(g2, 'PULL', Math.max(150, q[0] - 95), q[1] - 50, 56, '#ffffff'); g2.restore(); } }
+  if ((a = win(t, 9.9, 11.7)) > 0) { const p = scr(doorPt(k, SPX, 20, 0)); S.label(g2, a, 'HANDLE PULLS IT BACK', p[0], p[1], 440, 84); }
+  if ((a = win(t, 11.8, 12.85)) > 0) { const p = scr(doorPt(k, k.e - 5, 19, 0)); S.label(g2, a, 'LET GO: SPRING PUSHES IT OUT', p[0], p[1], 440, 72); }
   if ((a = win(t, 12.95, 14.7)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 56, '#ffffff'); g2.restore(); }
 }
 window._st = st; window._set = setScene; window._kin = kinAt; window._scr = scr; window._doorPt = doorPt;
