@@ -207,3 +207,21 @@ export function gradientFloor(scene, z, size = 150, cx = 0, cy = 0, stops = ['#4
   const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: t, roughness: 0.85, metalness: 0 }));
   m.position.set(cx, cy, z); m.receiveShadow = true; scene.add(m); return m;
 }
+
+// ---------- seamless cyclorama (first used in p058) ----------
+// Curved floor-to-wall backdrop (no hard horizon line): floor plane y=floorY from z=zFront back to the curve, a quarter-cylinder
+// of radius R, then a vertical wall up to height h. Vertical gradient from floor colour to wall colour; receives shadows.
+// Reviewer note (p058): a flat floor plane + backdrop plane shows a sharp horizon seam in every close-up.
+export function cyclorama(scene, { floorY = 0, zFront = 600, zBack = -300, R = 260, h = 1400, width = 3000, cx = 0, floor = '#2a2f37', wall = '#5a6574', rough = 0.9 } = {}) {
+  const prof = []; const zc = zBack + R; // curve centre (z) at floorY + R
+  prof.push([zFront, floorY]); for (let i = 0; i <= 24; i++) { const a = -Math.PI / 2 - (Math.PI / 2) * i / 24; prof.push([zc + R * Math.cos(a), floorY + R + R * Math.sin(a)]); } prof.push([zBack, floorY + h]);
+  let L = 0; const acc = [0]; for (let i = 1; i < prof.length; i++) { L += Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]); acc.push(L); }
+  const pos = [], uv = [], idx = []; const nx = 2;
+  for (let i = 0; i < prof.length; i++) for (let j = 0; j < nx; j++) { pos.push(cx + (j ? width / 2 : -width / 2), prof[i][1], prof[i][0]); uv.push(j, acc[i] / L); }
+  for (let i = 0; i < prof.length - 1; i++) { const a = i * 2, b = a + 1, c = a + 2, d = a + 3; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const c = document.createElement('canvas'); c.width = 4; c.height = 512; const x = c.getContext('2d'); const gr = x.createLinearGradient(0, 512, 0, 0);
+  const f0 = (zFront - 0) / L; gr.addColorStop(0, floor); gr.addColorStop(Math.min(0.95, (acc[1] + (acc[acc.length - 2] - acc[1]) * 0.5) / L), floor); gr.addColorStop(1, wall); x.fillStyle = gr; x.fillRect(0, 0, 4, 512);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: rough, metalness: 0, side: THREE.DoubleSide })); m.receiveShadow = true; scene.add(m); return m;
+}

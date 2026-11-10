@@ -36,5 +36,14 @@
   "https://www.cargurus.co.uk/Cars/articles/what-is-a-handbrake-what-does-it-do"
  ],
  "learningApplied": "Winner pattern 'one small part + a clear click/lock moment' (p048 ratchet 18.5K, p050 9.9K, p052 seatbelt 7.4K = V) in group V; p055/p057 lessons: one planar mechanism, opacity fade only (no clip sweep, no layered extrudes), hook subject whole and recognisable (console + lever + grip), light console vs dark lever for contrast; debate comment bait (button: yes or no?). Track A after p057 (B, reserve) / p056 (A): A because B reserve p057 was not posted; 13:07 report asked for track A.",
- "slot": "2026-11-11T01:00 Europe/London"
+ "slot": "2026-11-11T01:00 Europe/London",
+ "status": "ready (reserve)",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p058/handbrake_reel_v2.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p058/handbrake_cover_v2.jpg"
+ ],
+ "visualScore": {
+  "round1": 5,
+  "round2": 5
+ }
 }
