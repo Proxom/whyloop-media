@@ -7,5 +7,5 @@ Rebuild: python3 kin.py && python3 check.py && python3 audio.py && ../../tools/r
 Render: python3 -m http.server 8765 (repo root); node tools/render/render.js wip/p057/scene.html <out> 30 0 0 450 1 1 0 1 1080 1920 (~2.7 s/frame, ~21 min)
 Round 1 final: HARD GATE pass, reviewer 5/10 (flat CAD look, no car context, ghosted cover, arms not joined) -> fixed (fuel door, ribs, lift-off cover, carrier ring, deeper orange).
 Round 2 final v2: HARD GATE pass, reviewer 5/10 -> NOT scheduled (AGENT 6: 5 counts only when the slot is < 2 h away or late). RESERVE: media/p057/gas_cap_reel.mp4 + gas_cap_cover.jpg.
-v3 = same scene re-rendered with the new toolkit SMAA (render.js arg 13 = 1), no new review (score stays 5).
+v3 (CURRENT reserve in media/p057) = same scene re-rendered with the new toolkit SMAA (render.js arg 13 = 1): HARD GATE re-checked PASS (-18.4 LUFS, -3.1 dBTP, gap 42.8 dB, seam 0.17, no frame spikes); no new review (score stays 5).
 Open reviewer points for the toolkit: plastic texture/normal maps, close push-in on one arm at the click (show the bend), depth of field, smoother door rim (more curve segments).
