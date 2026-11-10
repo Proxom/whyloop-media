@@ -2,6 +2,13 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## STATUS + NEXT (Erkan, 10 Nov 2026 20:21) — read before anything else
+- The gearbox remake p059b is DONE: Erkan moved it to 10 Nov 20:30 himself. Do not reschedule, re-render or delete anything for it. The two older override/remake blocks below about the gearbox are finished: ignore them.
+- Erkan's verdict on p059b: "still not very good, only slightly better". So quality must rise further.
+- 11 Nov 17:00 is EMPTY in Metricool and MUST be filled: #2 on the 1M+ list, Handcuff double lock. Start it in the 05:07 run (do not treat 05:07 as a queue-check-only run), finish and schedule by the 13:07 run at the latest. The list does not shift: 12 Nov = #3 Differential, and so on.
+- REFERENCE GATE (new, for every 1M+ version): before scheduling, look at 6 frames of the original 1M+ video (topic/system only, never copy its footage) next to 6 frames of ours. A fresh reviewer scores ours 1-10 on: the object instantly recognisable and filling the frame, clean realistic materials and lighting, smooth motion, one clear idea per step, readable labels. Below 7: fix the top 3 issues once and re-score. Write both scores in the run report.
+- Practical quality rules: show the real object as people know it first (a real handcuff on a wrist / in a hand), keep the camera close (the part being explained fills at least 60% of the frame), one part moves at a time, slow down at the key moment, no tiny labels (min 48 px), no cluttered speed bars or extra UI.
+
 ## OVERRIDE (Erkan, 10 Nov 2026 18:40): PUBLISH THE GEARBOX REMAKE TONIGHT, NOT 11 NOV 17:00
 This replaces the scheduling part of the "URGENT ONE-TIME remake of the gearbox" block:
 - Publish the remake (p059b) AS SOON AS IT IS FINISHED: schedule it in Metricool for now + 3 minutes (Europe/London). If it is already scheduled for 11 Nov 17:00, move it to now + 3 minutes.
