@@ -31,9 +31,9 @@ def plate_poly():
         for i in range(41):
             u = i / 40; a = a0 + u * P; r = R0 + H * u; pts.append((r * math.cos(a), r * math.sin(a)))
     a1 = PSI0 + NT * P
-    for i in range(1, 30): a = a1 + 16 * D2R * i / 29; r = R0 - 3.0; pts.append((r * math.cos(a), r * math.sin(a)))      # stepped down past the last tooth
-    # body back to the pivot hub and a foot down to the floor bracket
-    pts += [(10 * math.cos(a1 + 16 * D2R), 10 * math.sin(a1 + 16 * D2R)), (-14, 6), (-22, -8), (-30, -62), (40, -62), (36, -40)]
+    for i in range(1, 41):   # rounded shoulder past the last tooth, sweeping down to the pivot hub
+        u = i / 40; a = a1 + 75 * D2R * u; r = (R0 - 2.0) - (R0 - 2.0 - 13.0) * u ** 1.6; pts.append((r * math.cos(a), r * math.sin(a)))
+    pts += [(-20, -4), (-27, -24), (-30, -62), (40, -62), (34, -44)]
     return Polygon(pts).buffer(0)
 PLATE = plate_poly()
 def pawl_local(beta):   # pawl outline in the LEVER frame at pawl angle beta (rotation about Q)
@@ -54,7 +54,7 @@ def defl(th, lo=0.0):   # smallest beta >= lo with clearance >= GAP
     return b
 def tip_r(th, beta): p = affinity.rotate(Point(*T0), beta, origin=tuple(Q), use_radians=True); return math.hypot(p.x, p.y)
 # beta needed to clear all tooth tops by 0.6 mm (button pressed)
-BETA_OUT = next(b * D2R for b in np.arange(0, 40, 0.25) if tip_r(0, b * D2R) >= R0 + H + RHO + 0.6)
+BETA_OUT = next(b * D2R for b in np.arange(0, 40, 0.25) if tip_r(0, b * D2R) >= R0 + H + RHO + 1.6)
 # click angles: lever angle where the tip passes tooth top k (going up); hold angles: lever settles onto the steep face
 def scan(th0, th1, n):
     ths = np.linspace(th0, th1, n); return ths, np.array([defl(t) for t in ths])

@@ -1,5 +1,1 @@
-{"VO_AT": [0.15, 2.7, 6.15, 9.27, 12.3, 16.4],
- "LABELS": [["THE PAWL", 3.55, 4.95, "pawl", 104], ["TEETH", 5.0, 6.05, "teeth", 104], ["CLICK!", 7.58, 7.95, null, 120], ["CLICK!", 8.25, 8.75, null, 120],
-            ["STEEP FACE", 9.95, 11.35, "face", 96], ["LOCKED", 11.45, 12.15, null, 120], ["PRESS", 12.45, 13.2, "button", 104],
-            ["ROD TIPS THE PAWL OUT", 13.3, 14.4, "pawl", 76], ["NOW IT CAN DROP", 14.5, 15.65, null, 88]],
- "ARROWS": [["up", 6.6, 8.8], ["down", 10.5, 11.4]]}
+{"VO_AT": [0.15, 2.7, 6.15, 9.27, 12.3, 16.4], "LABELS": [["THE PAWL", 3.55, 4.95, "pawl", 104], ["TEETH", 5.0, 6.05, "teeth", 104], ["CLICK!", 7.58, 7.95, null, 120], ["CLICK!", 8.25, 8.75, null, 120], ["STEEP FACE", 9.95, 11.35, "face", 96], ["LOCKED", 11.45, 12.15, null, 120], ["PRESS", 12.45, 13.05, "button", 104], ["PUSH ROD", 13.05, 13.35, null, 96], ["ROD TIPS THE PAWL OUT", 13.4, 14.4, "pawl", 76], ["NOW IT CAN DROP", 14.5, 15.65, null, 88]], "ARROWS": [["up", 6.6, 7.5]]}
