@@ -2,6 +2,13 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## OVERRIDE (Erkan, 10 Nov 2026 18:40): PUBLISH THE GEARBOX REMAKE TONIGHT, NOT 11 NOV 17:00
+This replaces the scheduling part of the "URGENT ONE-TIME remake of the gearbox" block:
+- Publish the remake (p059b) AS SOON AS IT IS FINISHED: schedule it in Metricool for now + 3 minutes (Europe/London). If it is already scheduled for 11 Nov 17:00, move it to now + 3 minutes.
+- The 1M+ list does NOT shift: 11 Nov 17:00 = #2 Handcuff double lock, 12 Nov = #3 Differential, and so on.
+- Do not delete or edit the old gearbox post; Erkan deletes it himself.
+- Ignore this block once p059b is published.
+
 ## URGENT ONE-TIME: REMAKE THE GEARBOX REEL WITH THE CLARITY RULES (Erkan, 10 Nov 2026 18:30) — do this FIRST in the next run; ignore this block once it is scheduled
 Erkan: "make the same video again now, by the new criteria". Remake #1 (manual gearbox synchro, p059) as a NEW Reel p059b, following "CLARITY FIRST" exactly:
 - 30-45 s, Kokoro voiceover synced to each step, labels pinned to parts (shaft, gear, sleeve, brass synchro ring, fork, dog teeth), each step at least 3 s, active part highlighted, slow motion at the key moment.
