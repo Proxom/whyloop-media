@@ -2,6 +2,16 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## URGENT ONE-TIME: REMAKE THE GEARBOX REEL WITH THE CLARITY RULES (Erkan, 10 Nov 2026 18:30) — do this FIRST in the next run; ignore this block once it is scheduled
+Erkan: "make the same video again now, by the new criteria". Remake #1 (manual gearbox synchro, p059) as a NEW Reel p059b, following "CLARITY FIRST" exactly:
+- 30-45 s, Kokoro voiceover synced to each step, labels pinned to parts (shaft, gear, sleeve, brass synchro ring, fork, dog teeth), each step at least 3 s, active part highlighted, slow motion at the key moment.
+- Story: car interior → hand moves the gear lever → cut inside → THE PROBLEM first (gear and shaft spin at different speeds; without a synchro the dog teeth crash: show it, "GRIND!") → the synchro ring rubs the cone → speeds match (yellow marks line up) → sleeve slides in → locked → payoff line "The brass ring matches the speeds first. No grind." for at least 2.5 s → loop.
+- Better animation than p059: real proportions, chamfers, helical-looking teeth or clearly drawn dog teeth, readable slow camera.
+- Must pass the HARD GATE including the new CLARITY GATE (fresh reviewer explains it correctly from frames + voiceover only; a 14-year-old would understand).
+- Title idea: "How a Gearbox Really Works (No Grinding) ⚙️". Caption may say "Explained properly this time 👇".
+- SCHEDULE: 11 Nov 17:00 (it takes that day's 1M+ slot). The 1M+ list then shifts by one day: 12 Nov 17:00 = #2 handcuff double lock, 13 Nov = #3, and so on.
+- If it is not finished in this run, save it in wip/p059b and finish it in the next run before anything else.
+
 ## CLARITY FIRST — LENGTH FOLLOWS THE TOPIC (Erkan, 10 Nov 2026 18:06) — overrides every earlier length rule ("10-30 s", "shorter is better")
 Erkan watched the 10 Nov 17:00 gearbox Reel (p059, 14 s): "too short for the topic, it ends before the idea is explained, the topic is not understandable, the animation is too simple." He is right: each label was on screen ~2 s, the viewer never saw WHY grinding happens, the parts were never named, and the payoff text faded. Short only wins when the topic is simple.
 1. LENGTH BY COMPLEXITY (never shorter than needed to understand):
