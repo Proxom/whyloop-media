@@ -4,4 +4,4 @@ sleeve -2.95 mm contact, ring pushed 1 mm onto the cone, sync 4.5-7.3 s, ring tu
 check.py (mesh/ring/dog overlap 0, ring blocks while turned), scene.html, audio.py (-18.1 LUFS, -3.1 dBTP, gap 45.8 dB), post.json (facts: Wikipedia Manual transmission + Lesics; spellcheck clean).
 Rebuild: python3 kin.py && python3 check.py && python3 audio.py && ../../tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 0 0 -18
 Render: python3 -m http.server 8765 (repo root); 2 workers: node tools/render/render.js wip/p059/scene.html <out> 30 1 0 420 1 1 <w> 2 1080 1920 1 (~2.2 s/frame effective, ~15 min)
-Left: final render -> encode -> HARD GATE -> review -> schedule.
+Scheduled 10 Nov 17:00 (Metricool 423325425) with v2 (visual 5 -> 6). p056 moved to 11 Nov 01:00 (423324902).
