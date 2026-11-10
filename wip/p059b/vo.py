@@ -6,12 +6,12 @@ LINES = [
  "You move the gear lever. What happens inside the gearbox?",
  "This gear spins freely on the shaft, and faster than it.",
  "The sleeve turns with the shaft. The fork slides it.",
- "Without a synchro, the sleeve hits teeth spinning at a different speed.",
+ "Without the brass ring, the sleeve hits teeth spinning at a different speed.",
  "Grind!",
- "So first, the sleeve presses a brass ring onto a cone on the gear.",
+ "So first, the sleeve presses the brass synchro ring onto a cone on the gear.",
  "Friction slows the gear, until both spin at the same speed.",
  "Now the sleeve slides over the dog teeth.",
- "Locked. The gear now turns the shaft.",
+ "Locked. Now the gear turns the shaft.",
  "The brass ring matches the speeds first. No grind.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
