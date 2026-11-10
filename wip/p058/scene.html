@@ -1,0 +1,173 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p058 handbrake: what holds it up? mm, y up, x = toward the front of the car, z = toward the side camera.
+// Section plane z = 0: the console, the grip's near half and the lever's near side plate fade away for the inside view.
+import * as S from '/tools/render/lib/studio.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const TL = await (await fetch('timeline.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const [QX, QY] = G.Q, [RX, RY] = G.RP, ER = G.ER, BTN = G.BTN;
+const ROD_L = Math.hypot(BTN[0] - RX, BTN[1] - RY);
+
+const st = S.makeStudio({ fov: 32, bg: 0x1a1f27, envIntensity: 0.9, bloom: 0, near: 5, far: 5000, samples: 0 });
+const { scene, camera } = st;
+const { shapeOf, extrude } = S;
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+
+// ---------- materials ----------
+const grain = S.noiseTex(5, 150, 16, 256); grain.repeat.set(0.06, 0.06);
+const leatherN = S.noiseTex(9, 128, 40, 512); leatherN.repeat.set(0.12, 0.12);
+const M = {
+  zinc: new THREE.MeshPhysicalMaterial({ color: 0xc9ced3, metalness: 1.0, roughness: 0.33, roughnessMap: grain, clearcoat: 0.15 }),
+  lever: new THREE.MeshPhysicalMaterial({ color: 0x23272d, metalness: 0.35, roughness: 0.42, roughnessMap: grain, clearcoat: 0.55, clearcoatRoughness: 0.3 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0xb4bcc5, metalness: 1.0, roughness: 0.25 }),
+  dsteel: new THREE.MeshStandardMaterial({ color: 0x7d858f, metalness: 1.0, roughness: 0.35 }),
+  pawl: new THREE.MeshPhysicalMaterial({ color: 0xff7d14, metalness: 0.2, roughness: 0.33, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
+  grip: new THREE.MeshPhysicalMaterial({ color: 0x1b1c1f, roughness: 0.62, roughnessMap: leatherN, bumpMap: leatherN, bumpScale: 0.35, metalness: 0, sheen: 0.4, sheenColor: new THREE.Color(0x4a4a50), side: THREE.DoubleSide }),
+  button: new THREE.MeshPhysicalMaterial({ color: 0xd9dde2, metalness: 0.9, roughness: 0.22, clearcoat: 0.4 }),
+  console: new THREE.MeshPhysicalMaterial({ color: 0x8d8880, roughness: 0.55, roughnessMap: grain, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.5 }),
+  trim: new THREE.MeshPhysicalMaterial({ color: 0x8e959e, metalness: 1.0, roughness: 0.28 }),
+  cable: new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.5, metalness: 0.2 }),
+  spring: new THREE.MeshStandardMaterial({ color: 0xc8cfd6, metalness: 1.0, roughness: 0.22 }),
+};
+const fades = [];
+const fadeMesh = (m) => { m.userData.base = m.material; const f = m.material.clone(); f.transparent = true; f.depthWrite = false; m.userData.fade = f; fades.push(m); return m; };
+const sh = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+
+// ---------- surroundings: carpet floor + soft backdrop ----------
+{ const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); const gr = g.createRadialGradient(512, 430, 40, 512, 512, 700);
+  gr.addColorStop(0, '#5b6574'); gr.addColorStop(0.45, '#333a45'); gr.addColorStop(1, '#151920'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const bd = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), new THREE.MeshBasicMaterial({ map: t })); bd.position.set(60, 60, -420); scene.add(bd); }
+{ const cn = S.noiseTex(13, 128, 60, 256); cn.repeat.set(90, 90); const carpet = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x1d2024, roughness: 0.97, bumpMap: cn, bumpScale: 0.5 }));
+  carpet.rotation.x = -Math.PI / 2; carpet.position.y = -66.05; carpet.receiveShadow = true; scene.add(carpet); }
+
+// ---------- fixed parts: floor bracket, toothed sector plate, pivot pin ----------
+{ const base = sh(new THREE.Mesh(new THREE.BoxGeometry(150, 4, 72), M.dsteel)); base.position.set(20, -64, 0); scene.add(base); }
+const plate = sh(extrude(shapeOf(G.PLATE), -1.6, 1.6, M.zinc, 0.25, 4)); scene.add(plate);
+{ const pin = sh(new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 15, 40), M.steel)); pin.rotation.x = Math.PI / 2; scene.add(pin);
+  for (const z of [7.6, -7.6]) { const n = sh(new THREE.Mesh(new THREE.CylinderGeometry(5.6, 5.6, 2.4, 6), M.steel)); n.rotation.x = Math.PI / 2; n.position.z = z; scene.add(n); } }
+// mounting flange (bent tab) where the plate meets the bracket
+{ const tab = sh(extrude(shapeOf(rect(-30, -62, 40, -58)), -10, 10, M.zinc, 0.4, 4)); scene.add(tab);
+  for (const x of [-18, 28]) { const b = sh(new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 3, 6), M.steel)); b.position.set(x, -56.5, 5.5); scene.add(b); } }
+
+// ---------- lever (rotates about O) ----------
+const lever = new THREE.Group(); scene.add(lever);
+const SIDE = [[-24, -2], [-16, -12], [6, -23], [40, -24], [52, -20], [62, -10], [100, -8], [250, -8], [258, -5], [258, 6], [100, 8], [30, 12], [-6, 15], [-20, 13], [-24, 7]];
+for (const [z0, z1, near] of [[2.2, 4.0, true], [-4.0, -2.2, false]]) { const m = sh(extrude(shapeOf(SIDE), z0, z1, M.lever, 0.5, 8)); lever.add(near ? fadeMesh(m) : m); }
+{ const web = sh(extrude(shapeOf(rect(56, 6.2, 250, 8.0)), -4.0, -0.05, M.lever, 0.3, 4)); lever.add(web);
+  const webN = sh(extrude(shapeOf(rect(56, 6.2, 250, 8.0)), 0.05, 4.0, M.lever, 0.3, 4)); lever.add(fadeMesh(webN));
+  const hubF = sh(new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 1.8, 48), M.lever)); hubF.rotation.x = Math.PI / 2; hubF.position.z = -5; lever.add(hubF);
+  const hubN = sh(new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 1.8, 48), M.lever)); hubN.rotation.x = Math.PI / 2; hubN.position.z = 5; lever.add(fadeMesh(hubN));
+  // cable lug on the rear stub
+  const lug = sh(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 9.5, 24), M.steel)); lug.rotation.x = Math.PI / 2; lug.position.set(-16, 8, 0); lever.add(lug);
+  const qpin = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 9.6, 24), M.steel)); qpin.rotation.x = Math.PI / 2; qpin.position.set(QX, QY, 0); lever.add(qpin); }
+// grip: far half stays (open toward the camera), near half fades
+const GRIP0 = 148, GRIP1 = 258;
+function gripHalf(far) { const g = new THREE.CylinderGeometry(12.5, 11, GRIP1 - GRIP0, 64, 1, true, far ? Math.PI : 0, Math.PI); g.rotateZ(-Math.PI / 2);
+  const m = sh(new THREE.Mesh(g, M.grip)); m.position.set((GRIP0 + GRIP1) / 2, 0, 0); return m; }
+lever.add(gripHalf(true)); lever.add(fadeMesh(gripHalf(false)));
+{ const ring = sh(new THREE.Mesh(new THREE.TorusGeometry(11.3, 1.3, 16, 64), M.trim)); ring.rotation.y = Math.PI / 2; ring.position.x = GRIP1; lever.add(ring);
+  const cap0 = sh(new THREE.Mesh(new THREE.TorusGeometry(12.2, 1.2, 16, 64), M.trim)); cap0.rotation.y = Math.PI / 2; cap0.position.x = GRIP0; lever.add(cap0); }
+// spring stop inside the grip (fixed to the lever)
+const STOP_U = 222;
+{ const w = sh(new THREE.Mesh(new THREE.CylinderGeometry(5.6, 5.6, 2, 40), M.dsteel)); w.rotation.z = Math.PI / 2; w.position.set(STOP_U, RY + (STOP_U - RX) * ER[1] / ER[0], 0); lever.add(w); }
+// pawl (orange) on its pin at Q, turned by beta
+const pawlG = new THREE.Group(); pawlG.position.set(QX, QY, 0); lever.add(pawlG);
+{ const pts = G.PAWL.map(p => [p[0] - QX, p[1] - QY]); const m = sh(extrude(shapeOf(pts), -1.5, 1.5, M.pawl, 0.35, 8)); pawlG.add(m);
+  const rp = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 4.4, 20), M.steel)); rp.rotation.x = Math.PI / 2; rp.position.set(RX - QX, RY - QY, 0); pawlG.add(rp); }
+// push rod + button + spring (move together with the rod pin)
+const rodG = new THREE.Group(); lever.add(rodG); rodG.rotation.z = Math.atan2(ER[1], ER[0]);
+{ const rod = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, ROD_L, 20), M.steel)); rod.rotation.z = -Math.PI / 2; rod.position.x = ROD_L / 2; rodG.add(rod);
+  const eye = sh(new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.6, 12, 24), M.steel)); rodG.add(eye);
+  const bt = sh(new THREE.Mesh(new THREE.CylinderGeometry(6.2, 6.2, 9, 48), M.button)); bt.rotation.z = -Math.PI / 2; bt.position.x = ROD_L + 1.5; rodG.add(bt);
+  const cap = sh(new THREE.Mesh(new THREE.SphereGeometry(6.2, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2), M.button)); cap.rotation.z = -Math.PI / 2; cap.scale.set(1, 0.35, 1); cap.position.x = ROD_L + 6; rodG.add(cap);
+  const coll = sh(new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 3, 32), M.dsteel)); coll.rotation.z = -Math.PI / 2; coll.position.x = ROD_L - 8; rodG.add(coll); }
+const springG = new THREE.Group(); lever.add(springG); let springMesh = null, springLen = -1;
+function buildSpring(u0, u1) { const len = u1 - u0; if (Math.abs(len - springLen) < 0.01) return; springLen = len; if (springMesh) { springG.remove(springMesh); springMesh.geometry.dispose(); }
+  const turns = 7, R = 3.6; const pts = []; for (let i = 0; i <= 420; i++) { const u = i / 420; const a = u * turns * Math.PI * 2; pts.push(new THREE.Vector3(u0 + 0.6 + u * (len - 1.2), R * Math.cos(a), R * Math.sin(a))); }
+  springMesh = sh(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 600, 0.55, 10, false), M.spring)); springG.add(springMesh); }
+springG.rotation.z = Math.atan2(ER[1], ER[0]);
+
+// ---------- cable to the rear brakes ----------
+const cable = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 1, 16), M.cable)); scene.add(cable);
+const cableEnd = sh(new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 9, 20), M.steel)); scene.add(cableEnd);
+
+// ---------- centre console (exterior, fades) ----------
+{ const prof = [[-95, -66], [135, -66], [135, 4], [118, 15], [-80, 15], [-95, 2]];
+  for (const [z0, z1] of [[7.5, 58], [-58, -7.5]]) { const m = sh(extrude(shapeOf(prof), z0, z1, M.console, 3.0, 10)); scene.add(fadeMesh(m)); }
+  const fr = sh(extrude(shapeOf([[118, -66], [135, -66], [135, 4], [118, 15]]), -8, 8, M.console, 1.5, 6)); scene.add(fadeMesh(fr));
+  const bk = sh(extrude(shapeOf([[-95, -66], [-62, -66], [-62, 15], [-80, 15], [-95, 2]]), -8, 8, M.console, 1.5, 6)); scene.add(fadeMesh(bk));
+  for (const z of [7.6, -7.6]) { const tr = sh(new THREE.Mesh(new THREE.BoxGeometry(178, 1.2, 1.6), M.trim)); tr.position.set(28, 15.3, z); scene.add(fadeMesh(tr)); } }
+
+// ---------- lights ----------
+const key = new THREE.DirectionalLight(0xfff0dc, 2.4); key.position.set(260, 380, 300); key.target.position.set(60, 0, 0); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -220; c.right = 220; c.top = 220; c.bottom = -220; c.near = 100; c.far = 1400; } key.shadow.bias = -0.0004; key.shadow.normalBias = 0.06; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 1.3); rim.position.set(-260, 260, -300); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe8d0, 0.55); fill.position.set(120, -60, 260); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.3));
+
+// ---------- animation ----------
+function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[i % K.length], B = K[(i + 1) % K.length];
+  const o = {}; for (const k of ['th', 'beta']) o[k] = Math.abs(B.beta - A.beta) > 0.012 ? (u < 0.5 ? A[k] : B[k]) : A[k] + (B[k] - A[k]) * u; return o; }
+const fadeU = (t) => { const [a0, a1] = T.FADE_OUT, [b0, b1] = T.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
+const rpAt = (b) => { const c = Math.cos(b), s = Math.sin(b), dx = RX - QX, dy = RY - QY; return [QX + c * dx - s * dy, QY + s * dx + c * dy]; };
+const levPt = (k, xl, yl = 0, z = 0) => { const c = Math.cos(k.th), s = Math.sin(k.th); return new THREE.Vector3(c * xl - s * yl, s * xl + c * yl, z); };
+// camera keys [t, tx, ty, tz, dist, elev, azim] (azim 0 = side view from +z, 90 = from the front)
+const EXT = [128, 52, 0, 1000, 20, 22], SEC = [42, -14, 0, 225, 8, -10], SECW = [45, -8, 0, 275, 9, -8], BTNV = [205, 95, 0, 330, 10, 18];
+const KEYS = [[0, ...EXT], [T.FADE_OUT[0] - 0.3, 112, 62, 0, 920, 18, 20], [T.FADE_OUT[1] + 0.25, ...SEC], [T.PULL2[0], ...SEC], [T.PULL2[1] + 0.2, ...SECW],
+  [11.55, ...SECW], [12.4, ...BTNV], [12.75, ...BTNV], [13.55, ...SEC], [T.FADE_IN[0] - 0.1, ...SECW], [T.FADE_IN[1] + 0.25, ...EXT], [LOOP, ...EXT]];
+function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
+  lever.rotation.z = k.th; pawlG.rotation.z = k.beta;
+  const rp = rpAt(k.beta); rodG.position.set(rp[0], rp[1], 0);
+  const disp = (rp[0] - RX) * ER[0] + (rp[1] - RY) * ER[1]; // rod travel along its axis (negative = pushed in)
+  springG.position.set(0, 0, 0); { const a0 = (STOP_U + 1 - RX) / ER[0]; const uS = a0, uB = ROD_L - 3 + disp; // along the rod axis from RP0
+    springG.position.set(RX, RY, 0); buildSpring(uS, uB); }
+  // cable from the lug straight back to the rear
+  const lug = levPt(k, -16, 8); const L = 700; cable.position.set(lug.x - L / 2, lug.y, 0); cable.scale.set(1, L, 1); cable.rotation.z = Math.PI / 2; cableEnd.position.set(lug.x - 6, lug.y, 0); cableEnd.rotation.z = Math.PI / 2;
+  const fu = fadeU(tt); for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; m.material.opacity = 1 - fu; } }
+  const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos);
+  const j = (t0, a) => (tt > t0 && tt < t0 + 0.35) ? a * Math.exp(-(tt - t0) * 14) * Math.sin((tt - t0) * 70) : 0;
+  camera.position.y += j(T.LET1[1], 1.2) + j(T.PUSHDN[1], 0.9);
+  camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
+const scr = (v) => S.toScreen(camera, v);
+
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const win = (t, a, b, f = 0.15) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+function point(k, key) {
+  if (key === 'pawl') return scr(levPt(k, ...(() => { const b = k.beta, c = Math.cos(b), s = Math.sin(b), dx = G.NB[0] - QX, dy = G.NB[1] - QY; return [QX + c * dx - s * dy, QY + s * dx + c * dy]; })(), 2));
+  if (key === 'teeth') { const a = G.PSI0 + 6.5 * G.P; return scr(new THREE.Vector3(41 * Math.cos(a), 41 * Math.sin(a), 1.6)); }
+  if (key === 'face') { const a = G.PSI0 + 5 * G.P; return scr(new THREE.Vector3(41.3 * Math.cos(a), 41.3 * Math.sin(a), 1.6)); }
+  if (key === 'button') { const rp = rpAt(k.beta); return scr(levPt(k, rp[0] + ER[0] * (ROD_L + 7), rp[1] + ER[1] * (ROD_L + 7), 0)); }
+  return [null, null]; }
+function overlay(t, k) {
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (T.FADE_OUT[0] - 0.1 - t) / 0.18), Math.min(1, (t - (LOOP - 0.35)) / 0.2));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.45; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'WHAT HOLDS', 'IT UP?', 124); const [x, y] = scr(new THREE.Vector3(14, 15, 9)); S.redCircle(g2, hookA, x, y, 100, [190, 190]); }
+  let a;
+  for (const A of TL.ARROWS) if ((a = win(t, A[1], A[2], 0.2)) > 0) { const p = scr(levPt(k, 92, 9, 4)), q = scr(levPt(k, 92, A[0] === 'up' ? 60 : -40, 4));
+    const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+    if (A[0] === 'up') S.forceArrow(g2, a * 0.95, p[0] + ux * 20, p[1] + uy * 20, p[0] + ux * 190, p[1] + uy * 190, 24); else S.forceArrow(g2, a * 0.95, p[0] - ux * 190, p[1] - uy * 190, p[0] - ux * 20, p[1] - uy * 20, 24); }
+  // thumb push on the button, along the rod axis
+  if ((a = win(t, T.PRESS[0] - 0.15, T.PRESS[1] + 0.1, 0.2)) > 0) { const p = point(k, 'button'); const q = scr(levPt(k, BTN[0] + 40 * ER[0], BTN[1] + 40 * ER[1], 0)); const dx = p[0] - q[0], dy = p[1] - q[1], L = Math.hypot(dx, dy) || 1;
+    S.forceArrow(g2, a * 0.95, p[0] - dx / L * 210, p[1] - dy / L * 210, p[0] - dx / L * 22, p[1] - dy / L * 22, 26); }
+  for (const L of TL.LABELS) if ((a = win(t, L[1], L[2])) > 0) { const p = L[3] ? point(k, L[3]) : [null, null]; S.label(g2, a, L[0], p[0], p[1], 450, L[4] || 96); }
+  if ((a = win(t, T.FOLLOW[0], T.FOLLOW[1], 0.15)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+window._st = st; window._set = setAll; window._kin = kinAt; window._scr = scr;
+S.install(st, setAll, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
+window.motionPx = (t, fps = 30) => 0;
+</script></body></html>

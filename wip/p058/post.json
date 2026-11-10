@@ -1,0 +1,40 @@
+{
+ "id": "p058",
+ "track": "A",
+ "group": "V",
+ "topic": "Car handbrake lever: what holds it up when you let go? (ratchet: a fixed toothed plate by the pivot and a pawl on the lever; the button spring pulls a push rod that keeps the pawl in the teeth; going up the pawl clicks over the sloped teeth, going down it catches on a steep face; pressing the button tips the pawl out).",
+ "hook": "WHAT HOLDS / IT UP?",
+ "principle": "A spring-loaded pawl on the lever rides over a fixed ratchet whose teeth slope one way: lifting the lever lets the pawl slide up each slope and drop into the next gap (click), while the cable trying to pull the lever down drives the pawl's tip against a steep tooth face, so the lever stays up until the release button pushes the rod that tips the pawl out of the teeth.",
+ "caption": "What holds a handbrake up when you let go? 🚗\nBe honest: do you press the button when you pull it up? 👇\nFollow @whyloop.hq for a new machine every day\n#handbrake #howitworks #engineering #mechanism #cars",
+ "firstComment": "Answer: a little pawl and a row of teeth 🔧\n\nThe lever pivots on a pin and pulls the brake cable. Next to the pivot sits a fixed plate with a row of teeth (the ratchet), and on the lever there's a small pawl. A spring behind the release button pushes the button out, which pulls a rod along the lever and keeps the pawl pressed into the teeth.\n\nPull up: each tooth is a slope, so it pushes the pawl aside and the pawl drops into the next gap. That's the click.\n\nLet go: the cable tries to pull the lever back down, but now the pawl's tip hits the steep side of a tooth. Locked.\n\nPress the button: the rod tips the pawl out of the teeth, and the lever can go down. To release it, lift the lever a little first to take the load off the pawl.\n\nSo, the button while pulling up? CarThrottle says don't bother: the ratchet is made to click. CarGurus says pressing it is good practice. Check your owner's manual.\n\n(Simplified 3D model, enlarged and slowed down. Real levers vary in shape.)\n\nSources:\nCarThrottle, Should you press the button when pulling the handbrake or not? (the handbrake pivots around a pin and pulls on a cable; a ratchet bracket with teeth and a pawl lock it; the pawl is connected via a push rod to the release button; a spring behind the button forces it outward, pulling the rod, which makes the pawl pivot between the teeth; you should not press the button when pulling the handbrake): https://www.carthrottle.com/features/should-you-press-button-when-pulling-handbrake-or-not\nCarGurus, What is a Handbrake and What Does it Do? (releasing the button engages a pawl on a ratchet plate, which locks the lever; to release, lift the lever slightly to help disengage the pawl tooth, press the button and lower the lever; not pressing the button when pulling up makes the clicking sound; it is good practice to press it when raising the lever): https://www.cargurus.co.uk/Cars/articles/what-is-a-handbrake-what-does-it-do",
+ "altText": "3D animation of a car handbrake. A black lever with a leather grip and a silver button on its end sticks out of a light gray center console and is pulled up in three steps. The console and the near side of the lever fade away to show the inside: by the pivot pin, a fixed silver plate with a row of sloped teeth, and on the lever an orange pawl whose tip rests between the teeth, held there by a thin rod running up the lever to the button. The lever is pulled up twice more and the pawl slides over each tooth and drops into the next gap. Then it is pushed down: the pawl's tip hits the steep side of a tooth and the lever stops. The camera moves to the grip, where the button is pressed in against a small coil spring; the rod slides back and tips the pawl out of the teeth, and the lever goes all the way down. The button is let go, the pawl drops back in and the console fades back. Text on screen: What holds it up? The pawl. Teeth. Click! Steep face. Locked. Press. Rod tips the pawl out. Now it can drop. Follow, new machine tomorrow.",
+ "onScreen": [
+  "INSIDE IT",
+  "WHAT HOLDS",
+  "IT UP?",
+  "WHYLOOP",
+  "THE PAWL",
+  "TEETH",
+  "CLICK!",
+  "STEEP FACE",
+  "LOCKED",
+  "PRESS",
+  "ROD TIPS THE PAWL OUT",
+  "NOW IT CAN DROP",
+  "FOLLOW → NEW MACHINE TOMORROW"
+ ],
+ "voiceover": [
+  "Let go of a handbrake. Why doesn't it drop?",
+  "Inside, a spring pushes a little pawl into a row of teeth.",
+  "Going up, it rides over each tooth. Click.",
+  "Going down, it hits a steep face. Locked.",
+  "Press the button: a rod tips the pawl out, and down it goes.",
+  "Follow for a new machine every day."
+ ],
+ "sources": [
+  "https://www.carthrottle.com/features/should-you-press-button-when-pulling-handbrake-or-not",
+  "https://www.cargurus.co.uk/Cars/articles/what-is-a-handbrake-what-does-it-do"
+ ],
+ "learningApplied": "Winner pattern 'one small part + a clear click/lock moment' (p048 ratchet 18.5K, p050 9.9K, p052 seatbelt 7.4K = V) in group V; p055/p057 lessons: one planar mechanism, opacity fade only (no clip sweep, no layered extrudes), hook subject whole and recognisable (console + lever + grip), light console vs dark lever for contrast; debate comment bait (button: yes or no?). Track A after p057 (B, reserve) / p056 (A): A because B reserve p057 was not posted; 13:07 report asked for track A.",
+ "slot": "2026-11-11T01:00 Europe/London"
+}
