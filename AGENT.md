@@ -2,6 +2,13 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## URGENT ONE-TIME: TODAY'S 17:00 MUST BE THE 1M+ TOPIC (Erkan, 10 Nov 2026 14:55) — applies only to a run that starts on 10 Nov before 15:30; ignore otherwise
+Erkan wants today's 17:00 Reel to be the first 1M+ list item (#1 manual gearbox synchro). The light-switch Reel p056 (Metricool 422477579) is scheduled at 10 Nov 17:00 as a fallback.
+1. Make #1 (manual gearbox: how the synchro lets you change gear) as fast as possible: simplest clear scene, preview renders only, one final render, HARD GATE, one review. Use the 5+ visual-score threshold (the slot is less than 2 hours away).
+2. If it passes and is in Metricool before 16:50: move p056 (light switch) with updateScheduledPost (full original content) to 11 Nov 01:00 (empty), then schedule the gearbox Reel at 10 Nov 17:00.
+3. If it is not ready by 16:50: do NOT touch p056; schedule the gearbox Reel for 11 Nov 17:00 (as the list planned) and save it.
+4. After this, 12 Nov 17:00 = #2 (handcuff double lock) and so on.
+
 ## 17:00 = OUR VERSION OF A PROVEN 1M+ MECHANISM VIDEO, IN ORDER (Erkan, 9 Nov 2026 21:12) — from 10 Nov, every day; overrides topic choice and E/V rotation for the 17:00 slot only
 1. The 17:00 Reel every day is OUR OWN VERSION of a mechanism/"how it works" video that already reached 1,000,000+ views (Instagram, YouTube or TikTok). Topics are free to use; the Reel must be 100% ours: our 3D model and animation, our script and on-screen words, our title wording, our sound. Never copy footage, frames, script lines, captions word for word or covers. Keep our format: one part, one question, 10-30 s, cutaway, loop, follow line. Log `outlier: <original title + link + views>` in the post doc.
 2. ORDER (most viewed first; one per day: 10 Nov = #1, 11 Nov = #2, ...; skip an item only if the hard gate cannot be met, then come back to it):
