@@ -2,6 +2,26 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## CLARITY FIRST — LENGTH FOLLOWS THE TOPIC (Erkan, 10 Nov 2026 18:06) — overrides every earlier length rule ("10-30 s", "shorter is better")
+Erkan watched the 10 Nov 17:00 gearbox Reel (p059, 14 s): "too short for the topic, it ends before the idea is explained, the topic is not understandable, the animation is too simple." He is right: each label was on screen ~2 s, the viewer never saw WHY grinding happens, the parts were never named, and the payoff text faded. Short only wins when the topic is simple.
+1. LENGTH BY COMPLEXITY (never shorter than needed to understand):
+   - Simple one-part mechanism (ratchet, zip tie, pen click, light switch): 12-20 s.
+   - Multi-step mechanism (gearbox, differential, engine, clutch, locks, scale, brakes, anything with 3+ steps or 3+ parts): 30-50 s.
+2. STRUCTURE FOR EVERY REEL:
+   a. Hook (0-2 s): the familiar object + the question.
+   b. THE PROBLEM in everyday terms (2-4 s): show what would go wrong without the mechanism (e.g. dog teeth crashing at different speeds → "GRIND!" with a sound).
+   c. NAME THE PARTS once: short labels pinned to each part (e.g. "sleeve", "brass ring", "gear"), kept on screen while that part matters.
+   d. STEP BY STEP: one step at a time, each step at least 3 s; highlight the active part (glow/colour), dim the rest; slow motion at the key moment; a human action where it fits (a hand moving the gear lever).
+   e. PAYOFF: restate the answer in one clear line at full opacity for at least 2.5 s.
+   f. Loop back.
+3. VOICEOVER is required for multi-step topics (Kokoro, short plain sentences, each sentence synced to its step). On-screen text: max 6 words, full opacity, at least 2.5 s each.
+4. CLARITY GATE — added to the HARD GATE (a Reel that fails it is not scheduled; fix it):
+   - Give a fresh reviewer subagent ONLY the video frames at 2 fps plus the voiceover transcript (NOT the caption or first comment). It must explain in 2 sentences how the mechanism works and why.
+   - If its explanation is wrong, vague or misses a step, the Reel fails: add time, a step, a label or a slower shot, then test again.
+   - Also ask it: "Would a 14-year-old understand this without reading the caption?" Answer must be yes.
+5. ANIMATION: start with real-world context (the object where people know it: car interior and gear lever, door, bike), then cut inside; slow, readable camera moves; enough detail that parts look like real parts (chamfers, real proportions, materials), not abstract blocks.
+6. The 17:00 1M+ list keeps going in order; the original 1M+ videos are mostly 30 s to several minutes long for complex topics, so take the time the topic needs.
+
 ## URGENT ONE-TIME: TODAY'S 17:00 MUST BE THE 1M+ TOPIC (Erkan, 10 Nov 2026 14:55) — applies only to a run that starts on 10 Nov before 15:30; ignore otherwise
 Erkan wants today's 17:00 Reel to be the first 1M+ list item (#1 manual gearbox synchro). The light-switch Reel p056 (Metricool 422477579) is scheduled at 10 Nov 17:00 as a fallback.
 1. Make #1 (manual gearbox: how the synchro lets you change gear) as fast as possible: simplest clear scene, preview renders only, one final render, HARD GATE, one review. Use the 5+ visual-score threshold (the slot is less than 2 hours away).
