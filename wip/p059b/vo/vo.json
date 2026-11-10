@@ -1,0 +1,52 @@
+[
+ {
+  "i": 0,
+  "text": "You move the gear lever. What happens inside the gearbox?",
+  "dur": 3.115
+ },
+ {
+  "i": 1,
+  "text": "This gear spins freely on the shaft, and faster than it.",
+  "dur": 3.051
+ },
+ {
+  "i": 2,
+  "text": "The sleeve turns with the shaft. The fork slides it.",
+  "dur": 2.88
+ },
+ {
+  "i": 3,
+  "text": "Without a synchro, the sleeve hits teeth spinning at a different speed.",
+  "dur": 3.541
+ },
+ {
+  "i": 4,
+  "text": "Grind!",
+  "dur": 0.789
+ },
+ {
+  "i": 5,
+  "text": "So first, the sleeve presses a brass ring onto a cone on the gear.",
+  "dur": 3.669
+ },
+ {
+  "i": 6,
+  "text": "Friction slows the gear, until both spin at the same speed.",
+  "dur": 3.52
+ },
+ {
+  "i": 7,
+  "text": "Now the sleeve slides over the dog teeth.",
+  "dur": 2.304
+ },
+ {
+  "i": 8,
+  "text": "Locked. The gear now turns the shaft.",
+  "dur": 2.027
+ },
+ {
+  "i": 9,
+  "text": "The brass ring matches the speeds first. No grind.",
+  "dur": 3.136
+ }
+]

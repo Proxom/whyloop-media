@@ -1,0 +1,1 @@
+[{"type": "select", "t": 1.7}, {"type": "crash", "t0": 15.9, "t1": 17.6}, {"type": "push", "t": 21.049999999999997}, {"type": "rub", "t0": 21.4, "t1": 27.6}, {"type": "align", "t": 28.0}, {"type": "lock", "t": 29.95}, {"type": "release", "t": 38.25}, {"type": "select", "t": 40.7}]
