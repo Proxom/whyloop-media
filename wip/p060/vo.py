@@ -3,7 +3,7 @@ import sys, json, soundfile as sf
 from kokoro_onnx import Kokoro
 TTS = sys.argv[1]; OUT = sys.argv[2]
 LINES = [
- "Why do handcuffs have a second lock?",
+ "Why do handcuffs have a double lock?",
  "Inside, the arm has teeth. A spring pushes a pawl onto them.",
  "Push the arm in. Each tooth lifts the pawl, and it snaps back. Click.",
  "Pull it back, and the steep side of a tooth jams the pawl.",

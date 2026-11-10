@@ -138,7 +138,7 @@ function applyFade(fu) { for (const m of fades) { if (fu <= 0.001) { m.visible =
 // push/pull "tries" while blocked: tiny shake only (the parts do not move)
 const TRY = [[14.6, 16.6, +1], [29.6, 31.0, -1], [31.8, 33.2, +1]];
 // camera keys [t, tx, ty, tz, dist, elev, azim]
-const EXT = [54, 8, 0, 300, 24, 24], IN = [79, 3, 0, 190, 8, 16], CL = [77, 1, 0, 150, 6, 12], PR = [52, 30, 0, 230, 22, 12], DL = [82, -5, 0, 125, 4, 12], PY = [79, 2, 0, 200, 9, 16];
+const EXT = [54, 8, 0, 300, 24, 24], IN = [79, 3, 0, 190, 8, 16], CL = [77, 1, 0, 150, 6, 12], PR = [55, 22, 0, 255, 16, 14], DL = [82, -5, 0, 125, 4, 12], PY = [79, 2, 0, 200, 9, 16];
 const KEYS = [[0, ...EXT], [2.6, ...EXT], [4.6, ...IN], [8.4, ...IN], [9.2, ...CL], [17.6, ...CL], [18.6, ...PR], [22.6, ...PR], [23.6, ...DL], [28.4, ...DL], [29.2, ...CL], [33.8, ...CL], [34.6, ...PY], [37.6, ...PY], [39.4, ...EXT], [LOOP, ...EXT]];
 function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
   arm.rotation.z = -k.phi * Math.PI / 180; pawl.rotation.z = k.psi * Math.PI / 180;
@@ -167,8 +167,8 @@ const TAGS = [
   [6.4, 8.6, 'PAWL', () => new THREE.Vector3(80.5, 9.5, 2.4), 110, -110],
   [7.0, 8.6, 'SPRING', () => new THREE.Vector3(90.5, 5, 2.4), 60, 110],
   [14.9, 17.8, 'STEEP SIDE', () => new THREE.Vector3(72.0, 0.6, 2.4), -140, -70],
-  [19.4, 22.8, 'WRIST', () => new THREE.Vector3(WX - 10, WY + WB - 6, 20), -120, -80],
-  [23.6, 29.0, 'KEY PIN', () => new THREE.Vector3(G.PIN_X, (kk.pin ?? -20) - 5, 1.5), -150, 90],
+  [19.4, 22.8, 'WRIST', () => new THREE.Vector3(33, 38.4, 6), 40, 150],
+  [23.6, 27.3, 'KEY PIN', () => new THREE.Vector3(G.PIN_X, (kk.pin ?? -20) - 5, 1.5), -150, 90],
   [24.6, 34.0, 'DOUBLE-LOCK BOLT', () => new THREE.Vector3(BX1, BOY + (BIY - BOY) * kk.b + BH / 2, 2.2), 70, 120],
 ];
 function arrowAt(a, p3, dir, len = 150) { const [x, y] = scr(p3); const d = Math.hypot(dir[0], dir[1]); const ux = dir[0] / d, uy = dir[1] / d; S.forceArrow(g2, a, x - ux * (len + 30), y - uy * (len + 30), x - ux * 30, y - uy * 30, 24); }
@@ -176,7 +176,7 @@ function overlay(t, k) { kk = k;
   S.vignette(g2, 560);
   const hookA = Math.max(0, Math.min(1, (3.0 - t) / 0.25), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
   if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
-    S.hookCard(g2, hookA, 'WHY A', 'DOUBLE LOCK?', 116); const [x, y] = scr(new THREE.Vector3(80, 4, 5.4)); S.redCircle(g2, hookA, x, y, 110, [-250, -40]); }
+    S.hookCard(g2, hookA, 'WHY A', 'DOUBLE LOCK?', 116); const [x, y] = scr(new THREE.Vector3(90.5, -7.5, 5.4)); S.redCircle(g2, hookA, x, y, 70, [-230, -60]); }
   // hook push arrow: the arm clicks one tooth in (1.15-1.95 s)
   if ((a = win(t, 0.6, 2.2, 0.2)) > 0) arrowAt(a * hookA, armPt(76, 120, k.phi, 5), [-0.5, -0.86], 130);
   var a;
@@ -191,8 +191,11 @@ function overlay(t, k) { kk = k;
   for (const c of G.CLICKS) if ((a = win(t, c, c + 0.75, 0.06)) > 0 && t > 3.0) { const [x, y] = scr(new THREE.Vector3(74, 6, 2.4)); g2.save(); g2.globalAlpha = a; S.outlined(g2, 'CLICK!', Math.min(860, x + 150), Math.max(640, y - 150), 64, '#ffffff'); g2.restore(); }
   // blocked badges
   if ((a = win(t, 15.0, 17.6)) > 0) badge(a, 'CAN\'T OPEN', 1290, '#ff3b2f');
-  if ((a = win(t, 20.6, 23.0, 0.1)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'TOO TIGHT!', S.CX, 700, 150, '#ff3b2f'); g2.restore(); }
+  if ((a = win(t, 20.6, 23.0, 0.1)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'TOO TIGHT!', S.CX, 1280, 140, '#ff3b2f'); g2.restore(); }
   if ((a = win(t, 29.9, 31.3)) > 0) badge(a, 'NO TIGHTER', 1290, '#ff3b2f');
+  // the pawl tries to lift (+x) and hits the bolt: lift arrow on the pad + red ring on the pawl/bolt contact
+  for (const [p0, p1] of [[29.8, 31.2], [32.0, 33.4]]) if ((a = win(t, p0, p1)) > 0) { const [cx, cy] = scr(new THREE.Vector3(79.1, -2.2, 2.4)); const [px, py] = scr(new THREE.Vector3(75.5, -1.0, 2.4));
+    S.forceArrow(g2, a, px - 10, py, cx - 14, cy, 16); g2.save(); g2.globalAlpha = a * (0.7 + 0.3 * Math.sin(t * 20)); g2.strokeStyle = '#ff2a2a'; g2.lineWidth = 8; g2.beginPath(); g2.arc(cx, cy, 46, 0, 7); g2.stroke(); g2.restore(); }
   if ((a = win(t, 32.0, 33.6)) > 0) badge(a, 'NO OPENING', 1290, '#ff3b2f');
   // payoff
   if ((a = win(t, 34.2, 37.8, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.55)'; S.rrect(g2, 80, 360, 830, 290, 26); g2.fill(); g2.restore();
