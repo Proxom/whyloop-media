@@ -29,8 +29,8 @@ const M = {
   pocket: new THREE.MeshPhysicalMaterial({ color: 0x5a6068, roughness: 0.62, roughnessMap: grain, metalness: 0 }),
   neck: new THREE.MeshStandardMaterial({ color: 0xa8b0b8, metalness: 1.0, roughness: 0.32 }),
   cover: new THREE.MeshPhysicalMaterial({ color: 0x24272c, roughness: 0.4, roughnessMap: grain, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
-  body: new THREE.MeshPhysicalMaterial({ color: 0xc7ccd2, roughness: 0.36, roughnessMap: grain, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22 }),
-  arm: new THREE.MeshPhysicalMaterial({ color: 0xff8a1e, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.2 }),
+  body: new THREE.MeshPhysicalMaterial({ color: 0xaebdcc, roughness: 0.36, roughnessMap: grain, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22 }),
+  arm: new THREE.MeshPhysicalMaterial({ color: 0xf26a05, roughness: 0.4, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.2 }),
   disk: new THREE.MeshPhysicalMaterial({ color: 0x4d6378, roughness: 0.4, roughnessMap: grain, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22 }),
   seal: new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.75, metalness: 0 }),
 };
@@ -42,6 +42,11 @@ const fadeMesh = (m) => { m.userData.base = m.material; const f = m.material.clo
   const wall = new THREE.Mesh(new THREE.CylinderGeometry(46.95, 46.95, 25, 96, 1, true), M.pocket); wall.material = M.pocket.clone(); wall.material.side = THREE.DoubleSide; wall.rotation.x = Math.PI / 2; wall.position.z = 5.5; wall.receiveShadow = true; scene.add(wall);
   const floor = new THREE.Mesh(new THREE.CircleGeometry(47.5, 96), M.pocket); floor.position.z = -6.5; floor.receiveShadow = true; scene.add(floor);
   const neck = extrude(shapeOf(ring(31.5), [ring(25.2, 96, true)]), -6.4, -0.6, M.neck, 0.5, 64); neck.receiveShadow = true; neck.castShadow = true; scene.add(neck); }
+{ const door = new THREE.Group(); door.position.set(49, 0, 22); scene.add(door);
+  const dm = extrude(shapeOf(S.circle(-46, 0, 45, 96)), 0, 2.4, M.paint, 0.9, 64); dm.position.x = -2; door.add(dm);
+  const inner = extrude(shapeOf(S.circle(-46, 0, 40, 96)), -1.2, 0.05, M.pocket, 0.4, 64); inner.position.x = -2; door.add(inner);
+  const hinge = new THREE.Mesh(new THREE.BoxGeometry(6, 16, 10), M.pocket); hinge.position.set(0, 0, -3); door.add(hinge);
+  door.rotation.y = 1.855; S.shadowAll(door); }
 // ---------- body (closer): disk + 12 inclined teeth ----------
 const body = new THREE.Group(); scene.add(body);
 { const d = extrude(shapeOf(ring(25.8)), 0.25, 3.0, M.disk, 0.5, 96); body.add(d);
@@ -51,11 +56,13 @@ const body = new THREE.Group(); scene.add(body);
 // ---------- handle (cover): skirt ring stays, top + grip fade; two flexible orange arms ----------
 const handle = new THREE.Group(); scene.add(handle);
 { const sk = extrude(shapeOf(ring(30.6), [ring(27.0, 96, true)]), 0.6, 12.2, M.cover, 0.6, 96); handle.add(sk);
+  for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; const rb = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.2, 10.6), M.cover); rb.position.set(30.75 * Math.cos(a), 30.75 * Math.sin(a), 6.6); rb.rotation.z = a; handle.add(rb); }
+  const carrier = extrude(shapeOf(ring(27.05), [ring(25.95, 96, true)]), 4.0, 8.5, M.arm, 0.25, 96); handle.add(carrier);
   const top = extrude(shapeOf(ring(30.6)), 12.0, 14.6, M.cover, 0.9, 96); handle.add(fadeMesh(top));
   const gp = S.roundRect(-25, -5.6, 25, 5.6, 5.4, 12); const grip = extrude(shapeOf(gp), 14.4, 25.5, M.cover, 1.6, 24); handle.add(fadeMesh(grip));
   S.shadowAll(handle); }
 const armG = new THREE.Group(); handle.add(armG); let armMesh = [null, null], lastD = -1;
-const A0 = G.A_TIP - G.ARM_SPAN, SPW = 3.2 / G.RA, ROFF = 27.3;
+const A0 = G.A_TIP - G.ARM_SPAN, SPW = 3.2 / G.RA, ROFF = 26.4;
 function armContour(d) {
   const RA = G.RA, AW = G.AW, rho = G.RHO, rc = G.RC0 + d; const aE = G.A_TIP + rho / RA, aI = G.A_TIP - rho / RA;
   const off = (a) => { const s = Math.max(0, Math.min(1, (a - A0) / G.ARM_SPAN)); return d * (3 * s * s - s * s * s) / 2; };
@@ -82,10 +89,11 @@ const BOFF = G.A_TIP - G.PSI_C;
 function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[i % K.length], B = K[(i + 1) % K.length];
   const o = {}; for (const k of ['h', 'b', 'd']) o[k] = A[k] + (B[k] - A[k]) * u; if (i + 1 >= K.length) { o.h = A.h; o.b = A.b; o.d = A.d; } return o; }
 const fadeU = (t) => { const [a0, a1] = TL.FADE_OUT, [b0, b1] = TL.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
-const EXT = [2.0, 15, 8, 205, 19, 18], SEC = [1.8, 5.5, 8, 205, 13, 7], SEC2 = [1.8, 5.0, 8, 196, 12, 5];
-const KEYS = [[0, ...EXT], [TL.FADE_OUT[0], 2.0, 13, 8, 205, 18, 16], [TL.FADE_OUT[1] + 0.2, ...SEC], [TL.D[0], ...SEC2], [TL.FADE_IN[0], ...SEC], [TL.FADE_IN[1] + 0.2, ...EXT], [LOOP, ...EXT]];
+const EXT = [6.0, 15, 8, 240, 17, 30], SEC = [1.8, 5.5, 8, 205, 13, 7], SEC2 = [1.8, 5.0, 8, 196, 12, 5];
+const KEYS = [[0, ...EXT], [TL.FADE_OUT[0], 4.0, 13, 8, 230, 17, 25], [TL.FADE_OUT[1] + 0.2, ...SEC], [TL.D[0], ...SEC2], [TL.FADE_IN[0], ...SEC], [TL.FADE_IN[1] + 0.2, ...EXT], [LOOP, ...EXT]];
 function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt); handle.rotation.z = k.h; body.rotation.z = k.b + BOFF; buildArms(k.d);
-  const fu = fadeU(tt); for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; m.material.opacity = 1 - fu; } }
+  const fu = fadeU(tt); { const lw = new THREE.Vector3(0, 95 * fu * fu, 45 * fu); lw.applyAxisAngle(new THREE.Vector3(0, 0, 1), -k.h); for (const m of fades) m.position.copy(lw); }
+  for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; m.material.opacity = Math.min(1, 1.6 * (1 - fu)); } }
   const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos); camera.up.set(0, 1, 0); camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
 const hPt = (k, r, a, z) => { const q = a + k.h; return new THREE.Vector3(r * Math.cos(q), r * Math.sin(q), z); };
 const scr = (v) => S.toScreen(camera, v);

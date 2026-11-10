@@ -5,7 +5,7 @@ from shapely.geometry import Polygon
 from shapely import affinity
 G = json.load(open('geom.json')); K = json.load(open('kin_240.json'))
 GEAR = Polygon(G['GEAR']).buffer(0); RA, AW, RHO, RC0, AT, SP = G['RA'], G['AW'], G['RHO'], G['RC0'], G['A_TIP'], G['ARM_SPAN']
-A0 = AT - SP; SPW = 3.2 / RA; ROFF = 27.3; BOFF = AT - G['PSI_C']
+A0 = AT - SP; SPW = 3.2 / RA; ROFF = 26.4; BOFF = AT - G['PSI_C']
 pol = lambda r, a: (r * math.cos(a), r * math.sin(a))
 def contour(d):
     rc = RC0 + d; aE = AT + RHO / RA; aI = AT - RHO / RA
