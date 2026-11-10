@@ -1,0 +1,42 @@
+[
+ {
+  "i": 0,
+  "text": "Why do handcuffs have a second lock?",
+  "dur": 2.027
+ },
+ {
+  "i": 1,
+  "text": "Inside, the arm has teeth. A spring pushes a pawl onto them.",
+  "dur": 3.669
+ },
+ {
+  "i": 2,
+  "text": "Push the arm in. Each tooth lifts the pawl, and it snaps back. Click.",
+  "dur": 4.032
+ },
+ {
+  "i": 3,
+  "text": "Pull it back, and the steep side of a tooth jams the pawl.",
+  "dur": 3.051
+ },
+ {
+  "i": 4,
+  "text": "But it can still click tighter, and too tight can hurt the wrist.",
+  "dur": 3.093
+ },
+ {
+  "i": 5,
+  "text": "So the key's small pin pushes a bolt in, right behind the pawl.",
+  "dur": 3.52
+ },
+ {
+  "i": 6,
+  "text": "Now the pawl can't lift. It can't get tighter, and it can't open.",
+  "dur": 3.712
+ },
+ {
+  "i": 7,
+  "text": "The bolt locks the pawl. No more tightening.",
+  "dur": 2.453
+ }
+]

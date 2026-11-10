@@ -1,0 +1,32 @@
+{
+ "id": "p060",
+ "track": "A",
+ "group": "E",
+ "slot": "2026-11-11T17:00:00 Europe/London",
+ "outlier": "YouTube Short 'Double lock handcuffs lock unlock mechanism' https://www.youtube.com/shorts/MjcLlFxnt8Q (25M views, YouTube search 10 Nov 2026). 17:00 1M+ list #2. Ours: own 3D model, script, words, title and sound.",
+ "topic": "Handcuff double lock: ratchet + pawl, the problem (a single-locked cuff can still tighten), the key pin pushes the bolt behind the pawl, the pawl can't lift.",
+ "hook": "WHY A / DOUBLE LOCK?",
+ "title": "Why Handcuffs Have a Double Lock 🔒",
+ "principle": "The swinging arm carries ratchet teeth; a spring-loaded pawl in the housing rides up the gentle slopes as the arm closes (click) and jams against the steep faces if it is pulled back, so a single-locked cuff can only tighten. Setting the double lock (the pin on the key's end pushes a small bolt) puts the bolt behind the pawl so it cannot lift: the arm can then move neither tighter nor open.",
+ "voiceover": [
+  "Why do handcuffs have a second lock?",
+  "Inside, the arm has teeth. A spring pushes a pawl onto them.",
+  "Push the arm in. Each tooth lifts the pawl, and it snaps back. Click.",
+  "Pull it back, and the steep side of a tooth jams the pawl.",
+  "But it can still click tighter, and too tight can hurt the wrist.",
+  "So the key's small pin pushes a bolt in, right behind the pawl.",
+  "Now the pawl can't lift. It can't get tighter, and it can't open.",
+  "The bolt locks the pawl. No more tightening."
+ ],
+ "caption": "Why Handcuffs Have a Double Lock 🔒\nGuess: what does the little pin on the key do? 👇\nFollow @whyloop.hq for a new machine every day\n#handcuffs #howitworks #mechanism #engineering #lock",
+ "firstComment": "Answer: it pushes the double-lock bolt 🔧\n\nInside the cuff, the swinging arm has a row of ratchet teeth. A spring-loaded pawl presses on them. Push the arm in and each tooth lifts the pawl, which snaps back: click. Pull it back and the steep side of a tooth jams against the pawl, so the cuff can't open without the key.\n\nThe catch: a single-locked cuff can still be tightened, even by accident, and overtightened handcuffs can injure the nerves in the wrist.\n\nDouble lock: the pin on the end of the key pushes a small bolt in, right behind the pawl. Now the pawl can't lift at all, so the arm can't move either way: no tightening, no opening. To unlock, the key is turned one way to move the bolt back, then the other way to lift the pawl.\n\n(Simplified 3D model, enlarged: one pawl, the front plate removed. Designs vary between brands.)\n\nSources:\nU.S. National Institute of Justice handcuff report, NCJ 86295 (the spring-loaded pawl cams away as the ratchet closes; with the double lock bolt active the pawl cannot cam, so the ratchet can neither close further nor open; to open, the bolt is moved first, then the pawl is lifted): https://www.ojp.gov/pdffiles1/Digitization/86295NCJRS.pdf\nUS patent 4,509,346 (double locking handcuffs were developed to prevent unwanted further tightening; the bolt is pushed into place by a pin on the end of the handcuff key; the key turns one way to move the bolt, then the other to lift the pawl): https://patents.justia.com/patent/4509346\nCollege of Policing, Handcuffing (double locking prevents further tightening of the ratchets; the tip of the key goes into the double-lock pinhole): https://library.college.police.uk/docs/college-of-policing/PSM_2020/MOD_08_HANDCUFFING-Redacted.pdf\nGrant and Cook, Muscle & Nerve 2000, \"A prospective study of handcuff neuropathies\" (nerve injuries from overtightened handcuffs): https://pubmed.ncbi.nlm.nih.gov/10842271",
+ "altText": "3D animation explaining the handcuff double lock, with a voiceover. A silver handcuff sits on a forearm under the question Why a double lock? A red circle marks the lock housing. The front plate fades away to show the inside: the curved arm with a row of sawtooth teeth, an orange pawl on a pin, and a coil spring pushing the pawl onto the teeth. Labels name the arm teeth, pawl and spring. 1, an arrow pushes the arm in: each tooth lifts the pawl and it snaps back, CLICK. 2, the arm is pulled back: the steep side of a tooth jams against the pawl, can't open. Then the view pulls back to the wrist: but it can still tighten, two more clicks, the wrist turns red, TOO TIGHT. 3, the pin on the end of a key comes up through a hole in the housing edge and pushes a small blue double-lock bolt in, right behind the pawl. 4, the arm is pushed and pulled again: the pawl can't lift, no tighter, no opening. The payoff text reads Bolt blocks the pawl. No tighter. The front plate returns and a follow line appears before the video loops.",
+ "onScreen": ["INSIDE IT", "WHY A", "DOUBLE LOCK?", "WHYLOOP", "INSIDE THE LOCK", "PUSH IN: CLICK, CLICK", "PULL BACK: IT JAMS", "BUT IT CAN STILL TIGHTEN", "PIN PUSHES THE BOLT IN", "PAWL CAN'T LIFT", "ARM TEETH", "PAWL", "SPRING", "STEEP SIDE", "WRIST", "KEY PIN", "DOUBLE-LOCK BOLT", "CLICK!", "CAN'T OPEN", "TOO TIGHT!", "NO TIGHTER", "NO OPENING", "BOLT BLOCKS THE PAWL.", "NO TIGHTER.", "FOLLOW → NEW MACHINE TOMORROW"],
+ "sources": [
+  "https://www.ojp.gov/pdffiles1/Digitization/86295NCJRS.pdf",
+  "https://patents.justia.com/patent/4509346",
+  "https://library.college.police.uk/docs/college-of-policing/PSM_2020/MOD_08_HANDCUFFING-Redacted.pdf",
+  "https://pubmed.ncbi.nlm.nih.gov/10842271"
+ ],
+ "learningApplied": "Erkan 10 Nov 20:21: real object first (cuff on a wrist), camera close (housing >= 60% of frame in the steps), one part moves at a time, slow clicks, labels >= 50 px, no speed bars. CLARITY FIRST: problem first-hand (still tightens -> too tight), parts named, numbered steps >= 4 s, VO per step, payoff 3.6 s."
+}

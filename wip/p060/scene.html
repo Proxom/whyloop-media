@@ -1,0 +1,208 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p060 handcuff double lock (clarity rules). mm, cuff plane = xy (faces +z), y up. Arm (single strand) pivots at P=(0,0) in the mid layer z -2.4..2.4,
+// between two plates (double strand) z +-2.8..5.4. Housing at x 62..97: pawl (orange) pivots at Q, spring pushes it onto the arm teeth,
+// double-lock bolt (blue) slides up behind the pawl, pushed by the pin on the end of the key (from below, through a hole in the housing edge).
+import * as S from '/tools/render/lib/studio.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const LOOP = G.LOOP;
+const st = S.makeStudio({ fov: 30, bg: 0x0e1218, envIntensity: 1.0, bloom: 0, near: 5, far: 8000, samples: 0 });
+const { scene, camera } = st; const { shapeOf, extrude } = S;
+const strip = (a) => { const b = a.slice(); const f = b[0], l = b[b.length - 1]; if (Math.abs(f[0] - l[0]) < 1e-6 && Math.abs(f[1] - l[1]) < 1e-6) b.pop(); return b; };
+const shp = (r) => shapeOf(strip(r.ext), r.holes.map(strip));
+const grain = S.noiseTex(9, 150, 18, 256); grain.repeat.set(0.08, 0.08);
+const std = (o) => new THREE.MeshStandardMaterial(o), phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const M = {
+  plate: phys({ color: 0xc4cad1, metalness: 1.0, roughness: 0.22, roughnessMap: grain, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
+  arm: phys({ color: 0xd0d6dc, metalness: 1.0, roughness: 0.2, roughnessMap: grain, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
+  spacer: std({ color: 0x5d6670, metalness: 0.9, roughness: 0.45, roughnessMap: grain }),
+  pawl: phys({ color: 0xf07a12, metalness: 0.55, roughness: 0.3, clearcoat: 0.4, clearcoatRoughness: 0.2 }),
+  bolt: phys({ color: 0x2f7fe0, metalness: 0.5, roughness: 0.3, clearcoat: 0.4, clearcoatRoughness: 0.2 }),
+  spring: std({ color: 0xe8ecef, metalness: 1.0, roughness: 0.2 }),
+  rivet: std({ color: 0xaab2bb, metalness: 1.0, roughness: 0.3 }),
+  key: phys({ color: 0x24272c, metalness: 0.8, roughness: 0.35, clearcoat: 0.3 }),
+  skin: phys({ color: 0xc58e6c, roughness: 0.55, metalness: 0, sheen: 0.4, sheenColor: new THREE.Color(0xffc0a0) }),
+  sleeve: std({ color: 0x27354a, roughness: 0.9, metalness: 0 }),
+  dark: std({ color: 0x0b0d10, roughness: 0.6, metalness: 0.2 }),
+};
+for (const k of ['arm', 'pawl', 'bolt', 'spring', 'key', 'spacer']) M[k].userData.base = M[k].color.clone();
+const skinBase = M.skin.color.clone();
+{ const cy = S.cyclorama(scene, { floorY: -95, zFront: 2400, zBack: -700, R: 420, h: 3200, width: 6000, floor: '#20252d', wall: '#3c4553' }); }
+// ---------- cuff ----------
+const cuff = new THREE.Group(); scene.add(cuff);
+const arm = new THREE.Group(); cuff.add(arm);
+arm.add(extrude(shp(G.ARM), -2.4, 2.4, M.arm, 0.45, 6));
+const pawl = new THREE.Group(); pawl.position.set(G.Q[0], G.Q[1], 0); cuff.add(pawl);
+{ const m = extrude(shp(G.PAWL), -2.25, 2.25, M.pawl, 0.3, 4); m.position.set(-G.Q[0], -G.Q[1], 0); pawl.add(m); }
+const [BOY, BIY, BH, BX0, BX1] = G.BOLT;
+const bolt = new THREE.Group(); cuff.add(bolt);
+{ const m = extrude(shapeOf(S.roundRect(BX0, 0, BX1, BH, 0.6, 4)), -2.2, 2.2, M.bolt, 0.3, 4); bolt.add(m);
+  const nub = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 4.4, 16), M.bolt); nub.rotation.x = Math.PI / 2; nub.position.set((BX0 + BX1) / 2, BH * 0.5, 0); }
+for (const r of G.SPACER) { const m = extrude(shp(r), -2.6, 2.6, M.spacer, 0.2, 4); cuff.add(m); }
+// spring: unit helix along +x, scaled per frame between the pawl seat and the wall
+const [SX0, SX1, SY, SR] = G.SPRING;
+const spring = (() => { const pts = []; const turns = 6.5; for (let i = 0; i <= 260; i++) { const u = i / 260, a = u * turns * Math.PI * 2; pts.push(new THREE.Vector3(u * (SX1 - SX0), SR * Math.cos(a), SR * Math.sin(a) * 0.9)); }
+  const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 520, 0.36, 10, false); const m = new THREE.Mesh(g, M.spring); cuff.add(m); return m; })();
+// plates (double strand): lower band around (36,0), pivot boss, housing; front plate fades for the cutaway
+const band = []; for (let i = 0; i <= 90; i++) { const a = Math.PI + Math.PI * i / 90; band.push([36 + 41 * Math.cos(a), 41 * Math.sin(a)]); }
+for (let i = 90; i >= 0; i--) { const a = Math.PI + Math.PI * i / 90; band.push([36 + 31 * Math.cos(a), 31 * Math.sin(a)]); }
+const plateShape = (() => { const s = new THREE.Shape(); // union drawn as separate meshes (band, boss, housing) to keep it simple
+  return null; })();
+const fades = [];
+const fadeMesh = (m) => { m.traverse(o => { if (o.isMesh) { o.userData.baseM = o.material; const f = o.material.clone(); f.transparent = true; f.depthWrite = false; o.userData.fadeM = f; fades.push(o); } }); return m; };
+const hous = strip(G.HOUS.ext);
+const keyhole = S.circle(90.5, -7.5, 2.1, 32, true);
+function makePlate(z0, z1, front) {
+  const g = new THREE.Group();
+  g.add(extrude(shapeOf(band), z0, z1, M.plate, 0.7, 6));
+  g.add(extrude(shapeOf(S.circle(0, 0, 9.0, 64, false), [S.circle(0, 0, 2.7, 32, true)]), z0, z1, M.plate, 0.7, 8));
+  g.add(extrude(shapeOf(hous, front ? [keyhole] : []), z0, z1, M.plate, 0.8, 8));
+  // swivel lug at the housing end for the chain
+  g.add(extrude(shapeOf(S.roundRect(95, -4, 104, 10, 3, 6), [S.circle(100.5, 3, 2.2, 24, true)]), z0, z1, M.plate, 0.6, 6));
+  S.shadowAll(g); cuff.add(g); return g;
+}
+const backPlate = makePlate(-5.4, -2.8, false);
+const frontPlate = fadeMesh(makePlate(2.8, 5.4, true));
+// rivets
+const rivet = (x, y, len = 12.4, r = 2.6, head = 3.6) => { const g = new THREE.Group(); const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 32), M.rivet); c.rotation.x = Math.PI / 2; g.add(c);
+  for (const s of [-1, 1]) { const h = new THREE.Mesh(new THREE.SphereGeometry(head, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.rivet); h.scale.set(1, 0.32, 1); h.rotation.x = s * Math.PI / 2; h.position.z = s * len / 2; g.add(h); if (s > 0) { h.castShadow = true; fadeMesh(h); } }
+  g.position.set(x, y, 0); S.shadowAll(g); cuff.add(g); return g; };
+const rivP = rivet(0, 0); const rivQ = rivet(G.Q[0], G.Q[1], 11.6, 1.25, 2.2);
+const frontRivets = [rivP, rivQ, rivet(66, 19, 11.6, 1.2, 2.0), rivet(93, 19, 11.6, 1.2, 2.0), rivet(93.5, -11, 11.6, 1.2, 2.0)];
+// chain: swivel + links to the second cuff (off frame right)
+const chain = new THREE.Group(); cuff.add(chain);
+{ const sw = new THREE.Mesh(new THREE.TorusGeometry(4.2, 1.3, 16, 40), M.plate); sw.position.set(106, 3, 0); sw.rotation.y = Math.PI / 2; chain.add(sw);
+  for (let i = 0; i < 4; i++) { const l = new THREE.Mesh(new THREE.TorusGeometry(5.2, 1.4, 16, 40), M.plate); l.scale.set(1.45, 1, 1); l.position.set(113 + i * 12.5, 3 - i * 2.2, -i * 1.5); l.rotation.set(i % 2 ? Math.PI / 2 : 0, 0, -0.17); chain.add(l); }
+  S.shadowAll(chain); }
+// second cuff: static copy at the end of the chain (closed, lying at an angle)
+const cuff2 = new THREE.Group(); scene.add(cuff2);
+{ const a2 = extrude(shp(G.ARM), -2.4, 2.4, M.plate, 0.45, 6); a2.rotation.z = -20 * Math.PI / 180; cuff2.add(a2);
+  const b2 = new THREE.Group(); b2.add(extrude(shapeOf(band), -5.4, -2.8, M.plate, 0.7, 6), extrude(shapeOf(band), 2.8, 5.4, M.plate, 0.7, 6), extrude(shapeOf(hous), -5.4, 5.4, M.plate, 0.8, 8)); cuff2.add(b2);
+  cuff2.position.set(270, -10, -60); cuff2.rotation.set(-1.25, 0.3, Math.PI); S.shadowAll(cuff2); }
+// wrist + hand (forearm along z through the opening), sleeve on the elbow side
+const [WX, WY, WA, WB] = G.WRIST;
+const wrist = new THREE.Group(); wrist.position.set(WX, WY, 0); scene.add(wrist);
+{ const fa = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.12, 300, 64, 1, false), M.skin); fa.rotation.x = Math.PI / 2; fa.scale.set(WA - 0.05, WB - 0.05, 1); fa.position.z = -150; wrist.add(fa);
+  // the cylinder is scaled in its local x,z (x = WA, z(after rot) ... use a dedicated ellipse extrusion instead for exact fit)
+  wrist.remove(fa);
+  const ell = []; for (let i = 0; i < 96; i++) { const a = i / 96 * Math.PI * 2; ell.push([WA * Math.cos(a), WB * Math.sin(a)]); }
+  const fore = extrude(shapeOf(ell), -40, 330, M.skin, 6, 48); wrist.add(fore);
+  const sl = extrude(shapeOf(ell.map(([x, y]) => [x * 1.22, y * 1.18])), 230, 600, M.sleeve, 8, 48); wrist.add(sl);
+  // hand (a loose fist) beyond the cuff on the +z side
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), M.skin); palm.scale.set(WA * 1.15, WB * 1.05, 46); palm.position.set(2, 4, -70); wrist.add(palm);
+  for (let i = 0; i < 4; i++) { const f = new THREE.Mesh(new THREE.CapsuleGeometry(8.2, 26, 8, 20), M.skin); f.position.set(-WA * 0.75 + i * 4, WB * 0.75 - i * 15.5, -104); f.rotation.set(0.15, 0.9, 0.05 * i); wrist.add(f); }
+  
+  S.shadowAll(wrist); }
+// key (handle end with the double-lock pin), comes up from below
+const key = new THREE.Group(); scene.add(key);
+{ const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, G.PIN_LEN, 24), M.key); pin.position.y = -G.PIN_LEN / 2; key.add(pin);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.95, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.key); tip.position.y = 0; key.add(tip);
+  const hd = extrude(shapeOf(S.roundRect(-4.5, -60, 4.5, 0, 2.2, 6)), -1.3, 1.3, M.key, 0.5, 6); hd.position.y = -G.PIN_LEN; key.add(hd);
+  const bow = extrude(shapeOf(S.circle(0, 0, 9, 48, false), [S.circle(0, 0, 4.5, 32, true)]), -1.3, 1.3, M.key, 0.5, 8); bow.position.y = -G.PIN_LEN - 66; key.add(bow);
+  S.shadowAll(key); }
+S.shadowAll(cuff);
+// ---------- lights ----------
+const key1 = new THREE.DirectionalLight(0xfff0dc, 2.6); key1.position.set(-160, 260, 320); key1.target.position.set(50, 0, 0); key1.castShadow = true;
+key1.shadow.mapSize.set(2048, 2048); { const c = key1.shadow.camera; c.left = -260; c.right = 260; c.top = 260; c.bottom = -260; c.near = 50; c.far = 1400; } key1.shadow.bias = -0.0004; key1.shadow.normalBias = 0.05; key1.shadow.radius = 3;
+scene.add(key1, key1.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 1.8); rim.position.set(260, 140, -240); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe8d0, 0.6); fill.position.set(220, -80, 260); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.3));
+const soft = new THREE.RectAreaLight(0xfff4e8, 4.0, 300, 160); soft.position.set(120, 180, 260); soft.lookAt(70, 0, 0); scene.add(soft);
+// ---------- highlight schedule ----------
+const HL = [[4.9, 6.4, ['arm']], [6.4, 8.6, ['pawl', 'spring']], [8.6, 14.0, ['arm', 'pawl']], [14.0, 18.0, ['arm', 'pawl']], [23.2, 29.0, ['bolt', 'key']], [29.0, 34.0, ['bolt', 'pawl']], [34.2, 37.6, ['bolt', 'pawl']]];
+const PARTS = ['arm', 'pawl', 'bolt', 'spring', 'key', 'spacer'];
+const GLOW = { arm: 0xffd060, pawl: 0xff7a10, bolt: 0x4aa0ff, spring: 0xffffff, key: 0xffd060, spacer: 0 };
+let flashRed = 0;
+function highlight(t) {
+  let dimAll = 0; const act = {}; for (const [a, b, ps] of HL) { const u = Math.max(0, Math.min(1, (t - a) / 0.3, (b - t) / 0.3)); if (u > 0) { dimAll = Math.max(dimAll, u); for (const p of ps) act[p] = Math.max(act[p] || 0, u); } }
+  const pulse = 0.75 + 0.25 * Math.sin(t * 2 * Math.PI * 1.2);
+  for (const p of PARTS) { const m = M[p], a = act[p] || 0, d = dimAll * (1 - a); m.color.copy(m.userData.base).multiplyScalar(1 - 0.45 * d); m.emissive.setHex(GLOW[p]).multiplyScalar(0.12 * a * pulse); }
+  if (flashRed > 0) { M.pawl.emissive.lerp(new THREE.Color(0.9, 0.06, 0.02), flashRed); }
+}
+// ---------- animation ----------
+function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[Math.min(i, K.length - 1)], B = K[Math.min(i + 1, K.length - 1)];
+  return { phi: A.phi + (B.phi - A.phi) * u, psi: A.psi + (B.psi - A.psi) * u, b: A.b + (B.b - A.b) * u, pin: A.pin == null ? null : (B.pin == null ? A.pin : A.pin + (B.pin - A.pin) * u) }; }
+const ramp = (t, a, b) => S.smooth((t - a) / (b - a));
+const win = (t, a, b, f = 0.2) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+const fadeFront = (t) => t < 2.7 ? 0 : t < 3.9 ? ramp(t, 2.7, 3.9) : t < 37.8 ? 1 : t < 38.9 ? 1 - ramp(t, 37.8, 38.9) : 0;
+function applyFade(fu) { for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.baseM; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fadeM; m.material.opacity = Math.max(0, 1 - 1.3 * fu); } } }
+// push/pull "tries" while blocked: tiny shake only (the parts do not move)
+const TRY = [[14.6, 16.6, +1], [29.6, 31.0, -1], [31.8, 33.2, +1]];
+// camera keys [t, tx, ty, tz, dist, elev, azim]
+const EXT = [56, 30, 0, 290, 24, 24], IN = [79, 3, 0, 190, 8, 16], CL = [77, 1, 0, 150, 6, 12], PR = [52, 30, 0, 230, 22, 12], DL = [82, -5, 0, 125, 4, 12], PY = [79, 2, 0, 200, 9, 16];
+const KEYS = [[0, ...EXT], [2.6, ...EXT], [4.6, ...IN], [8.4, ...IN], [9.2, ...CL], [17.6, ...CL], [18.6, ...PR], [22.6, ...PR], [23.6, ...DL], [28.4, ...DL], [29.2, ...CL], [33.8, ...CL], [34.6, ...PY], [37.6, ...PY], [39.4, ...EXT], [LOOP, ...EXT]];
+function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
+  arm.rotation.z = -k.phi * Math.PI / 180; pawl.rotation.z = k.psi * Math.PI / 180;
+  bolt.position.y = BOY + (BIY - BOY) * k.b;
+  // spring from the seat on the pawl lever to the wall
+  { const c = Math.cos(k.psi * Math.PI / 180), s = Math.sin(k.psi * Math.PI / 180); const lx = SX0 - G.Q[0], ly = SY - G.Q[1]; const sx = G.Q[0] + lx * c - ly * s, sy = G.Q[1] + lx * s + ly * c;
+    spring.position.set(sx, sy, 0); spring.scale.set((SX1 - sx) / (SX1 - SX0), 1, 1); spring.rotation.z = Math.atan2(SY - sy, SX1 - sx); }
+  key.visible = k.pin != null; if (k.pin != null) key.position.set(G.PIN_X, k.pin, 0);
+  // wrist reddens as the arm gets too tight (problem step), relaxes after
+  const red = ramp(tt, 19.3, 20.9) * (1 - ramp(tt, 23.0, 24.0)); M.skin.color.copy(skinBase).lerp(new THREE.Color(0xd8402c), 0.8 * red);
+  flashRed = 0; for (const [a, b] of TRY) if (tt > a && tt < b) flashRed = Math.max(flashRed, win(tt, a + 0.25, b, 0.2) * (0.6 + 0.4 * Math.abs(Math.sin((tt - a) * Math.PI * 4))));
+  highlight(tt); applyFade(fadeFront(tt));
+  const c = S.orbitCam(KEYS, tt);
+  if (flashRed > 0) { const sh = 0.25 * flashRed; c.pos.x += sh * Math.sin(tt * 91); c.pos.y += sh * Math.sin(tt * 73 + 1); }
+  camera.position.copy(c.pos); camera.up.set(0, 1, 0); camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
+const scr = (v) => S.toScreen(camera, v);
+const armPt = (r, th, phi, z = 2.4) => { const a = (th - phi) * Math.PI / 180; return new THREE.Vector3(r * Math.cos(a), r * Math.sin(a), z); };
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const CAPS = [[4.6, 8.6, 'INSIDE THE LOCK', null], [8.6, 14.0, 'PUSH IN: CLICK, CLICK', 1], [14.0, 18.0, 'PULL BACK: IT JAMS', 2], [18.0, 23.0, 'BUT IT CAN STILL TIGHTEN', null],
+  [23.0, 29.0, 'PIN PUSHES THE BOLT IN', 3], [29.0, 34.0, "PAWL CAN'T LIFT", 4]];
+let kk = null;
+const TAGS = [
+  [4.9, 8.6, 'ARM TEETH', () => armPt(71.5, -7 + kk.phi, kk.phi), -140, 60],
+  [6.4, 8.6, 'PAWL', () => new THREE.Vector3(80.5, 9.5, 2.4), 110, -110],
+  [7.0, 8.6, 'SPRING', () => new THREE.Vector3(90.5, 5, 2.4), 60, 110],
+  [14.9, 17.8, 'STEEP SIDE', () => new THREE.Vector3(72.0, 0.6, 2.4), -140, -70],
+  [19.4, 22.8, 'WRIST', () => new THREE.Vector3(WX - 10, WY + WB - 6, 20), -120, -80],
+  [23.6, 29.0, 'KEY PIN', () => new THREE.Vector3(G.PIN_X, (kk.pin ?? -20) - 5, 1.5), -150, 90],
+  [24.6, 34.0, 'DOUBLE-LOCK BOLT', () => new THREE.Vector3(BX1, BOY + (BIY - BOY) * kk.b + BH / 2, 2.2), 70, 120],
+];
+function arrowAt(a, p3, dir, len = 150) { const [x, y] = scr(p3); const d = Math.hypot(dir[0], dir[1]); const ux = dir[0] / d, uy = dir[1] / d; S.forceArrow(g2, a, x - ux * (len + 30), y - uy * (len + 30), x - ux * 30, y - uy * 30, 24); }
+function overlay(t, k) { kk = k;
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (3.0 - t) / 0.25), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'WHY A', 'DOUBLE LOCK?', 116); const [x, y] = scr(new THREE.Vector3(80, 4, 5.4)); S.redCircle(g2, hookA, x, y, 120, [-230, 220]); }
+  // hook push arrow: the arm clicks one tooth in (1.15-1.95 s)
+  if ((a = win(t, 0.6, 2.2, 0.2)) > 0) arrowAt(a * hookA, armPt(76, 120, k.phi, 5), [-0.5, -0.86], 130);
+  var a;
+  for (const C of CAPS) if ((a = win(t, C[0], C[1])) > 0) S.caption(g2, a, C[2], 440, 70, C[3] ? '#ffffff' : '#ffd21f', C[3]);
+  for (const tg of TAGS) if ((a = win(t, tg[0], tg[1])) > 0) { const [x, y] = scr(tg[3]()); S.tag(g2, a, tg[2], x, y, tg[4], tg[5], 50); }
+  // force arrows on the arm: push in (down at the teeth), pull back (up)
+  const pushIn = [[9.3, 13.0], [29.4, 31.1]], pullOut = [[14.4, 16.8], [31.7, 33.3]];
+  for (const [p0, p1] of pushIn) if ((a = win(t, p0, p1)) > 0) arrowAt(a, armPt(68, -14 + k.phi, k.phi), [0, 1], 150);
+  if ((a = win(t, 18.9, 21.1)) > 0) { const ph = -k.phi * Math.PI / 180, bx = 35.6, by = 35.6 + 3.9; arrowAt(a, new THREE.Vector3(bx * Math.cos(ph) - by * Math.sin(ph), bx * Math.sin(ph) + by * Math.cos(ph), 5), [0.15, 1], 150); }
+  for (const [p0, p1] of pullOut) if ((a = win(t, p0, p1)) > 0) arrowAt(a, armPt(68, -16 + k.phi, k.phi), [0, -1], 150);
+  // CLICK! pops at each snap
+  for (const c of G.CLICKS) if ((a = win(t, c, c + 0.75, 0.06)) > 0 && t > 3.0) { const [x, y] = scr(new THREE.Vector3(74, 6, 2.4)); g2.save(); g2.globalAlpha = a; S.outlined(g2, 'CLICK!', Math.min(860, x + 150), Math.max(640, y - 150), 64, '#ffffff'); g2.restore(); }
+  // blocked badges
+  if ((a = win(t, 15.0, 17.6)) > 0) badge(a, 'CAN\'T OPEN', 1290, '#ff3b2f');
+  if ((a = win(t, 20.6, 23.0, 0.1)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'TOO TIGHT!', S.CX, 700, 150, '#ff3b2f'); g2.restore(); }
+  if ((a = win(t, 29.9, 31.3)) > 0) badge(a, 'NO TIGHTER', 1290, '#ff3b2f');
+  if ((a = win(t, 32.0, 33.6)) > 0) badge(a, 'NO OPENING', 1290, '#ff3b2f');
+  // payoff
+  if ((a = win(t, 34.2, 37.8, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.55)'; S.rrect(g2, 80, 360, 830, 290, 26); g2.fill(); g2.restore();
+    S.caption(g2, a, 'BOLT BLOCKS THE PAWL.', 470, 72, '#ffffff'); S.caption(g2, a, 'NO TIGHTER.', 600, 120, '#ffd21f'); }
+  if ((a = win(t, 39.0, 40.6, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.75)'; S.rrect(g2, 110, 1340, 770, 84, 24); g2.fill(); S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+function badge(a, text, y, col) { g2.save(); g2.globalAlpha = a; g2.font = '60px Anton'; const tw = g2.measureText(text).width + 60; g2.fillStyle = 'rgba(12,14,20,0.86)'; S.rrect(g2, S.CX - tw / 2, y - 48, tw, 96, 24); g2.fill();
+  g2.strokeStyle = col; g2.lineWidth = 5; g2.stroke(); g2.fillStyle = col; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, S.CX, y + 3); g2.restore(); }
+window._set = setAll; window._kin = kinAt;
+S.install(st, setAll, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
+window.motionPx = (t, fps = 30) => 0;
+</script></body></html>
