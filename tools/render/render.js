@@ -1,16 +1,16 @@
 // Generic frame renderer (Playwright + swiftshader). Serve the REPO ROOT on :8765 (python3 -m http.server 8765).
-// usage: node tools/render/render.js <scene path from repo root> <outdir> <fps> <sub|0=adaptive> <startFrame> <endFrame> [scale] [ao] [worker] [nworkers] [w] [h]
+// usage: node tools/render/render.js <scene path from repo root> <outdir> <fps> <sub|0=adaptive> <startFrame> <endFrame> [scale] [ao] [worker] [nworkers] [w] [h] [aa=0|1 SMAA]
 const { chromium } = require('playwright');
 const fs = require('fs');
 (async () => {
-  const [page, outdir, fps, sub, start, end, scale = '1', ao = '1', worker = '0', nworkers = '1', w = '1080', h = '1920'] = process.argv.slice(2);
+  const [page, outdir, fps, sub, start, end, scale = '1', ao = '1', worker = '0', nworkers = '1', w = '1080', h = '1920', aa = '0'] = process.argv.slice(2);
   fs.mkdirSync(outdir, { recursive: true });
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: +w, height: +h } });
   p.setDefaultTimeout(180000);
   p.on('console', m => { if (m.type() === 'error') console.log('PAGE', m.text()); });
   p.on('pageerror', e => console.log('PAGEERR', e.message));
-  await p.goto(`http://127.0.0.1:8765/${page}?scale=${scale}&ao=${ao}&w=${w}&h=${h}`);
+  await p.goto(`http://127.0.0.1:8765/${page}?scale=${scale}&ao=${ao}&w=${w}&h=${h}&aa=${aa}`);
   await p.waitForFunction('window.ready === true', null, { timeout: 180000 });
   const F = +fps, S = +sub; const t0 = Date.now(); let n = 0;
   for (let f = +start; f < +end; f++) {

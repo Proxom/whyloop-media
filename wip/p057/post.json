@@ -9,7 +9,37 @@
  "caption": "Why does a gas cap click? ⛽\nGuess: what is clicking inside? 👇\nWhich object should we open next?\nFollow @whyloop.hq for a new machine every day\n#gascap #howitworks #engineering #mechanism #cars",
  "firstComment": "Answer: two bendy plastic arms 🔧\n\nThe handle you turn isn't fixed to the part that seals. Inside, two flexible arms on the handle press into a ring of slanted teeth on the cap body.\n\nTurn it to tighten: the arms push on the slopes and the whole cap turns, until the rubber seal is tight and the cap stops.\n\nKeep turning: now the arms bend outward, ride up a slope and drop into the next tooth. Click! That's the torque limiter: you can't overtighten it and crush the seal, and the clicks tell you it's closed properly.\n\nTurn it to loosen: the arms push on the steep side of the teeth, so they can't slip and the cap comes right off.\n\n(Simplified 3D model, enlarged. Real caps vary: some have more arms, teeth on the other side, or a wavy spring.)\n\nSources:\nUS Patent 5,110,003, Torque-override cap (drive teeth on the shell engage inclined teeth on a ratchet wheel: torque-limited in the cap-advancing direction, positive in the cap-removal direction; overtightening can crush the O-ring gasket; extra torque gives a characteristic clicking noise): https://patents.justia.com/patent/5110003\nUS Patent 7,516,867, Cap device having torque mechanism (click units on the cover ride over projections when the torque exceeds a preset level; the click confirms the cap is fastened): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/7516867\nUS 2006/0283860, Fuel filler cap (rotate the cap clockwise until a click sound is generated a few times): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/20060283860",
  "altText": "3D animation of a car gas cap. A black gas cap with a grip bar sits in the fuel filler pocket of a blue car body panel, under the question Why does it click? An orange arrow turns the cap clockwise. Then the cap's top and grip fade away to show the inside: a light gray ring of 12 slanted teeth on the cap body and two orange flexible arms on the handle, whose tips sit between the teeth. While tightening, the arms push the teeth and the whole cap turns until it stops on the seal. Turning further, each arm bends outward, rides up a slanted tooth and drops into the next one, click, three times. Then the arrow turns the other way: the arm tips push the steep side of the teeth and the cap turns back without slipping. The top fades back in and the video loops. Text on screen: Why does it click? Inside the cap. Sealed. It stops. The arm bends. Click! It skips. Can't overtighten it. Loosen: it grabs. Follow, new machine tomorrow.",
- "onScreen": ["INSIDE IT", "WHY DOES IT", "CLICK?", "WHYLOOP", "INSIDE THE CAP", "SEALED. IT STOPS", "THE ARM BENDS", "CLICK! IT SKIPS", "CAN'T OVERTIGHTEN IT", "LOOSEN: IT GRABS", "FOLLOW → NEW MACHINE TOMORROW"],
- "sources": ["https://patents.justia.com/patent/5110003", "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/7516867", "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/20060283860"],
- "learningApplied": "p056 lesson + queue note: one planar mechanism, opacity fade only (no clip-plane sweep), light teeth on a darker disk + orange key part for contrast (dark-on-dark lesson), hook subject large. Group V after E p054/p056; track B after p056 (A). Winner pattern 'one small part + a clear click' (p048 ratchet family, rule 2). TEST 1 caption line kept. 15 s loop, follow line in the last 1.5 s."
+ "onScreen": [
+  "INSIDE IT",
+  "WHY DOES IT",
+  "CLICK?",
+  "WHYLOOP",
+  "INSIDE THE CAP",
+  "SEALED. IT STOPS",
+  "THE ARM BENDS",
+  "CLICK! IT SKIPS",
+  "CAN'T OVERTIGHTEN IT",
+  "LOOSEN: IT GRABS",
+  "FOLLOW → NEW MACHINE TOMORROW"
+ ],
+ "sources": [
+  "https://patents.justia.com/patent/5110003",
+  "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/7516867",
+  "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/20060283860"
+ ],
+ "learningApplied": "p056 lesson + queue note: one planar mechanism, opacity fade only (no clip-plane sweep), light teeth on a darker disk + orange key part for contrast (dark-on-dark lesson), hook subject large. Group V after E p054/p056; track B after p056 (A). Winner pattern 'one small part + a clear click' (p048 ratchet family, rule 2). TEST 1 caption line kept. 15 s loop, follow line in the last 1.5 s.",
+ "status": "ready (reserve, not scheduled)",
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 15.000 s, first/last frame luma 85.7 (no black), loop seam diff 0.18",
+  "mechanism": "PASS principle written; 12 teeth / 2 arms from kin.py; shapely 240 Hz full loop: overlap 0, min gap 0.05 mm; arm max radius 23.7 < skirt 27.0; z ranges separate for disk/arms/cover; every motion has a cause (hand arrow, seal stop, spring arm)",
+  "facts": "PASS US 5,110,003 (Justia), US 7,516,867 and US 2006/0283860 (USPTO PDFs); no unverified claim",
+  "text": "PASS US English, pyspellchecker flags only hashtags/handle and overtighten(ing) (valid, used in the patents); hook 128 px, labels 80-96 px, follow 54 px; text inside safe zones",
+  "audio": "PASS -18.4 LUFS (music-only), -3.1 dBTP, HP4k gap 42.8 dB, low modal clicks (< 1 kHz fundamentals) on kin events 5.92/7.07/8.22 s",
+  "look": "PASS 6 stills + safe-zone frame checked; frame-diff scan: no spikes/black boxes"
+ },
+ "visualScore": {
+  "round1": 5,
+  "round2": 5,
+  "notes": "R1: flat CAD look, no car context, ghosted cover, arms not joined -> fixed (fuel door, ribs, lift-off, carrier ring, deeper orange). R2: still flat materials, click flex not shown close-up, aliasing on ribs/door rim, top-down shot static."
+ }
 }

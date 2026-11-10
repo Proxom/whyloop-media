@@ -5,4 +5,7 @@ loop closes: handle 0 -> 0, body +90 deg = 3 teeth (12-fold symmetric)), check.p
 Facts: US 5,110,003; US 7,516,867; US 2006/0283860 (post.json). Copy spellchecked (flags: hashtags, handle, overtighten/overtightening = valid words used in the patents).
 Rebuild: python3 kin.py && python3 check.py && python3 audio.py && ../../tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 0 0 -18
 Render: python3 -m http.server 8765 (repo root); node tools/render/render.js wip/p057/scene.html <out> 30 0 0 450 1 1 0 1 1080 1920 (~2.7 s/frame, ~21 min)
-Left: final render -> encode -> HARD GATE -> review -> schedule 11 Nov 01:00.
+Round 1 final: HARD GATE pass, reviewer 5/10 (flat CAD look, no car context, ghosted cover, arms not joined) -> fixed (fuel door, ribs, lift-off cover, carrier ring, deeper orange).
+Round 2 final v2: HARD GATE pass, reviewer 5/10 -> NOT scheduled (AGENT 6: 5 counts only when the slot is < 2 h away or late). RESERVE: media/p057/gas_cap_reel.mp4 + gas_cap_cover.jpg.
+v3 = same scene re-rendered with the new toolkit SMAA (render.js arg 13 = 1), no new review (score stays 5).
+Open reviewer points for the toolkit: plastic texture/normal maps, close push-in on one arm at the click (show the bend), depth of field, smoother door rim (more curve segments).

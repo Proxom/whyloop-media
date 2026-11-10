@@ -8,6 +8,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 export { THREE };
 
@@ -17,7 +18,7 @@ export const SAFE = { top: 320, bottom: 480, right: 150, left: 60 };
 
 export function params() {
   const Q = new URLSearchParams(location.search);
-  return { scale: parseFloat(Q.get('scale') || '1'), ao: Q.get('ao') !== '0', w: +(Q.get('w') || 1080), h: +(Q.get('h') || 1920), safe: Q.get('safe') === '1' };
+  return { scale: parseFloat(Q.get('scale') || '1'), ao: Q.get('ao') !== '0', aa: Q.get('aa') === '1', w: +(Q.get('w') || 1080), h: +(Q.get('h') || 1920), safe: Q.get('safe') === '1' };
 }
 
 export function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
@@ -48,6 +49,8 @@ export function makeStudio({ fov = 32, bg = 0x0b0f16, envIntensity = 0.35, bloom
     g.updateGtaoMaterial({ radius: 3, distanceExponent: 1.5, thickness: 2.0, scale: 1.0, samples: 8 }); g.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 5, rings: 2, samples: 8 }); composer.addPass(g); }
   if (bloom > 0) composer.addPass(new UnrealBloomPass(new THREE.Vector2(RW / 2, RH / 2), bloom, 0.45, 0.95));
   composer.addPass(new OutputPass());
+  // opt-in SMAA (?aa=1): removes stair-stepping on thin edges (ribs, panel rims) that samples:0 leaves; first used in p057
+  if (P.aa) composer.addPass(new SMAAPass(RW, RH));
   const out = document.createElement('canvas'); out.width = W; out.height = H; document.body.appendChild(out);
   const g2 = out.getContext('2d');
   return { P, W, H, renderer, scene, camera, composer, out, g2 };
