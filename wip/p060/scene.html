@@ -98,8 +98,7 @@ const wrist = new THREE.Group(); wrist.position.set(WX, WY, 0); scene.add(wrist)
   const fore = extrude(shapeOf(ell), -40, 330, M.skin, 6, 48); wrist.add(fore);
   const sl = extrude(shapeOf(ell.map(([x, y]) => [x * 1.22, y * 1.18])), 230, 600, M.sleeve, 8, 48); wrist.add(sl);
   // hand (a loose fist) beyond the cuff on the +z side
-  const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), M.skin); palm.scale.set(WA * 1.15, WB * 1.05, 46); palm.position.set(2, 4, -70); wrist.add(palm);
-  for (let i = 0; i < 4; i++) { const f = new THREE.Mesh(new THREE.CapsuleGeometry(8.2, 26, 8, 20), M.skin); f.position.set(-WA * 0.75 + i * 4, WB * 0.75 - i * 15.5, -104); f.rotation.set(0.15, 0.9, 0.05 * i); wrist.add(f); }
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), M.skin); palm.scale.set(WA * 1.08, WB * 0.62, 60); palm.position.set(0, 2, -80); wrist.add(palm);
   
   S.shadowAll(wrist); }
 // key (handle end with the double-lock pin), comes up from below
