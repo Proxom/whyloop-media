@@ -247,9 +247,9 @@ export function caption(g2, a, text, y = 440, size = 72, color = '#ffffff', num 
 }
 // Two-bar speed meter (design px). v1/v2 in any unit; vmax = full bar. Shows "SAME SPEED" when |v1-v2| < tol.
 export function speedMeter(g2, a, l1, v1, l2, v2, vmax, y = 1250, tol = 0.02) {
-  if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 250, W = 560, h = 34, same = Math.abs(v1 - v2) < tol * vmax;
+  if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 370, W = 470, h = 34, same = Math.abs(v1 - v2) < tol * vmax;
   g2.fillStyle = 'rgba(10,12,18,0.72)'; rrect(g2, 70, y - 40, 850, 150, 20); g2.fill();
-  [[l1, v1, 0], [l2, v2, 62]].forEach(([l, v, dy]) => { g2.font = '44px Anton'; g2.textAlign = 'right'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff'; g2.fillText(l, x0 - 24, y + dy + h / 2 + 2);
+  [[l1, v1, 0], [l2, v2, 62]].forEach(([l, v, dy]) => { g2.font = '44px Anton'; g2.textAlign = 'right'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff'; g2.fillText(l, x0 - 20, y + dy + h / 2 + 2);
     g2.fillStyle = 'rgba(255,255,255,0.15)'; rrect(g2, x0, y + dy, W, h, h / 2); g2.fill();
     g2.fillStyle = same ? '#3ddc84' : '#ffd21f'; rrect(g2, x0, y + dy, Math.max(h, W * Math.min(1, v / vmax)), h, h / 2); g2.fill(); });
   g2.restore();
