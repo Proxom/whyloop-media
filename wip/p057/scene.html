@@ -1,0 +1,119 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p057 gas cap: why does it click? mm, y up, z = cap axis toward the viewer (the car's side panel is the plane z = 22).
+// The ratchet is planar in x-y: body (closer) teeth z 3..9, handle arms z 4..8.5. The cover top + grip fade away for the inside view.
+import * as S from '/tools/render/lib/studio.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const TL = await (await fetch('timeline.json')).json();
+const LOOP = G.LOOP;
+const st = S.makeStudio({ fov: 32, bg: 0x0d1016, envIntensity: 0.9, bloom: 0, near: 5, far: 3000, samples: 0 });
+st.renderer.toneMappingExposure = 0.95;
+const { scene, camera } = st;
+const { shapeOf, extrude } = S;
+const pol = (r, a) => [r * Math.cos(a), r * Math.sin(a)];
+const ring = (r, n = 96, cw = false) => S.circle(0, 0, r, n, cw);
+
+// ---------- materials ----------
+const grain = S.noiseTex(5, 150, 14, 256); grain.repeat.set(0.06, 0.06);
+const M = {
+  paint: new THREE.MeshPhysicalMaterial({ color: 0x1f4f8f, roughness: 0.42, metalness: 0.6, clearcoat: 1.0, clearcoatRoughness: 0.08 }),
+  pocket: new THREE.MeshPhysicalMaterial({ color: 0x5a6068, roughness: 0.62, roughnessMap: grain, metalness: 0 }),
+  neck: new THREE.MeshStandardMaterial({ color: 0xa8b0b8, metalness: 1.0, roughness: 0.32 }),
+  cover: new THREE.MeshPhysicalMaterial({ color: 0x24272c, roughness: 0.4, roughnessMap: grain, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
+  body: new THREE.MeshPhysicalMaterial({ color: 0xc7ccd2, roughness: 0.36, roughnessMap: grain, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22 }),
+  arm: new THREE.MeshPhysicalMaterial({ color: 0xff8a1e, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.2 }),
+  disk: new THREE.MeshPhysicalMaterial({ color: 0x4d6378, roughness: 0.4, roughnessMap: grain, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.22 }),
+  seal: new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.75, metalness: 0 }),
+};
+const fades = [];
+const fadeMesh = (m) => { m.userData.base = m.material; const f = m.material.clone(); f.transparent = true; f.depthWrite = false; m.userData.fade = f; fades.push(m); return m; };
+
+// ---------- car side panel with the filler pocket ----------
+{ const s = shapeOf([[-400, -400], [400, -400], [400, 400], [-400, 400]], [ring(47, 96, true)]); const m = extrude(s, 18, 22, M.paint, 1.6, 64); m.receiveShadow = true; scene.add(m);
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(46.95, 46.95, 25, 96, 1, true), M.pocket); wall.material = M.pocket.clone(); wall.material.side = THREE.DoubleSide; wall.rotation.x = Math.PI / 2; wall.position.z = 5.5; wall.receiveShadow = true; scene.add(wall);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(47.5, 96), M.pocket); floor.position.z = -6.5; floor.receiveShadow = true; scene.add(floor);
+  const neck = extrude(shapeOf(ring(31.5), [ring(25.2, 96, true)]), -6.4, -0.6, M.neck, 0.5, 64); neck.receiveShadow = true; neck.castShadow = true; scene.add(neck); }
+// ---------- body (closer): disk + 12 inclined teeth ----------
+const body = new THREE.Group(); scene.add(body);
+{ const d = extrude(shapeOf(ring(25.8)), 0.25, 3.0, M.disk, 0.5, 96); body.add(d);
+  const sealR = extrude(shapeOf(ring(26.6), [ring(24.6, 96, true)]), -0.55, 0.2, M.seal, 0.3, 64); scene.add(sealR);
+  const g = extrude(shapeOf(G.GEAR), 2.95, 9.0, M.body, 0.25, 4); body.add(g);
+  const hub = extrude(shapeOf(ring(4.2, 48)), 8.95, 10.2, M.body, 0.35, 32); body.add(hub); S.shadowAll(body); }
+// ---------- handle (cover): skirt ring stays, top + grip fade; two flexible orange arms ----------
+const handle = new THREE.Group(); scene.add(handle);
+{ const sk = extrude(shapeOf(ring(30.6), [ring(27.0, 96, true)]), 0.6, 12.2, M.cover, 0.6, 96); handle.add(sk);
+  const top = extrude(shapeOf(ring(30.6)), 12.0, 14.6, M.cover, 0.9, 96); handle.add(fadeMesh(top));
+  const gp = S.roundRect(-25, -5.6, 25, 5.6, 5.4, 12); const grip = extrude(shapeOf(gp), 14.4, 25.5, M.cover, 1.6, 24); handle.add(fadeMesh(grip));
+  S.shadowAll(handle); }
+const armG = new THREE.Group(); handle.add(armG); let armMesh = [null, null], lastD = -1;
+const A0 = G.A_TIP - G.ARM_SPAN, SPW = 3.2 / G.RA, ROFF = 27.3;
+function armContour(d) {
+  const RA = G.RA, AW = G.AW, rho = G.RHO, rc = G.RC0 + d; const aE = G.A_TIP + rho / RA, aI = G.A_TIP - rho / RA;
+  const off = (a) => { const s = Math.max(0, Math.min(1, (a - A0) / G.ARM_SPAN)); return d * (3 * s * s - s * s * s) / 2; };
+  const p = []; p.push(pol(ROFF, A0 - SPW), pol(ROFF, A0));
+  for (let i = 0; i <= 40; i++) { const a = A0 + (aE - A0) * i / 40; p.push(pol(RA + AW + off(a), a)); }
+  const c = Math.cos(G.A_TIP), s = Math.sin(G.A_TIP), loc = (x, y) => [c * x - s * y, s * x + c * y];
+  p.push(loc(rc, rho)); for (let i = 1; i < 24; i++) { const t = Math.PI / 2 + Math.PI * i / 24; p.push(loc(rc + rho * Math.cos(t), rho * Math.sin(t))); } p.push(loc(rc, -rho));
+  for (let i = 0; i <= 40; i++) { const a = aI + (A0 - aI) * i / 40; p.push(pol(RA - AW + off(a), a)); }
+  p.push(pol(RA - AW, A0 - SPW)); return p; }
+function buildArms(d) { if (Math.abs(d - lastD) < 0.004) return; lastD = d;
+  for (let k = 0; k < 2; k++) { if (armMesh[k]) { armG.remove(armMesh[k]); armMesh[k].geometry.dispose(); }
+    const m = extrude(shapeOf(armContour(d)), 4.0, 8.5, M.arm, 0.3, 4); m.rotation.z = k * Math.PI; m.castShadow = m.receiveShadow = true; armG.add(m); armMesh[k] = m; } }
+
+// ---------- lights ----------
+const key = new THREE.DirectionalLight(0xfff0dc, 2.2); key.position.set(-150, 190, 230); key.target.position.set(0, 0, 5); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -80; c.right = 80; c.top = 80; c.bottom = -80; c.near = 100; c.far = 700; } key.shadow.bias = -0.0004; key.shadow.normalBias = 0.05; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 1.0); rim.position.set(170, 120, 60); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xffe8d0, 0.45); fill.position.set(60, -120, 160); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.25));
+
+// ---------- animation ----------
+const BOFF = G.A_TIP - G.PSI_C;
+function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[i % K.length], B = K[(i + 1) % K.length];
+  const o = {}; for (const k of ['h', 'b', 'd']) o[k] = A[k] + (B[k] - A[k]) * u; if (i + 1 >= K.length) { o.h = A.h; o.b = A.b; o.d = A.d; } return o; }
+const fadeU = (t) => { const [a0, a1] = TL.FADE_OUT, [b0, b1] = TL.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
+const EXT = [2.0, 15, 8, 205, 19, 18], SEC = [1.8, 5.5, 8, 205, 13, 7], SEC2 = [1.8, 5.0, 8, 196, 12, 5];
+const KEYS = [[0, ...EXT], [TL.FADE_OUT[0], 2.0, 13, 8, 205, 18, 16], [TL.FADE_OUT[1] + 0.2, ...SEC], [TL.D[0], ...SEC2], [TL.FADE_IN[0], ...SEC], [TL.FADE_IN[1] + 0.2, ...EXT], [LOOP, ...EXT]];
+function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt); handle.rotation.z = k.h; body.rotation.z = k.b + BOFF; buildArms(k.d);
+  const fu = fadeU(tt); for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; m.material.opacity = 1 - fu; } }
+  const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos); camera.up.set(0, 1, 0); camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
+const hPt = (k, r, a, z) => { const q = a + k.h; return new THREE.Vector3(r * Math.cos(q), r * Math.sin(q), z); };
+const scr = (v) => S.toScreen(camera, v);
+
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const win = (t, a, b, f = 0.18) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+function turnArrow(k, a, dir) { // finger push at the cover edge, tangential: dir -1 = clockwise (tighten), +1 = counter-clockwise (loosen)
+  const p = scr(hPt(k, 29.5, -0.35, 13)); const ang = -0.35 + k.h; const tv = new THREE.Vector3(-Math.sin(ang) * dir, Math.cos(ang) * dir, 0);
+  const q = scr(hPt(k, 29.5, -0.35, 13).add(tv.multiplyScalar(-8))); const dx = p[0] - q[0], dy = p[1] - q[1], L = Math.hypot(dx, dy); const ux = dx / L, uy = dy / L;
+  S.forceArrow(g2, a, p[0] + ux * 30 - ux * 200, p[1] + uy * 30 - uy * 200, p[0] + ux * 30, p[1] + uy * 30, 24); }
+function overlay(t, k) {
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (TL.FADE_OUT[0] - t) / 0.18), Math.min(1, (t - (LOOP - 0.35)) / 0.2));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'WHY DOES IT', 'CLICK?', 128); const [x, y] = scr(new THREE.Vector3(0, 0, 18)); S.redCircle(g2, hookA, x, y, 200, [-300, -250]); }
+  let a;
+  for (const [t0, t1, dir] of TL.ARROWS) if ((a = win(t, t0, t1, 0.2)) > 0) turnArrow(k, a * 0.95, dir);
+  for (const L of TL.LABELS) { if ((a = win(t, L[1], L[2])) > 0) { let p = [null, null];
+      if (L[3] === 'arm') p = scr(hPt(k, G.RA + G.AW + k.d * 0.31, G.A_TIP - G.ARM_SPAN * 0.5, 8.5));
+      if (L[3] === 'nub') p = scr(hPt(k, G.RC0 + k.d + 1.6, G.A_TIP + 0.02, 8.5));
+      if (L[3] === 'teeth') { const q = Math.PI * 1.32 + k.b; p = scr(new THREE.Vector3(14 * Math.cos(q), 14 * Math.sin(q), 9)); }
+      S.label(g2, a, L[0], p[0], p[1], 450, L[4] || 88); } }
+  if ((a = win(t, TL.FOLLOW[0], TL.FOLLOW[1], 0.15)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+window._st = st; window._set = setAll; window._kin = kinAt; window._scr = scr; window._hPt = hPt;
+S.install(st, setAll, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
+window.motionPx = (t, fps = 30) => { const pts = (tq) => { const k = kinAt(tq); return [scr(hPt(k, 29, 0, 12)), scr(hPt(k, G.RC0 + k.d, G.A_TIP, 8))]; };
+  setAll(t); const A = pts(t); setAll(t + 1 / fps); const B = pts(t + 1 / fps); let m = 0; for (let i = 0; i < A.length; i++) m = Math.max(m, Math.hypot(A[i][0] - B[i][0], A[i][1] - B[i][1])); return m; };
+</script></body></html>

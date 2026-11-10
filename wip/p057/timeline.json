@@ -1,0 +1,4 @@
+{"LOOP": 15.0, "FADE_OUT": [2.45, 3.45], "FADE_IN": [12.55, 13.5], "D": [9.6, 12.4], "FOLLOW": [13.45, 14.9],
+ "ARROWS": [[0.2, 4.4, -1], [4.85, 8.3, -1], [9.55, 12.4, 1]],
+ "LABELS": [["INSIDE THE CAP", 3.5, 4.4, null, 88], ["SEALED. IT STOPS", 4.45, 5.15, "teeth", 88], ["THE ARM BENDS", 5.2, 5.86, "arm", 88],
+            ["CLICK! IT SKIPS", 5.9, 8.3, "nub", 96], ["CAN'T OVERTIGHTEN IT", 8.4, 9.5, null, 80], ["LOOSEN: IT GRABS", 9.6, 12.4, "nub", 88]]}
