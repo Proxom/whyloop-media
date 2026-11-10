@@ -225,3 +225,32 @@ export function cyclorama(scene, { floorY = 0, zFront = 600, zBack = -300, R = 2
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: rough, metalness: 0, side: THREE.DoubleSide })); m.receiveShadow = true; scene.add(m); return m;
 }
+
+// ---------- clarity overlays (first used in p059b, Erkan 10 Nov "CLARITY FIRST") ----------
+// Pinned part tag: dot on the part (px,py), leader line, dark pill with the part name at offset (dx,dy). Kept inside the safe area.
+export function tag(g2, a, text, px, py, dx = 120, dy = -90, size = 46, color = '#ffd21f') {
+  if (a <= 0 || px == null) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const tw = g2.measureText(text).width; const bw = tw + 34, bh = size + 22;
+  let bx = px + dx - (dx < 0 ? bw : 0), by = py + dy - bh / 2;
+  bx = Math.max(SAFE.left + 6, Math.min(DW - SAFE.right - bw - 6, bx)); by = Math.max(SAFE.top + 6, Math.min(DH - SAFE.bottom - bh - 6, by));
+  const ex = bx + (dx < 0 ? bw : 0), ey = by + bh / 2;
+  g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.strokeStyle = color; g2.lineWidth = 5; g2.lineCap = 'round';
+  g2.beginPath(); g2.moveTo(px, py); g2.lineTo(ex, ey); g2.stroke(); g2.fillStyle = color; g2.beginPath(); g2.arc(px, py, 10, 0, Math.PI * 2); g2.fill();
+  g2.shadowBlur = 0; g2.fillStyle = 'rgba(12,14,20,0.86)'; rrect(g2, bx, by, bw, bh, 14); g2.fill(); g2.lineWidth = 4; g2.stroke();
+  g2.fillStyle = '#ffffff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, bx + bw / 2, by + bh / 2 + 2); g2.restore();
+}
+// Step caption at the top of the action area (full opacity while shown). Optional small step number badge.
+export function caption(g2, a, text, y = 440, size = 72, color = '#ffffff', num = null) {
+  if (a <= 0) return; g2.save(); g2.globalAlpha = a; let x = CX;
+  if (num != null) { g2.font = `${size}px Anton`; const tw = g2.measureText(text).width; const r = size * 0.5; x = CX + r + 6; const bx = x - tw / 2 - r - 14;
+    g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.arc(bx, y - size * 0.36, r, 0, Math.PI * 2); g2.fill(); g2.fillStyle = '#10141c'; g2.textAlign = 'center'; g2.font = `${Math.round(size * 0.72)}px Anton`; g2.fillText(String(num), bx, y - size * 0.36 + size * 0.26); }
+  outlined(g2, text, x, y, size, color); g2.restore();
+}
+// Two-bar speed meter (design px). v1/v2 in any unit; vmax = full bar. Shows "SAME SPEED" when |v1-v2| < tol.
+export function speedMeter(g2, a, l1, v1, l2, v2, vmax, y = 1250, tol = 0.02) {
+  if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 250, W = 560, h = 34, same = Math.abs(v1 - v2) < tol * vmax;
+  g2.fillStyle = 'rgba(10,12,18,0.72)'; rrect(g2, 70, y - 40, 850, 150, 20); g2.fill();
+  [[l1, v1, 0], [l2, v2, 62]].forEach(([l, v, dy]) => { g2.font = '44px Anton'; g2.textAlign = 'right'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff'; g2.fillText(l, x0 - 24, y + dy + h / 2 + 2);
+    g2.fillStyle = 'rgba(255,255,255,0.15)'; rrect(g2, x0, y + dy, W, h, h / 2); g2.fill();
+    g2.fillStyle = same ? '#3ddc84' : '#ffd21f'; rrect(g2, x0, y + dy, Math.max(h, W * Math.min(1, v / vmax)), h, h / 2); g2.fill(); });
+  g2.restore();
+}
