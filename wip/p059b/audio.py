@@ -2,7 +2,7 @@
 # writes vo_stem.wav and bed_stem.wav (48 kHz stereo, LOOP s, seamless). All SFX fundamentals < 1 kHz, low-passed; no beeps/chimes/hiss.
 import json, wave, numpy as np, soundfile as sf
 TL = json.load(open('geom.json')); SR = 48000; DUR = TL['LOOP']; N = int(SR * DUR); rng = np.random.default_rng(591)
-VO_AT = [0.3, 5.6, 9.0, 12.4, 16.0, 19.4, 23.4, 28.0, 30.45, 34.5]   # each sentence on its step (Locked. lands 0.5 s after the lock clunk)
+VO_AT = TL['VO_AT']   # each sentence on its step (Locked. lands 0.5 s after the lock clunk)
 L = np.zeros(N); R = np.zeros(N); V = np.zeros(N)
 def put(sig, t, pan=0.0, gain=1.0, dst=None):
     i0 = int(round(t * SR)); idx = (np.arange(len(sig)) + i0) % N

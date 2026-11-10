@@ -9,7 +9,7 @@ exec(open('../../posts/p059/kin.py').read().split('# ---- axial layout')[0])  # 
 Z = dict(gear=(0, 18), dog=(18, 23), cone=(23, 31), blk=(25, 33), hub=(36, 54), slv=(35, 57))
 CONE_R = (27.0, 24.0)
 LOOP = 42.0; FPS = 240; N = int(LOOP * FPS)
-VO_AT = [0.3, 5.6, 9.0, 12.4, 16.0, 19.4, 23.4, 28.2, 31.3, 34.5]
+VO_AT = [0.3, 5.6, 9.0, 12.2, 16.0, 19.2, 23.45, 28.0, 30.45, 34.5]
 T = dict(SELECT=(1.0, 2.4), FADE_OUT=(3.4, 5.2), NAME=(5.4, 12.2), RING_OUT=(12.2, 12.8), CRASH_PUSH=(14.6, 15.9), CHATTER=(15.9, 17.6),
          CRASH_BACK=(17.8, 18.8), RING_IN=(18.6, 19.3), PUSH=(20.6, 21.4), SYNC=(21.4, 27.6), SLOWMO=(22.4, 28.0), ALIGN=(27.65, 28.0),
          ENGAGE=(28.6, 30.0), LOCKED=(30.0, 34.4), PAYOFF=(34.4, 38.0), DISENGAGE=(38.0, 38.7), SPINUP=(38.9, 39.9), FADE_IN=(38.6, 40.2),
@@ -20,7 +20,10 @@ ts = np.arange(N) / FPS
 X_CONTACT, X_ENG, X_DOGFACE = -2.95, -15.5, -11.85   # sleeve front z = 35 + x; dog teeth end face at z 23 -> x = -12 (0.15 mm clear)
 def chatter(t):  # sleeve bouncing off the dog-teeth end faces: |sin| bounces, decaying, always >= 0 (never inside the teeth)
     u = t - T['CHATTER'][0]; return 1.1 * abs(math.sin(2 * math.pi * 7.0 * u)) * math.exp(-u * 0.6) * (1 - seg(t, T['CHATTER'][1] - 0.25, T['CHATTER'][1]))
+NUDGE = (10.0, 10.7, 10.9, 11.6)  # the fork visibly slides the sleeve a little (no contact with the ring: contact starts at x -1.95)
 def slv_x(t):
+    if t < NUDGE[1]: return -1.2 * seg(t, NUDGE[0], NUDGE[1])
+    if t < NUDGE[3]: return -1.2 * (1 - seg(t, NUDGE[2], NUDGE[3]))
     if t < T['CRASH_PUSH'][0]: return 0.0
     if t < T['CRASH_PUSH'][1]: return X_DOGFACE * seg(t, *T['CRASH_PUSH'])
     if t < T['CHATTER'][1]: return X_DOGFACE + chatter(t)
