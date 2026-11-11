@@ -11,7 +11,7 @@ LINES = [
  "Going straight, the spider gears don't spin. They push both side gears, so both wheels turn at the same speed.",
  "In a turn, the inner wheel slows down. The spider gears start to spin, so the outer wheel speeds up by the same amount.",
  "Hold one wheel still, and the other one spins twice as fast.",
- "The spider gears split the speed between the two wheels.",
+ "The spider gears let one wheel slow down while the other speeds up.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
 info = []

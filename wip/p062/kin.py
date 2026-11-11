@@ -26,7 +26,7 @@ def kfun(t):  # speed split: +k -> right wheel faster (left turn)
     if t < 40.6: return 0.25
     return ramp(t, 40.6, 42.0, 0.25, 0.2)
 def wfun(t):  # carrier speed rad/s (0.5 rev/s); slow motion at the key moment of step 2
-    w = 2 * math.pi * 0.5
+    w = 2 * math.pi * (0.5 if t < 10.0 else ramp(t, 10.0, 12.0, 0.5, 0.35) if t < 12.0 else 0.35 if t < 40.4 else ramp(t, 40.4, 41.6, 0.35, 0.5))  # slower inside so the gears read
     if 25.6 <= t < 30.0: w *= ramp(t, 25.6, 26.4, 1, 0.45) if t < 27.0 else ramp(t, 29.2, 30.0, 0.45, 1)
     return w
 N = int(LOOP * FPS) + 2
