@@ -34,7 +34,7 @@ n = int(2.3 * SR); u = np.arange(n) / n; sc = bandnoise(n, 180, 900) * (np.sin(n
 put(sc, 7.7, pan=-0.5, gain=0.16)                                                   # skid scrub (low-mid, no squeal)
 for t0 in (9.4, 40.3):                                                              # dive in / back out: low swell
     n = int(1.6 * SR); u = np.arange(n) / n; put(bandnoise(n, 60, 380) * np.sin(np.pi * u) ** 2, t0, gain=0.10)
-put(modal([110, 220], [1.0, 0.3], [0.12, 0.05], dur=0.5, att=0.004), 32.9, gain=0.5)   # brake grabs the wheel
+put(modal([110, 220], [1.0, 0.3], [0.12, 0.05], dur=0.5, att=0.004), 33.4, gain=0.5)   # brake grabs the wheel
 # ---- music bed: 8 bars over the 42 s loop (D major-ish, warm, low register) ----
 def note(m): return 440 * 2 ** ((m - 69) / 12)
 chords = [[50, 57, 62, 66], [47, 54, 59, 62], [43, 50, 55, 59], [45, 52, 57, 61]] * 2; seg = DUR / 8; mus = np.zeros(N)

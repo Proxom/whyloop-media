@@ -200,7 +200,7 @@ function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k;
   for (const T of [trR.v, trL.v]) { T.m.geometry.setDrawRange(0, nVis * 6); T.m.visible = ta > 0 && nVis > 1; T.m.material.opacity = 0.85 * (1 - ramp(tt, 9.6, 10.8)); }
   const bf = bodyFade(tt); for (const m of bodyMats) { m.opacity = m.userData.op0 * bf; } bodyG.visible = bf > 0.01; front.visible = true;
   applyFade(housFade(tt)); highlight(tt);
-  { const bi = ramp(tt, 32.3, 33.1) * (1 - ramp(tt, 36.4, 37.0)); brake.visible = bi > 0.01; for (const o of brake.children) if (o.userData.s) o.position.y = o.userData.s * (44 + 160 * (1 - bi)); brake.position.z = 0; brake.children[2].position.y = 0; brake.scale.setScalar(1); }
+  { const bi = ramp(tt, 32.95, 33.45) * (1 - ramp(tt, 36.4, 37.0)); brake.visible = bi > 0.01; for (const o of brake.children) if (o.userData.s) o.position.y = o.userData.s * (44 + 45 * (1 - bi)); brake.children[2].visible = bi > 0.97; }
   const c = S.orbitCam(KEYS, tt); car.updateMatrixWorld(true);
   const pos = c.pos.clone().applyMatrix4(car.matrixWorld), tgt = c.target.clone().applyMatrix4(car.matrixWorld);
   camera.position.copy(pos); camera.up.set(0, 1, 0); camera.lookAt(tgt); camera.updateMatrixWorld();
@@ -234,7 +234,7 @@ function overlay(t, k) {
   // step 2 seesaw: arrows around each side gear turning at that wheel's real speed (projected 3D circles)
   if ((a = win(t, 25.8, 32.6)) > 0) { gearArrow(a, -1, k.c - k.d, '#3fa9ff', 'SLOWER'); gearArrow(a, 1, k.c + k.d, '#ffd21f', 'FASTER'); }
   // step 3: brake holds the inner wheel
-  if ((a = win(t, 33.2, 36.4)) > 0) { const [x, y] = W2(AXP(-BRX, 0, 0)); S.tag(g2, a, 'HELD STILL', x, y + 50, -30, 190, 52, '#ff4a3a'); }
+  if ((a = win(t, 33.35, 36.4)) > 0) { const [x, y] = W2(AXP(-BRX, 0, 0)); S.tag(g2, a, 'HELD STILL', x, y + 50, -30, 190, 52, '#ff4a3a'); }
   // wheel/path tags
   if ((a = win(t, 3.6, 7.3)) > 0) { speedTag(a, 'LONGER PATH', AXP(HT, -RT, 900), 40, 150, '#ffd21f'); speedTag(a, 'SHORTER PATH', AXP(-HT, -RT, 900), -40, 150, '#3fa9ff'); }
   if ((a = win(t, 7.7, 10.0, 0.08)) > 0) { const [x, y] = W2(AXP(-HT, 0, 0)); g2.save(); g2.globalAlpha = a * (0.75 + 0.25 * Math.sin(t * 30)); S.outlined(g2, 'SKID!', Math.max(220, Math.min(760, x)), Math.min(1380, y + 190), 120, '#ff3b2f'); g2.restore(); }
@@ -244,7 +244,7 @@ function overlay(t, k) {
     if ((a = win(t, 19.8, 24.8)) > 0) S.tag(g2, a, 'NOT SPINNING ON PIN', x, y, -150, -40, 50, '#ff7a1a');
     if ((a = win(t, 26.0, 36.4)) > 0) S.tag(g2, a, 'SPINS ON PIN', x, y, -150, -40, 50, '#ff7a1a'); }
   // wheel dials: both rear wheels, turning at their real speeds (thL = c - d, thR = c + d), steps 1-3
-  if ((a = win(t, 19.4, 36.8, 0.3)) > 0) { const lab = t < 25.6 ? ['SAME', 'SAME'] : t < 33.4 ? ['SLOWER', 'FASTER'] : ['STOPPED', '2X FASTER'];
+  if ((a = win(t, 19.4, 36.8, 0.3)) > 0) { const lab = t < 25.6 ? ['SAME', 'SAME'] : t < 33.05 ? ['SLOWER', 'FASTER'] : ['STOPPED', '2X FASTER'];
     g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.72)'; S.rrect(g2, 120, 1222, 750, 214, 24); g2.fill(); g2.restore();
     wheelDial(a, 300, 1300, k.c - k.d, '#3fa9ff', 'INNER', lab[0]); wheelDial(a, 690, 1300, k.c + k.d, '#ffd21f', 'OUTER', lab[1]); }
   // spider spin arrow (curved) around the visible spider during the turn

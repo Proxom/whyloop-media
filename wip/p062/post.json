@@ -66,5 +66,19 @@
   "https://www.autotechart.com/how-it-works/differential/"
  ],
  "learningApplied": "CLARITY FIRST (Erkan 10 Nov): multi-step topic 42 s, VO synced per step, problem first, parts named, one step at a time with highlight, slow-mo at the key moment, payoff 3.6 s; quality rules (real object first: the car; camera close on the gears; min label 50 px).",
- "status": "wip (round 4 render)"
+ "status": "ready (gate passed, visual 5: schedule 12 Nov 17:00 only after 15:00)",
+ "qualityAudit": {
+  "technical": "1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 42.0 s, no black first/last frame",
+  "audio": "-15.0 LUFS, -3.0 dBTP, HP4k gap 20.7 dB",
+  "mechanism": "kin.py/check.py: 41/11 ring-pinion, 16/10 side-spider, mesh error <1.7 % pitch, L+R = 2c; step 3 inner 0, outer 0.70 rev/s",
+  "facts": "Britannica, MIT 2.972, tec-science, Counterman",
+  "text": "pyspellchecker: only hashtags/handle/hypoid/tec/driveshaft's flagged (valid)",
+  "look": "6 stills + safe-zone frame checked 11 Nov 21:40",
+  "clarity": "R4 fresh reviewer 11 Nov 21:37: explanation correct, 14-year-old YES"
+ },
+ "visualScore": {
+  "R1": 4,
+  "R2": 5,
+  "note": "max 2 rounds reached"
+ }
 }
