@@ -1,0 +1,47 @@
+[
+ {
+  "i": 0,
+  "text": "How can two wheels on one axle turn at different speeds?",
+  "dur": 3.029
+ },
+ {
+  "i": 1,
+  "text": "In a turn, the outer wheel travels a longer path than the inner wheel.",
+  "dur": 3.584
+ },
+ {
+  "i": 2,
+  "text": "With a solid axle, one tire would have to skid.",
+  "dur": 2.752
+ },
+ {
+  "i": 3,
+  "text": "So in the middle, there's a differential.",
+  "dur": 1.899
+ },
+ {
+  "i": 4,
+  "text": "The driveshaft turns the big ring gear. It carries two small spider gears on a pin.",
+  "dur": 4.672
+ },
+ {
+  "i": 5,
+  "text": "Going straight, the spider gears don't spin. They push both side gears, so both wheels turn at the same speed.",
+  "dur": 6.229
+ },
+ {
+  "i": 6,
+  "text": "In a turn, the inner wheel slows down. The spider gears start to spin, so the outer wheel speeds up by the same amount.",
+  "dur": 6.997
+ },
+ {
+  "i": 7,
+  "text": "Hold one wheel still, and the other one spins twice as fast.",
+  "dur": 3.435
+ },
+ {
+  "i": 8,
+  "text": "The spider gears split the speed between the two wheels.",
+  "dur": 2.752
+ }
+]

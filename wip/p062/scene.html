@@ -1,0 +1,249 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p062 open differential (17:00 1M+ #3). mm. Car frame: x right, y up, -z forward; rear axle on x at y = R_TIRE.
+// Carrier (ring gear, pin, 2 spider gears) turns about x by c; side gears/axles/wheels: right c + d, left c - d (kin.py).
+import * as S from '/tools/render/lib/studio.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const LOOP = G.LOOP, RT = G.R_TIRE, HT = G.TRACK / 2;
+const st = S.makeStudio({ fov: 30, bg: 0x1a1f27, envIntensity: 0.9, bloom: 0, near: 20, far: 60000, samples: 0 });
+const { scene, camera } = st;
+const std = (o) => new THREE.MeshStandardMaterial(o), phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const grain = S.noiseTex(5, 150, 16, 256); grain.repeat.set(0.05, 0.05);
+const M = {
+  ring: phys({ color: 0xd9a441, metalness: 1.0, roughness: 0.28, roughnessMap: grain, clearcoat: 0.3 }),   // brass-gold ring gear
+  pin: phys({ color: 0xc8ced6, metalness: 1.0, roughness: 0.25, roughnessMap: grain }),                     // pinion + shaft (steel)
+  spider: phys({ color: 0xf07a12, metalness: 0.55, roughness: 0.3, clearcoat: 0.4 }),                        // spider gears (orange)
+  sideR: phys({ color: 0xffd21f, metalness: 0.5, roughness: 0.32, clearcoat: 0.4 }),                         // outer side gear (yellow)
+  sideL: phys({ color: 0x3fa9ff, metalness: 0.5, roughness: 0.32, clearcoat: 0.4 }),                         // inner side gear (blue)
+  carrier: phys({ color: 0x8c96a3, metalness: 0.9, roughness: 0.35, roughnessMap: grain }),
+  xpin: phys({ color: 0xe9edf2, metalness: 1.0, roughness: 0.18 }),
+  steel: phys({ color: 0xb9c0c8, metalness: 1.0, roughness: 0.3, roughnessMap: grain }),
+  housing: std({ color: 0x3a4048, metalness: 0.6, roughness: 0.55, roughnessMap: grain }),
+  tire: std({ color: 0x1b1c1f, metalness: 0.0, roughness: 0.85 }),
+  rim: phys({ color: 0xd5dbe2, metalness: 1.0, roughness: 0.22, clearcoat: 0.5 }),
+  mark: std({ color: 0xffd21f, roughness: 0.5, emissive: 0x332800 }),
+  body: phys({ color: 0xbfd6ff, metalness: 0.1, roughness: 0.15, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide, clearcoat: 1 }),
+  glass: phys({ color: 0x24324a, metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide }),
+  dark: std({ color: 0x23272e, metalness: 0.5, roughness: 0.6 }),
+};
+for (const k of ['ring', 'pin', 'spider', 'sideR', 'sideL', 'carrier', 'xpin']) { M[k].userData.base = M[k].color.clone(); }
+// ---------- bevel gear builder: local axis +z, apex at the origin, tooth k centred at angle 2*pi*k/Z (matches kin.py) ----------
+function bevelGear(Z, gam, A0, F, mat, { bore = 0, back = 6, hub = null } = {}) {
+  const m = 2 * A0 * Math.sin(gam) / Z, q = Math.PI / (2 * Z), sg = Math.sin(gam), cg = Math.cos(gam);
+  const P = (A, h, phi) => { const s = A / A0; const r = A * sg + h * s * cg, z = A * cg - h * s * sg; return [r * Math.cos(phi), r * Math.sin(phi), z]; };
+  const lv = [[-1.15 * m, 1.18], [0, 1.0], [0.6 * m, 0.78], [1.0 * m, 0.46]];
+  const pos = []; const quad = (a, b, c, d) => pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+  for (let k = 0; k < Z; k++) { const ph = 2 * Math.PI * k / Z;
+    const V = (A, i, sd) => P(A, lv[i][0], ph + sd * lv[i][1] * q);
+    const Ao = A0, Ai = A0 - F;
+    for (let i = 0; i < 3; i++) { quad(V(Ao, i, 1), V(Ao, i + 1, 1), V(Ai, i + 1, 1), V(Ai, i, 1)); quad(V(Ai, i, -1), V(Ai, i + 1, -1), V(Ao, i + 1, -1), V(Ao, i, -1));
+      quad(V(Ao, i, -1), V(Ao, i + 1, -1), V(Ao, i + 1, 1), V(Ao, i, 1)); quad(V(Ai, i, 1), V(Ai, i + 1, 1), V(Ai, i + 1, -1), V(Ai, i, -1)); }
+    quad(V(Ao, 3, -1), V(Ai, 3, -1), V(Ai, 3, 1), V(Ao, 3, 1)); }
+  const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); tg.computeVertexNormals();
+  const g = new THREE.Group(); g.add(new THREE.Mesh(tg, mat));
+  // body under the root cone (lathe about y, then rotated so y -> z)
+  const root = (A) => { const p = P(A, -1.15 * m, 0); return [p[0], p[2]]; };
+  const [ro, zo] = root(A0), [ri, zi] = root(A0 - F);
+  const prof = [[Math.max(bore, 0.1), zi + (zo - zi) * 0.0 - 0.01], [ri, zi], [ro, zo], [ro + 0.6 * m * cg, zo + back * 0.15], [ro * 0.98, zo + back], [Math.max(bore, 0.1), zo + back]];
+  const lg = new THREE.LatheGeometry(prof.map(([r, z]) => new THREE.Vector2(r, z)), 96); lg.rotateX(Math.PI / 2);
+  // LatheGeometry revolves about y with y = height; after rotateX(pi/2) height -> z. Flip sign: rotateX maps y->z.
+  const body = new THREE.Mesh(lg, mat); body.material = mat; g.add(body);
+  if (hub) { const h = new THREE.Mesh(new THREE.CylinderGeometry(hub[0], hub[0], hub[2] - hub[1], 48), mat); h.rotation.x = Math.PI / 2; h.position.z = (hub[1] + hub[2]) / 2; g.add(h); }
+  S.shadowAll(g); return g;
+}
+// orient a gear: local z -> axis, local x -> u (parent frame), apex at 'apex'; returns {base, spin}
+function mount(parent, gear, apex, axis, u) { const base = new THREE.Group(); const a = new THREE.Vector3(...axis), uu = new THREE.Vector3(...u), v = new THREE.Vector3().crossVectors(a, uu);
+  base.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(uu, v, a)); base.position.set(...apex); const spin = new THREE.Group(); spin.add(gear); base.add(spin); parent.add(base); return spin; }
+// ---------- car ----------
+const car = new THREE.Group(); scene.add(car);
+const axle = new THREE.Group(); axle.position.set(0, RT, 0); car.add(axle);           // housing frame (non-rotating)
+const carrier = new THREE.Group(); axle.add(carrier);                                   // rotates about x by c
+const [RING_R, G_RING, A_RP] = G.RING, [PIN_R, G_PIN] = G.PIN, [SIDE_R, G_SIDE, A_SS] = G.SIDE, [SPI_R, G_SPI] = G.SPI;
+const gRing = mount(carrier, bevelGear(G.Z.ring, G_RING, A_RP, 24, M.ring, { bore: 60, back: 12 }), [G.XA, 0, 0], [1, 0, 0], [0, 1, 0]);
+const gSideR = mount(carrier, bevelGear(G.Z.side, G_SIDE, A_SS, 15, M.sideR, { bore: 0, back: 7, hub: [15, 30, 70] }), [0, 0, 0], [1, 0, 0], [0, 1, 0]);
+const gSideL = mount(carrier, bevelGear(G.Z.side, G_SIDE, A_SS, 15, M.sideL, { bore: 0, back: 7, hub: [15, 30, 70] }), [0, 0, 0], [-1, 0, 0], [0, 1, 0]);
+const gSpi0 = mount(carrier, bevelGear(G.Z.spi, G_SPI, A_SS, 15, M.spider, { bore: 7, back: 8 }), [0, 0, 0], [0, 1, 0], [1, 0, 0]);
+const gSpi1 = mount(carrier, bevelGear(G.Z.spi, G_SPI, A_SS, 15, M.spider, { bore: 7, back: 8 }), [0, 0, 0], [0, -1, 0], [1, 0, 0]);
+const pinGroup = new THREE.Group(); axle.add(pinGroup);
+const gPin = mount(pinGroup, bevelGear(G.Z.pin, G_PIN, A_RP, 24, M.pin, { bore: 0, back: 10, hub: [13, 110, 1450] }), [G.XA, 0, 0], [0, 0, -1], [0, 1, 0]);
+// cross pin + carrier case (open cage so the gears stay visible)
+{ const xp = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 136, 32), M.xpin); carrier.add(xp);
+  const fl = S.extrude(S.shapeOf(S.circle(0, 0, 66, 72, false), [S.circle(0, 0, 17, 36, true)]), 0, 9, M.carrier, 1.5, 8); fl.rotation.y = -Math.PI / 2; fl.position.x = -50; carrier.add(fl);
+  const hubL = new THREE.Mesh(new THREE.CylinderGeometry(24, 28, 50, 48, 1, true), M.carrier); hubL.rotation.z = Math.PI / 2; hubL.position.x = -84; carrier.add(hubL);
+  const fr = S.extrude(S.shapeOf(S.circle(0, 0, 74, 72, false), [S.circle(0, 0, 17, 36, true)]), 0, 8, M.carrier, 1.5, 8); fr.rotation.y = Math.PI / 2; fr.position.x = 58; carrier.add(fr);
+  for (const s of [1, -1]) { const arm = new THREE.Mesh(new RoundedBoxGeometry(116, 14, 30, 3, 4), M.carrier); arm.position.set(4, s * 70, 0); carrier.add(arm);
+    const boss = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, 14, 32), M.carrier); boss.position.set(0, s * 70, 0); carrier.add(boss); }
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; const b = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 10, 6), M.steel); b.rotation.z = Math.PI / 2; b.position.set(69, 64 * Math.cos(a), 64 * Math.sin(a)); carrier.add(b); }
+  S.shadowAll(carrier); }
+// axle shafts + wheels (housing frame; each turns with its side gear)
+function wheelSide(sx, mat) {
+  const g = new THREE.Group(); g.position.x = 0; axle.add(g);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, HT - 60, 24), M.steel); sh.rotation.z = Math.PI / 2; sh.position.x = sx * (60 + (HT - 60) / 2); g.add(sh);
+  // paint band on the shaft near the diff so its speed is readable
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(15.5, 15.5, 60, 24), mat); band.rotation.z = Math.PI / 2; band.position.x = sx * 230; g.add(band);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(60, 6, 34), M.dark); stripe.position.set(sx * 230, 14, 0); g.add(stripe);
+  const w = new THREE.Group(); w.position.x = sx * HT; g.add(w);
+  const tp = []; const TW = 205, R0 = 225; for (let i = 0; i <= 24; i++) { const a = -Math.PI / 2 + Math.PI * i / 24; tp.push(new THREE.Vector2(R0 + (RT - R0 - 18) + 18 * Math.cos(a) + 0 * i, (TW / 2) * Math.sin(a) * 1.0)); }
+  const prof = [new THREE.Vector2(R0, -TW / 2 + 10), ...tp.map((p, i) => new THREE.Vector2(i === 0 || i === 24 ? RT - 30 : RT - 18 + 18 * Math.cos(-Math.PI / 2 + Math.PI * i / 24), p.y)), new THREE.Vector2(R0, TW / 2 - 10)];
+  const tire = new THREE.Mesh(new THREE.LatheGeometry(prof, 96), M.tire); tire.rotation.z = Math.PI / 2; w.add(tire);
+  for (let i = 0; i < 36; i++) { const a = i / 36 * Math.PI * 2; const tr = new THREE.Mesh(new THREE.BoxGeometry(TW * 0.86, 10, 24), M.tire); tr.position.set(0, (RT + 2) * Math.cos(a), (RT + 2) * Math.sin(a)); tr.rotation.x = a; w.add(tr); }
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(R0, R0, TW - 30, 64, 1, true), M.rim); rim.rotation.z = Math.PI / 2; w.add(rim);
+  const face = S.extrude(S.shapeOf(S.circle(0, 0, R0, 64, false), [0, 1, 2, 3, 4].map(i => { const a = i / 5 * Math.PI * 2 + 0.6; return S.circle(130 * Math.cos(a), 130 * Math.sin(a), 52, 24, true); })), 0, 14, M.rim, 3, 12);
+  face.rotation.y = sx * Math.PI / 2; face.position.x = sx * 40; w.add(face);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(38, 44, 30, 32), M.steel); cap.rotation.z = Math.PI / 2; cap.position.x = sx * 55; w.add(cap);
+  const mk = new THREE.Mesh(new THREE.BoxGeometry(10, 92, 22), M.mark); mk.position.set(sx * (TW / 2 - 4), RT - 60, 0); w.add(mk);
+  S.shadowAll(g); return g;
+}
+const shaftR = wheelSide(1, M.sideR), shaftL = wheelSide(-1, M.sideL);
+// axle housing (fades for the cutaway)
+const housing = new THREE.Group(); axle.add(housing);
+{ const ban = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40), M.housing); ban.scale.set(118, 135, 140); housing.add(ban);
+  for (const s of [1, -1]) { const tb = new THREE.Mesh(new THREE.CylinderGeometry(36, 44, HT - 220, 40), M.housing); tb.rotation.z = Math.PI / 2; tb.position.x = s * (110 + (HT - 220) / 2); housing.add(tb);
+    const dr = new THREE.Mesh(new THREE.CylinderGeometry(150, 150, 70, 48), M.housing); dr.rotation.z = Math.PI / 2; dr.position.x = s * (HT - 120); housing.add(dr); }
+  const nose = new THREE.Mesh(new THREE.CylinderGeometry(40, 70, 170, 40), M.housing); nose.rotation.x = Math.PI / 2; nose.position.set(G.XA, 0, -175); housing.add(nose);
+  const cov = new THREE.Mesh(new THREE.CylinderGeometry(112, 112, 16, 64), M.housing); cov.rotation.x = Math.PI / 2; cov.position.z = 128; housing.add(cov);
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; const b = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 12, 6), M.steel); b.rotation.x = Math.PI / 2; b.position.set(100 * Math.cos(a), 100 * Math.sin(a), 140); housing.add(b); }
+  S.shadowAll(housing); }
+const fades = [];
+const fadeMesh = (root) => { root.traverse(o => { if (o.isMesh) { o.userData.baseM = o.material; const f = o.material.clone(); f.transparent = true; f.depthWrite = false; o.userData.fadeM = f; fades.push(o); } }); };
+fadeMesh(housing);
+// driveshaft to the gearbox + front wheels + ghost body
+const front = new THREE.Group(); car.add(front);
+{ const gb = new THREE.Mesh(new RoundedBoxGeometry(380, 360, 700, 4, 30), M.dark); gb.position.set(G.XA, 520, -1800); front.add(gb);
+  const eng = new THREE.Mesh(new RoundedBoxGeometry(620, 560, 640, 4, 40), M.dark); eng.position.set(0, 640, -2450); front.add(eng);
+  S.shadowAll(front); }
+const fw = [];
+for (const s of [1, -1]) { const g = new THREE.Group(); g.position.set(s * (HT - 20), RT, -2700); car.add(g);
+  const w = new THREE.Group(); g.add(w);
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(RT - 60, 60, 24, 64), M.tire); tire.rotation.y = Math.PI / 2; tire.scale.set(1, 1, 1.6); w.add(tire);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(215, 215, 150, 48), M.rim); rim.rotation.z = Math.PI / 2; w.add(rim);
+  S.shadowAll(g); fw.push(g); }
+const bodyG = new THREE.Group(); car.add(bodyG);
+{ const lower = new THREE.Mesh(new RoundedBoxGeometry(1760, 620, 4350, 6, 160), M.body); lower.position.set(0, 610, -1150); bodyG.add(lower);
+  const cab = new THREE.Mesh(new RoundedBoxGeometry(1480, 520, 2250, 6, 180), M.glass); cab.position.set(0, 1150, -1000); bodyG.add(cab);
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new RoundedBoxGeometry(1760, 620, 4350, 2, 160), 30), new THREE.LineBasicMaterial({ color: 0xdfe9ff, transparent: true, opacity: 0.55 }));
+  edge.position.copy(lower.position); bodyG.add(edge);
+  const tl = (x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(260, 70, 20), std({ color: 0xff2a1a, emissive: 0x801008, roughness: 0.3 })); m.position.set(x, 760, 1075); bodyG.add(m); }; tl(-680); tl(680); }
+const bodyMats = []; bodyG.traverse(o => { if (o.material) { o.material.userData.op0 = o.material.opacity; bodyMats.push(o.material); } });
+// ---------- ground (world) ----------
+const groundTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); g.fillStyle = '#3a3e45'; g.fillRect(0, 0, 1024, 1024);
+  const r = S.rng(3); for (let i = 0; i < 26000; i++) { const v = 40 + r() * 50; g.fillStyle = `rgba(${v},${v + 3},${v + 8},0.5)`; g.fillRect(r() * 1024, r() * 1024, 2 + r() * 3, 2 + r() * 3); }
+  g.fillStyle = 'rgba(235,235,225,0.55)'; g.fillRect(0, 0, 1024, 6); for (let y = 0; y < 1024; y += 128) g.fillRect(0, y, 6, 64);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.repeat.set(60000 / 8000, 60000 / 8000); return t; })();
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60000, 60000), std({ map: groundTex, roughness: 0.92, metalness: 0 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+// trails of the rear wheels (world), built from the kinematics for t in [0, TR_END]
+const TR_END = 10.6;
+function trail(side, color) { const n = Math.round(TR_END * 60) + 1; const pos = new Float32Array(n * 2 * 3); const idx = [];
+  for (let i = 0; i < n - 1; i++) { const a = 2 * i, b = a + 1, c = a + 2, d = a + 3; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx);
+  for (let i = 0; i < n; i++) { const k = kinAt(i / 60); const rx = Math.cos(k.psi), rz = -Math.sin(k.psi); const cx = k.x + side * HT * rx, cz = k.z + side * HT * rz;
+    for (const [j, o] of [[0, -95], [1, 95]]) { pos[(2 * i + j) * 3] = cx + o * rx; pos[(2 * i + j) * 3 + 1] = 3; pos[(2 * i + j) * 3 + 2] = cz + o * rz; } }
+  g.computeVertexNormals(); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide })); m.renderOrder = 2; scene.add(m); return { m, n }; }
+// ---------- lights ----------
+const sun = new THREE.DirectionalLight(0xfff0dc, 2.6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+{ const c = sun.shadow.camera; c.left = -2600; c.right = 2600; c.top = 3400; c.bottom = -3400; c.near = 100; c.far = 14000; } sun.shadow.bias = -0.0005; sun.shadow.normalBias = 2; sun.shadow.radius = 3;
+scene.add(sun, sun.target);
+const rimL = new THREE.DirectionalLight(0xcfe0ff, 1.5); scene.add(rimL, rimL.target);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.55));
+const lamp = new THREE.PointLight(0xfff2e0, 2.2, 0, 0); camera.add(lamp); lamp.position.set(200, 300, 0); scene.add(camera);
+// ---------- kinematics ----------
+const C = Object.fromEntries(G.cols.map((n, i) => [n, i]));
+function kinAt(t) { t = Math.max(0, Math.min(LOOP, t)); const f = t * G.FPS; const i = Math.min(Math.floor(f), K.length - 2), u = f - i; const A = K[i], B = K[i + 1]; const o = {};
+  for (const n of G.cols) o[n] = A[C[n]] + (B[C[n]] - A[C[n]]) * u; return o; }
+const tl = (a) => { const t = ((a % LOOP) + LOOP) % LOOP; return t; };
+const ramp = (t, a, b) => S.smooth((t - a) / (b - a));
+const win = (t, a, b, f = 0.2) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+const bodyFade = (t) => t < 9.4 ? 1 : t < 10.8 ? 1 - ramp(t, 9.4, 10.8) : t < 40.4 ? 0 : ramp(t, 40.4, 41.6);
+const housFade = (t) => t < 10.4 ? 0 : t < 11.8 ? ramp(t, 10.4, 11.8) : t < 40.0 ? 1 : 1 - ramp(t, 40.0, 41.2);
+function applyFade(fu) { for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.baseM; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fadeM; m.material.opacity = Math.max(0, 1 - 1.25 * fu); } } }
+// highlight: active parts glow, the rest dims
+const HL = [[12.8, 14.6, ['ring', 'pin']], [14.6, 17.6, ['spider', 'xpin']], [19.6, 24.6, ['sideR', 'sideL']], [25.2, 32.6, ['spider']], [32.8, 36.6, ['spider', 'sideR']], [36.8, 40.2, ['spider']]];
+const PARTS = ['ring', 'pin', 'spider', 'sideR', 'sideL', 'carrier', 'xpin'];
+const GLOW = { ring: 0xffc040, pin: 0xffffff, spider: 0xff7a10, sideR: 0xffd21f, sideL: 0x3fa9ff, carrier: 0, xpin: 0xffffff };
+function highlight(t) { let dimAll = 0; const act = {}; for (const [a, b, ps] of HL) { const u = Math.max(0, Math.min(1, (t - a) / 0.3, (b - t) / 0.3)); if (u > 0) { dimAll = Math.max(dimAll, u); for (const p of ps) act[p] = Math.max(act[p] || 0, u); } }
+  const pulse = 0.75 + 0.25 * Math.sin(t * 2 * Math.PI * 1.2);
+  for (const p of PARTS) { const m = M[p], a = act[p] || 0, d = dimAll * (1 - a); m.color.copy(m.userData.base).multiplyScalar(1 - 0.5 * d); m.emissive.setHex(GLOW[p]).multiplyScalar(0.16 * a * pulse); } }
+// camera keys in the CAR frame [t, tx, ty, tz, dist, elev, azim]
+const HOOK = [0, 380, -500, 8600, 60, 22], PROB = [0, 0, 600, 17000, 74, 18], AX = [0, RT, 0, 1700, 24, 34], RINGV = [10, RT, -60, 820, 30, -140], SPV = [0, RT, 0, 560, 14, 16],
+  WIDE = [80, RT, 0, 1500, 20, 58], SPC = [0, RT, 0, 470, 12, 10], HOLD = [100, RT, 0, 1500, 18, 62], PAY = [0, RT, 0, 600, 16, 22];
+const KEYS = [[0, ...HOOK], [3.0, ...HOOK], [4.6, ...PROB], [9.2, ...PROB], [11.2, ...AX], [12.6, ...RINGV], [14.4, ...RINGV], [15.4, ...SPV], [18.6, ...SPV], [19.6, ...WIDE], [24.4, ...WIDE],
+  [25.4, ...SPC], [32.2, ...SPC], [33.2, ...HOLD], [36.4, ...HOLD], [37.2, ...PAY], [40.2, ...PAY], [41.6, ...HOOK], [LOOP, ...HOOK]];
+let kk = null; const trR = { v: null }, trL = { v: null };
+function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k;
+  car.position.set(k.x, 0, k.z); car.rotation.set(0, k.psi, 0);
+  carrier.rotation.x = k.c;
+  gRing.rotation.z = k.ring; gSideR.rotation.z = k.sideR; gSideL.rotation.z = k.sideL; gSpi0.rotation.z = k.spi0; gSpi1.rotation.z = k.spi1; gPin.rotation.z = k.pin;
+  shaftR.rotation.x = k.c + k.d; shaftL.rotation.x = k.c - k.d;
+  const steer = Math.min(0.62, Math.atan(2700 * k.k / HT)); for (const g of fw) { g.rotation.set(0, steer, 0); g.children[0].rotation.x = k.c; }
+  // skid jitter on the inner (left) tire while the solid-axle idea is shown
+  const sk = win(tt, 7.6, 10.0, 0.2); shaftL.position.set(0, sk * 4 * Math.sin(tt * 97), sk * 5 * Math.sin(tt * 61));
+  M.tire.color.setHex(0x1b1c1f);
+  // trails: draw-range grows with time
+  if (!trR.v) { trR.v = trail(1, 0xffd21f); trL.v = trail(-1, 0x3fa9ff); }
+  const nVis = Math.max(0, Math.min(trR.v.n - 1, Math.floor(Math.min(tt, TR_END) * 60))); const ta = tt < 0.05 || tt > 10.8 ? 0 : 1;
+  for (const T of [trR.v, trL.v]) { T.m.geometry.setDrawRange(0, nVis * 6); T.m.visible = ta > 0 && nVis > 1; T.m.material.opacity = 0.85 * (1 - ramp(tt, 9.6, 10.8)); }
+  const bf = bodyFade(tt); for (const m of bodyMats) { m.opacity = m.userData.op0 * bf; } bodyG.visible = bf > 0.01; front.visible = true;
+  applyFade(housFade(tt)); highlight(tt);
+  const c = S.orbitCam(KEYS, tt); car.updateMatrixWorld(true);
+  const pos = c.pos.clone().applyMatrix4(car.matrixWorld), tgt = c.target.clone().applyMatrix4(car.matrixWorld);
+  camera.position.copy(pos); camera.up.set(0, 1, 0); camera.lookAt(tgt); camera.updateMatrixWorld();
+  const cp = new THREE.Vector3(k.x, 0, k.z); sun.position.set(cp.x - 2500, 7000, cp.z + 3000); sun.target.position.copy(cp); sun.target.updateMatrixWorld();
+  rimL.position.set(cp.x + 3000, 2500, cp.z - 3000); rimL.target.position.copy(cp); rimL.target.updateMatrixWorld();
+  return k; }
+const W2 = (v) => { car.updateMatrixWorld(true); return S.toScreen(camera, v.clone().applyMatrix4(car.matrixWorld)); };   // car-frame point -> screen
+const AXP = (x, y = 0, z = 0) => new THREE.Vector3(x, RT + y, z);                                                      // housing-frame point (no carrier rotation)
+const CRP = (v) => { const c = Math.cos(kk.c), s = Math.sin(kk.c); return AXP(v[0], v[1] * c - v[2] * s, v[1] * s + v[2] * c); };  // carrier-frame point
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const CAPS = [[3.4, 7.3, 'OUTER WHEEL: LONGER PATH', null, '#ffd21f'], [7.4, 10.2, 'SOLID AXLE = A TIRE SKIDS', null, '#ff4a3a'], [10.5, 12.6, 'INSIDE: THE DIFFERENTIAL', null, '#ffd21f'],
+  [18.4, 24.8, 'STRAIGHT: SAME SPEED', 1, '#ffffff'], [25.2, 32.6, 'TURN: SPIDERS SPIN', 2, '#ffffff'], [32.8, 36.6, 'HOLD ONE: OTHER 2X', 3, '#ffffff']];
+const TAGS = [
+  [12.9, 15.0, 'RING GEAR', () => AXP(40, 90, -30), -90, -160],
+  [13.3, 15.0, 'DRIVESHAFT', () => AXP(G.XA, 0, -260), 80, -130],
+  [15.0, 18.2, 'SPIDER GEARS', () => CRP([0, 44, 0]), -120, -150],
+  [16.4, 18.2, 'PIN', () => CRP([0, -60, 0]), 110, 120],
+  [20.0, 24.6, 'SIDE GEAR', () => AXP(-40, 0, 30), -60, 170],
+  [20.4, 24.6, 'SIDE GEAR', () => AXP(40, 0, 30), 60, 170],
+];
+function speedTag(a, text, p3, dx, dy, col) { if (a <= 0) return; const [x, y] = W2(p3); S.tag(g2, a, text, x, y, dx, dy, 52, col); }
+function overlay(t, k) {
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (3.1 - t) / 0.25), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'TWO WHEELS.', 'TWO SPEEDS?', 116); const [x, y] = W2(AXP(0, 0, 0)); S.redCircle(g2, hookA, x, y, 66, [-230, 150]); }
+  let a;
+  for (const C of CAPS) if ((a = win(t, C[0], C[1])) > 0) S.caption(g2, a, C[2], 440, 66, C[4], C[3]);
+  for (const tg of TAGS) if ((a = win(t, tg[0], tg[1])) > 0) { const [x, y] = W2(tg[3]()); S.tag(g2, a, tg[2], x, y, tg[4], tg[5], 50); }
+  // wheel/path tags
+  if ((a = win(t, 3.6, 7.3)) > 0) { speedTag(a, 'LONGER PATH', AXP(HT, -RT, 900), 40, 150, '#ffd21f'); speedTag(a, 'SHORTER PATH', AXP(-HT, -RT, 900), -40, 150, '#3fa9ff'); }
+  if ((a = win(t, 7.7, 10.0, 0.08)) > 0) { const [x, y] = W2(AXP(-HT, 0, 0)); g2.save(); g2.globalAlpha = a * (0.75 + 0.25 * Math.sin(t * 30)); S.outlined(g2, 'SKID!', Math.max(220, Math.min(760, x)), Math.min(1380, y + 190), 120, '#ff3b2f'); g2.restore(); }
+  if ((a = win(t, 20.6, 24.6)) > 0) { speedTag(a, 'SAME SPEED', AXP(-300, 0, 0), -40, -170, '#3fa9ff'); speedTag(a, 'SAME SPEED', AXP(300, 0, 0), 40, -170, '#ffd21f'); }
+  if ((a = win(t, 27.0, 32.4)) > 0) { speedTag(a, 'INNER: SLOWER', AXP(-260, 0, 0), -30, 190, '#3fa9ff'); speedTag(a, 'OUTER: FASTER', AXP(260, 0, 0), 30, -190, '#ffd21f'); }
+  if ((a = win(t, 33.8, 36.5)) > 0) { speedTag(a, 'STOPPED', AXP(-300, 0, 0), -30, 190, '#3fa9ff'); speedTag(a, '2X SPEED', AXP(300, 0, 0), 30, -190, '#ffd21f'); }
+  // slow-motion badge
+  if ((a = win(t, 26.4, 29.4)) > 0) { g2.save(); g2.globalAlpha = a; g2.font = '48px Anton'; g2.fillStyle = 'rgba(12,14,20,0.8)'; S.rrect(g2, 640, 520, 260, 76, 18); g2.fill(); g2.fillStyle = '#ffd21f'; g2.textAlign = 'center'; g2.fillText('SLOW-MO', 770, 576); g2.restore(); }
+  // spider spin arrow (curved) around the visible spider during the turn
+  if ((a = win(t, 26.0, 32.4)) > 0 || (a = win(t, 33.4, 36.4))) { const s0 = CRP([0, 62, 0]), s1 = CRP([0, -62, 0]); const p = (W2(s0)[1] < W2(s1)[1]) ? s0 : s1; const [x, y] = W2(p); spinArrow(a, x, y, 70, t); }
+  // payoff
+  if ((a = win(t, 36.8, 40.4, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.6)'; S.rrect(g2, 80, 360, 830, 290, 26); g2.fill(); g2.restore();
+    S.caption(g2, a, 'SPIDER GEARS', 470, 80, '#ffffff'); S.caption(g2, a, 'SPLIT THE SPEED', 600, 112, '#ffd21f'); }
+  if ((a = win(t, 40.4, 41.9, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.75)'; S.rrect(g2, 110, 1340, 770, 84, 24); g2.fill(); S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+function spinArrow(a, x, y, R, t) { if (y < 330 || y > 1430) return; g2.save(); g2.globalAlpha = a; g2.translate(x, y); g2.rotate((t * 2.2) % (Math.PI * 2)); g2.strokeStyle = '#ff7a1a'; g2.lineWidth = 12; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10;
+  g2.beginPath(); g2.arc(0, 0, R, 0, Math.PI * 1.4); g2.stroke(); const ex = R * Math.cos(Math.PI * 1.4), ey = R * Math.sin(Math.PI * 1.4); const ang = Math.PI * 1.4 + Math.PI / 2;
+  g2.fillStyle = '#ff7a1a'; g2.beginPath(); g2.moveTo(ex + 30 * Math.cos(ang), ey + 30 * Math.sin(ang)); g2.lineTo(ex + 22 * Math.cos(ang + 2.2), ey + 22 * Math.sin(ang + 2.2)); g2.lineTo(ex + 22 * Math.cos(ang - 2.2), ey + 22 * Math.sin(ang - 2.2)); g2.closePath(); g2.fill(); g2.restore(); }
+window._set = setAll; window._kin = kinAt;
+S.install(st, setAll, (t) => overlay(tl(t), kk));
+window.motionPx = (t, fps = 30) => 0;
+</script></body></html>
