@@ -208,11 +208,12 @@ const CRP = (v) => { const c = Math.cos(kk.c), s = Math.sin(kk.c); return AXP(v[
 // ---------- overlay ----------
 await document.fonts.load('120px Anton');
 const g2 = st.g2;
-const CAPS = [[3.4, 7.3, 'OUTER WHEEL: LONGER PATH', null, '#ffd21f'], [7.4, 10.2, 'SOLID AXLE = A TIRE SKIDS', null, '#ff4a3a'], [10.5, 12.6, 'INSIDE: THE DIFFERENTIAL', null, '#ffd21f'], [14.9, 17.9, 'RING GEAR CARRIES THEM', null, '#ffd21f'],
+const CAPS = [[3.4, 7.3, 'OUTER WHEEL: LONGER PATH', null, '#ffd21f'], [7.4, 10.2, 'SOLID AXLE = A TIRE SKIDS', null, '#ff4a3a'], [10.5, 12.6, 'INSIDE: THE DIFFERENTIAL', null, '#ffd21f'], [12.8, 14.8, 'DRIVESHAFT TURNS RING GEAR', null, '#ffd21f'], [14.9, 17.9, 'RING GEAR CARRIES THEM', null, '#ffd21f'],
   [18.4, 24.8, 'STRAIGHT: SAME SPEED', 1, '#ffffff'], [25.2, 32.6, 'TURN: SPIDERS SPIN', 2, '#ffffff'], [32.8, 36.6, 'HOLD ONE: OTHER 2X', 3, '#ffffff']];
 const TAGS = [
-  [12.9, 15.0, 'RING GEAR', () => AXP(40, 90, -30), -90, -160],
+  [12.9, 15.0, 'RING GEAR', () => AXP(40, 90, -30), -40, 170],
   [13.3, 15.0, 'DRIVESHAFT', () => AXP(G.XA, 0, -260), 80, -130],
+  [13.6, 15.0, 'PINION', () => AXP(G.XA, 0, -100), 160, 130],
   [15.0, 18.2, 'SPIDER GEARS', () => CRP([0, 44, 0]), -120, -150],
   [16.4, 18.2, 'PIN', () => CRP([0, 8, 8]), 120, 150],
   [20.0, 24.6, 'SIDE GEAR', () => AXP(-40, 20, 30), -60, -210],
@@ -231,6 +232,10 @@ function overlay(t, k) {
   if ((a = win(t, 3.6, 7.3)) > 0) { speedTag(a, 'LONGER PATH', AXP(HT, -RT, 900), 40, 150, '#ffd21f'); speedTag(a, 'SHORTER PATH', AXP(-HT, -RT, 900), -40, 150, '#3fa9ff'); }
   if ((a = win(t, 7.7, 10.0, 0.08)) > 0) { const [x, y] = W2(AXP(-HT, 0, 0)); g2.save(); g2.globalAlpha = a * (0.75 + 0.25 * Math.sin(t * 30)); S.outlined(g2, 'SKID!', Math.max(220, Math.min(760, x)), Math.min(1380, y + 190), 120, '#ff3b2f'); g2.restore(); }
   // slow-motion badge
+  // spider gear state: locked on its pin (straight) vs spinning on its pin (turn)
+  { const s0 = CRP([0, 52, 0]), s1 = CRP([0, -52, 0]); const p = (W2(s0)[1] < W2(s1)[1]) ? s0 : s1; const [x, y] = W2(p);
+    if ((a = win(t, 19.8, 24.8)) > 0) S.tag(g2, a, 'LOCKED ON PIN', x, y, -150, -40, 50, '#ff7a1a');
+    if ((a = win(t, 26.0, 36.4)) > 0) S.tag(g2, a, 'SPINS ON PIN', x, y, -150, -40, 50, '#ff7a1a'); }
   // wheel dials: both rear wheels, turning at their real speeds (thL = c - d, thR = c + d), steps 1-3
   if ((a = win(t, 19.4, 36.8, 0.3)) > 0) { const lab = t < 25.6 ? ['SAME', 'SAME'] : t < 33.4 ? ['SLOWER', 'FASTER'] : ['STOPPED', '2X FASTER'];
     g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.72)'; S.rrect(g2, 120, 1222, 750, 214, 24); g2.fill(); g2.restore();

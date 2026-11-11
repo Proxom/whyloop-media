@@ -8,8 +8,8 @@ LINES = [
  "With a solid axle, one tire would have to skid.",
  "So in the middle, there's a differential.",
  "The driveshaft turns the big ring gear. It carries two small spider gears on a pin.",
- "Going straight, the spider gears don't spin. They push both side gears, so both wheels turn at the same speed.",
- "In a turn, the inner wheel slows down. The spider gears start to spin, so the outer wheel speeds up by the same amount.",
+ "Going straight, the spider gears ride along, but they don't turn on their pin. So both wheels turn at the same speed.",
+ "In a turn, the road slows the inner wheel. Now the spider gears turn on their pin, and the outer wheel speeds up by the same amount.",
  "Hold one wheel still, and the other one spins twice as fast.",
  "The spider gears let one wheel slow down while the other speeds up.",
 ]
