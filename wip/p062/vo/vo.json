@@ -21,8 +21,8 @@
  },
  {
   "i": 4,
-  "text": "The driveshaft turns the big ring gear. It carries two small spider gears on a pin.",
-  "dur": 4.672
+  "text": "The driveshaft turns the ring gear. Its spider gears mesh with a side gear on each axle.",
+  "dur": 5.184
  },
  {
   "i": 5,
@@ -36,8 +36,8 @@
  },
  {
   "i": 7,
-  "text": "Hold one wheel still, and the other one spins twice as fast.",
-  "dur": 3.435
+  "text": "Hold one wheel still: the other spins at twice the ring gear's speed.",
+  "dur": 3.605
  },
  {
   "i": 8,

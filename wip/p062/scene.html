@@ -115,6 +115,10 @@ const housing = new THREE.Group(); axle.add(housing);
   const cov = new THREE.Mesh(new THREE.CylinderGeometry(112, 112, 16, 64), M.housing); cov.rotation.x = Math.PI / 2; cov.position.z = 128; housing.add(cov);
   for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; const b = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 12, 6), M.steel); b.rotation.x = Math.PI / 2; b.position.set(100 * Math.cos(a), 100 * Math.sin(a), 140); housing.add(b); }
   S.shadowAll(housing); }
+const BRX = 134; const brake = new THREE.Group(); axle.add(brake);
+{ const red = phys({ color: 0xd8261c, metalness: 0.3, roughness: 0.35, clearcoat: 0.6 }); brake.userData.m = red;
+  for (const s of [1, -1]) { const pad = new THREE.Mesh(new RoundedBoxGeometry(38, 50, 80, 3, 8), red); pad.position.set(-BRX, s * 44, 0); pad.userData.s = s; brake.add(pad); }
+  const yoke = new THREE.Mesh(new RoundedBoxGeometry(38, 134, 22, 3, 8), red); yoke.position.set(-BRX, 0, -48); brake.add(yoke); S.shadowAll(brake); }
 const fades = [];
 const fadeMesh = (root) => { root.traverse(o => { if (o.isMesh) { o.userData.baseM = o.material; const f = o.material.clone(); f.transparent = true; f.depthWrite = false; o.userData.fadeM = f; fades.push(o); } }); };
 fadeMesh(housing);
@@ -169,7 +173,7 @@ const bodyFade = (t) => t < 9.4 ? 1 : t < 10.8 ? 1 - ramp(t, 9.4, 10.8) : t < 40
 const housFade = (t) => t < 10.4 ? 0 : t < 11.8 ? ramp(t, 10.4, 11.8) : t < 40.0 ? 1 : 1 - ramp(t, 40.0, 41.2);
 function applyFade(fu) { for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.baseM; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fadeM; m.material.opacity = Math.max(0, 1 - 1.25 * fu); } } }
 // highlight: active parts glow, the rest dims
-const HL = [[12.8, 14.6, ['ring', 'pin']], [14.6, 17.6, ['spider', 'xpin', 'ring']], [19.6, 24.6, ['sideR', 'sideL']], [25.2, 32.6, ['spider']], [32.8, 36.6, ['spider', 'sideR']], [36.8, 40.2, ['spider']]];
+const HL = [[12.8, 14.6, ['ring', 'pin']], [14.6, 16.2, ['spider', 'xpin', 'ring']], [16.2, 18.4, ['spider', 'sideR', 'sideL']], [19.6, 24.6, ['sideR', 'sideL']], [25.2, 32.6, ['spider']], [32.8, 36.6, ['spider', 'sideR']], [36.8, 40.2, ['spider']]];
 const PARTS = ['ring', 'pin', 'spider', 'sideR', 'sideL', 'carrier', 'xpin'];
 const GLOW = { ring: 0xffc040, pin: 0xffffff, spider: 0xff7a10, sideR: 0xffd21f, sideL: 0x3fa9ff, carrier: 0, xpin: 0xffffff };
 function highlight(t) { let dimAll = 0; const act = {}; for (const [a, b, ps] of HL) { const u = Math.max(0, Math.min(1, (t - a) / 0.3, (b - t) / 0.3)); if (u > 0) { dimAll = Math.max(dimAll, u); for (const p of ps) act[p] = Math.max(act[p] || 0, u); } }
@@ -177,9 +181,9 @@ function highlight(t) { let dimAll = 0; const act = {}; for (const [a, b, ps] of
   for (const p of PARTS) { const m = M[p], a = act[p] || 0, d = dimAll * (1 - a); m.color.copy(m.userData.base).multiplyScalar(1 - 0.5 * d); m.emissive.setHex(GLOW[p]).multiplyScalar(0.16 * a * pulse); } }
 // camera keys in the CAR frame [t, tx, ty, tz, dist, elev, azim]
 const HOOK = [0, 380, -500, 8600, 60, 22], PROB = [0, 0, 600, 17000, 74, 18], AX = [0, RT, 0, 1700, 24, 34], RINGV = [10, RT, -60, 820, 30, -140], SPV = [0, RT, 0, 560, 14, 16],
-  WIDE = [80, RT, 0, 1500, 20, 58], SPC = [0, RT - 18, 0, 700, 12, 10], HOLD = [100, RT, 0, 1500, 18, 62], PAY = [0, RT, 0, 600, 16, 22];
+  WIDE = [80, RT, 0, 1500, 20, 58], SPC = [0, RT - 18, 0, 700, 12, 10], HOLD = [100, RT, 0, 1500, 18, 62], PAY = [0, RT, 0, 780, 16, 22]; const SPC3 = [-75, RT - 18, 0, 780, 12, 10];
 const KEYS = [[0, ...HOOK], [3.0, ...HOOK], [4.6, ...PROB], [9.2, ...PROB], [11.2, ...AX], [12.6, ...RINGV], [14.4, ...RINGV], [15.4, ...SPV], [18.6, ...SPV], [19.6, ...SPC],
-  [36.4, ...SPC], [37.2, ...PAY], [40.2, ...PAY], [41.6, ...HOOK], [LOOP, ...HOOK]];
+  [32.4, ...SPC], [33.2, ...SPC3], [36.4, ...SPC3], [37.2, ...PAY], [40.2, ...PAY], [41.6, ...HOOK], [LOOP, ...HOOK]];
 let kk = null; const trR = { v: null }, trL = { v: null };
 function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k;
   car.position.set(k.x, 0, k.z); car.rotation.set(0, k.psi, 0);
@@ -196,6 +200,7 @@ function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k;
   for (const T of [trR.v, trL.v]) { T.m.geometry.setDrawRange(0, nVis * 6); T.m.visible = ta > 0 && nVis > 1; T.m.material.opacity = 0.85 * (1 - ramp(tt, 9.6, 10.8)); }
   const bf = bodyFade(tt); for (const m of bodyMats) { m.opacity = m.userData.op0 * bf; } bodyG.visible = bf > 0.01; front.visible = true;
   applyFade(housFade(tt)); highlight(tt);
+  { const bi = ramp(tt, 32.3, 33.1) * (1 - ramp(tt, 36.4, 37.0)); brake.visible = bi > 0.01; for (const o of brake.children) if (o.userData.s) o.position.y = o.userData.s * (44 + 160 * (1 - bi)); brake.position.z = 0; brake.children[2].position.y = 0; brake.scale.setScalar(1); }
   const c = S.orbitCam(KEYS, tt); car.updateMatrixWorld(true);
   const pos = c.pos.clone().applyMatrix4(car.matrixWorld), tgt = c.target.clone().applyMatrix4(car.matrixWorld);
   camera.position.copy(pos); camera.up.set(0, 1, 0); camera.lookAt(tgt); camera.updateMatrixWorld();
@@ -213,11 +218,7 @@ const CAPS = [[3.4, 7.3, 'OUTER WHEEL: LONGER PATH', null, '#ffd21f'], [7.4, 10.
 const TAGS = [
   [12.9, 15.0, 'RING GEAR', () => AXP(40, 90, -30), -40, 170],
   [13.3, 15.0, 'DRIVESHAFT', () => AXP(G.XA, 0, -260), 80, -130],
-  [13.6, 15.0, 'PINION', () => AXP(G.XA, 0, -100), 160, 130],
   [15.0, 18.2, 'SPIDER GEARS', () => CRP([0, 44, 0]), -120, -150],
-  [16.4, 18.2, 'PIN', () => CRP([0, 8, 8]), 120, 150],
-  [20.0, 24.6, 'SIDE GEAR', () => AXP(-40, 20, 30), -60, -210],
-  [20.4, 24.6, 'SIDE GEAR', () => AXP(40, 20, 30), 60, -210],
 ];
 function speedTag(a, text, p3, dx, dy, col) { if (a <= 0) return; const [x, y] = W2(p3); S.tag(g2, a, text, x, y, dx, dy, 52, col); }
 function overlay(t, k) {
@@ -228,13 +229,19 @@ function overlay(t, k) {
   let a;
   for (const C of CAPS) if ((a = win(t, C[0], C[1])) > 0) S.caption(g2, a, C[2], 440, 66, C[4], C[3]);
   for (const tg of TAGS) if ((a = win(t, tg[0], tg[1])) > 0) { const [x, y] = W2(tg[3]()); S.tag(g2, a, tg[2], x, y, tg[4], tg[5], 50); }
+  // side gears named while the VO says 'a side gear on each axle' and kept through step 1 (blue = inner, yellow = outer)
+  if ((a = win(t, 16.2, 19.3)) > 0) { let [x, y] = W2(AXP(-62, -30, 40)); S.tag(g2, a, 'INNER SIDE GEAR', x, y, -40, 230, 48, '#3fa9ff'); [x, y] = W2(AXP(62, -30, 40)); S.tag(g2, a, 'OUTER SIDE GEAR', x, y, 40, 330, 48, '#ffd21f'); }
+  // step 2 seesaw: arrows around each side gear turning at that wheel's real speed (projected 3D circles)
+  if ((a = win(t, 25.8, 32.6)) > 0) { gearArrow(a, -1, k.c - k.d, '#3fa9ff', 'SLOWER'); gearArrow(a, 1, k.c + k.d, '#ffd21f', 'FASTER'); }
+  // step 3: brake holds the inner wheel
+  if ((a = win(t, 33.2, 36.4)) > 0) { const [x, y] = W2(AXP(-BRX, 0, 0)); S.tag(g2, a, 'HELD STILL', x, y + 50, -30, 190, 52, '#ff4a3a'); }
   // wheel/path tags
   if ((a = win(t, 3.6, 7.3)) > 0) { speedTag(a, 'LONGER PATH', AXP(HT, -RT, 900), 40, 150, '#ffd21f'); speedTag(a, 'SHORTER PATH', AXP(-HT, -RT, 900), -40, 150, '#3fa9ff'); }
   if ((a = win(t, 7.7, 10.0, 0.08)) > 0) { const [x, y] = W2(AXP(-HT, 0, 0)); g2.save(); g2.globalAlpha = a * (0.75 + 0.25 * Math.sin(t * 30)); S.outlined(g2, 'SKID!', Math.max(220, Math.min(760, x)), Math.min(1380, y + 190), 120, '#ff3b2f'); g2.restore(); }
   // slow-motion badge
   // spider gear state: locked on its pin (straight) vs spinning on its pin (turn)
   { const s0 = CRP([0, 52, 0]), s1 = CRP([0, -52, 0]); const p = (W2(s0)[1] < W2(s1)[1]) ? s0 : s1; const [x, y] = W2(p);
-    if ((a = win(t, 19.8, 24.8)) > 0) S.tag(g2, a, 'LOCKED ON PIN', x, y, -150, -40, 50, '#ff7a1a');
+    if ((a = win(t, 19.8, 24.8)) > 0) S.tag(g2, a, 'NOT SPINNING ON PIN', x, y, -150, -40, 50, '#ff7a1a');
     if ((a = win(t, 26.0, 36.4)) > 0) S.tag(g2, a, 'SPINS ON PIN', x, y, -150, -40, 50, '#ff7a1a'); }
   // wheel dials: both rear wheels, turning at their real speeds (thL = c - d, thR = c + d), steps 1-3
   if ((a = win(t, 19.4, 36.8, 0.3)) > 0) { const lab = t < 25.6 ? ['SAME', 'SAME'] : t < 33.4 ? ['SLOWER', 'FASTER'] : ['STOPPED', '2X FASTER'];
@@ -247,6 +254,13 @@ function overlay(t, k) {
     S.caption(g2, a, 'SPIDER GEARS', 470, 80, '#ffffff'); S.caption(g2, a, 'LET SPEEDS DIFFER', 600, 104, '#ffd21f'); }
   if ((a = win(t, 40.4, 41.9, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.75)'; S.rrect(g2, 110, 1340, 770, 84, 24); g2.fill(); S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
 }
+function gearArrow(a, sx, th, col, word) { const pts = []; const r = 58, x0 = sx * 80;
+  for (let i = 0; i <= 40; i++) { const q = -th * 0 + th + i / 40 * Math.PI * 1.25; pts.push(W2(AXP(x0, r * Math.sin(q), r * Math.cos(q)))); }
+  g2.save(); g2.globalAlpha = a; g2.strokeStyle = col; g2.lineWidth = 11; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.65)'; g2.shadowBlur = 10;
+  g2.beginPath(); pts.forEach(([x, y], i) => i ? g2.lineTo(x, y) : g2.moveTo(x, y)); g2.stroke();
+  const [ex, ey] = pts[40], [px, py] = pts[36]; const ang = Math.atan2(ey - py, ex - px); g2.fillStyle = col; g2.beginPath();
+  g2.moveTo(ex + 30 * Math.cos(ang), ey + 30 * Math.sin(ang)); g2.lineTo(ex + 22 * Math.cos(ang + 2.2), ey + 22 * Math.sin(ang + 2.2)); g2.lineTo(ex + 22 * Math.cos(ang - 2.2), ey + 22 * Math.sin(ang - 2.2)); g2.closePath(); g2.fill(); g2.restore();
+  const [lx, ly] = W2(AXP(x0 + sx * 40, -r - 40, 0)); g2.save(); g2.globalAlpha = a; S.outlined(g2, word, Math.max(140, Math.min(860, lx)), Math.min(1180, Math.max(380, ly + 70)), 52, col); g2.restore(); }
 function wheelDial(a, x, y, th, col, name, word) { g2.save(); g2.globalAlpha = a; g2.translate(x, y); g2.scale(0.74, 0.74);
   g2.fillStyle = '#16181c'; g2.beginPath(); g2.arc(0, 0, 84, 0, 7); g2.fill(); g2.strokeStyle = '#2c3036'; g2.lineWidth = 10; g2.beginPath(); g2.arc(0, 0, 72, 0, 7); g2.stroke();
   g2.rotate(-th); g2.fillStyle = col; g2.beginPath(); g2.arc(0, 0, 54, 0, 7); g2.fill(); g2.fillStyle = '#16181c';

@@ -13,15 +13,15 @@
   "In a turn, the outer wheel travels a longer path than the inner wheel.",
   "With a solid axle, one tire would have to skid.",
   "So in the middle, there's a differential.",
-  "The driveshaft turns the big ring gear. It carries two small spider gears on a pin.",
+  "The driveshaft turns the ring gear. Its spider gears mesh with a side gear on each axle.",
   "Going straight, the spider gears ride along, but they don't turn on their pin. So both wheels turn at the same speed.",
   "In a turn, the road slows the inner wheel. Now the spider gears turn on their pin, and the outer wheel speeds up by the same amount.",
-  "Hold one wheel still, and the other one spins twice as fast.",
+  "Hold one wheel still: the other spins at twice the ring gear's speed.",
   "The spider gears let one wheel slow down while the other speeds up."
  ],
  "caption": "How a Car Differential Works 🚗\nGuess: if one wheel stops, how fast does the other spin? 👇\nFollow @whyloop.hq for a new machine every day\n#differential #howitworks #carengineering #mechanism #engineering",
  "firstComment": "Answer: twice as fast 🔧\n\nIn a turn, the outer wheel rolls along a bigger circle than the inner one, so it has to turn faster. With a solid axle, one tire would have to scrub.\n\nThe pinion on the driveshaft turns the big ring gear. The ring gear is bolted to the carrier, and the carrier holds small spider gears on a pin. The spider gears mesh with the two side gears, one on each axle shaft.\n\nGoing straight, the spider gears don't turn on their pin: everything spins as one block and both wheels turn at the same speed. In a turn, the spider gears start to spin on the pin, so one side gear runs slower and the other faster by the same amount. The ring gear always turns at the average of the two wheel speeds, so if one wheel is held still, the other spins at twice the ring gear's speed.\n\n(Simplified 3D model: an open differential with two spider gears and straight bevel teeth; real axles use hypoid gears, and the car body is shown see-through.)\n\nSources:\nBritannica, Differential gear (on a straight road no relative motion between side gears and pinions; in a left turn the right wheel turns faster; the ring gear turns at the mean speed of the two wheels): https://www.britannica.com/technology/differential-gear\nMIT 2.972, How a Differential Works (straight: the planet pinions do not spin; w_in = (w1 + w2) / 2): https://web.mit.edu/2.972/www/reports/differential/differential.html\ntec-science, How does a differential gear work? (one wheel standing still, the other turns at double speed): https://www.tec-science.com/mechanical-power-transmission/planetary-gear/how-does-a-differential-gear-work\nCounterman, Limited-Slip Differentials (spider gears ride on a pin in the carrier; they don't spin going straight and spin on the pin in a corner): https://www.counterman.com/limited-slip-differentials",
- "altText": "3D animation explaining a car differential, with a voiceover. A see-through car turns left on a parking lot; a red circle marks the middle of the rear axle under the question Two wheels. Two speeds? A yellow track behind the outer rear wheel is longer than the blue track behind the inner wheel. With a solid axle, the inner tire would skid. The car body and the axle housing fade to show the differential: the driveshaft's small pinion turns a big steel ring gear, which carries two orange spider gears on a pin between a yellow side gear and a blue side gear on the two axle shafts. Two small wheel dials at the bottom turn at the real speeds of the inner (blue) and outer (yellow) rear wheels. 1, going straight: the spider gears ride around without spinning and both dials read same. 2, in a turn, in slow motion: the spider gears spin on their pin; the inner wheel turns slower and the outer faster. 3, one wheel is held still: the inner dial stops and the outer turns twice as fast. The payoff reads Spider gears let speeds differ. The car comes back and a follow line appears before the video loops.",
+ "altText": "3D animation explaining a car differential, with a voiceover. A see-through car turns left on a parking lot; a red circle marks the middle of the rear axle under the question Two wheels. Two speeds? A yellow track behind the outer rear wheel is longer than the blue track behind the inner wheel. With a solid axle, the inner tire would skid. The car body and the axle housing fade to show the differential: the driveshaft's small pinion turns a big steel ring gear, which carries two orange spider gears on a pin; they mesh with a blue inner side gear and a yellow outer side gear, one on each axle shaft. Two small wheel dials at the bottom turn at the real speeds of the inner (blue) and outer (yellow) rear wheels. 1, going straight: the spider gears ride around without spinning and both dials read same. 2, in a turn, in slow motion: the spider gears spin on their pin; curved arrows on the side gears and the dials show the inner wheel turning slower and the outer faster. 3, a red brake clamps the inner axle: held still, the inner dial stops and the outer turns twice as fast. The payoff reads Spider gears let speeds differ. The car comes back and a follow line appears before the video loops.",
  "onScreen": [
   "INSIDE IT",
   "TWO WHEELS.",
@@ -37,8 +37,6 @@
   "RING GEAR",
   "DRIVESHAFT",
   "SPIDER GEARS",
-  "PIN",
-  "SIDE GEAR",
   "INNER: SAME",
   "OUTER: SAME",
   "INNER: SLOWER",
@@ -52,9 +50,13 @@
   "LET SPEEDS DIFFER",
   "FOLLOW → NEW MACHINE TOMORROW",
   "DRIVESHAFT TURNS RING GEAR",
-  "PINION",
-  "LOCKED ON PIN",
-  "SPINS ON PIN"
+  "SPINS ON PIN",
+  "INNER SIDE GEAR",
+  "OUTER SIDE GEAR",
+  "NOT SPINNING ON PIN",
+  "SLOWER",
+  "FASTER",
+  "HELD STILL"
  ],
  "sources": [
   "https://www.britannica.com/technology/differential-gear",
@@ -64,5 +66,5 @@
   "https://www.autotechart.com/how-it-works/differential/"
  ],
  "learningApplied": "CLARITY FIRST (Erkan 10 Nov): multi-step topic 42 s, VO synced per step, problem first, parts named, one step at a time with highlight, slow-mo at the key moment, payoff 3.6 s; quality rules (real object first: the car; camera close on the gears; min label 50 px).",
- "status": "wip"
+ "status": "wip (round 4 render)"
 }
