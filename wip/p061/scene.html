@@ -27,7 +27,7 @@ const brushed = (() => { const c = document.createElement('canvas'); c.width = 5
   g.fillStyle = '#909090'; g.fillRect(0, 0, 512, 64); for (let i = 0; i < 900; i++) { const v = 110 + r() * 60 | 0; g.fillStyle = `rgba(${v},${v},${v},0.35)`; g.fillRect(r() * 512, r() * 64, 40 + r() * 200, 1); }
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.05, 0.3); return t; })();
 const M = {
-  paint: new THREE.MeshPhysicalMaterial({ color: 0x8e1016, roughness: 0.35, metalness: 0.35, clearcoat: 1.0, clearcoatRoughness: 0.06 }),
+  paint: new THREE.MeshPhysicalMaterial({ color: 0x8e1016, roughness: 0.45, metalness: 0.15, clearcoat: 1.0, clearcoatRoughness: 0.12 }),
   alu: new THREE.MeshPhysicalMaterial({ color: 0xd9dde2, roughness: 0.28, roughnessMap: brushed, metalness: 1.0, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
   anod: new THREE.MeshPhysicalMaterial({ color: 0x2a2e35, roughness: 0.38, roughnessMap: grain, metalness: 0.85, clearcoat: 0.4, clearcoatRoughness: 0.25 }),
   steel: new THREE.MeshStandardMaterial({ color: 0xb8bec6, roughness: 0.3, metalness: 1.0 }),
@@ -93,16 +93,16 @@ const lever = new THREE.Group(); scene.add(lever); const camG = new THREE.Group(
 
 // ---------- camera keys: [t, tx, ty, tz, dist, elev, azim] ----------
 const HOOK = [0, 20, 6, 0, 230, 14, 38];
-const KEYS = [HOOK, [1.7, 20, 6, 0, 230, 14, 38], [3.0, 30, 6, 0, 205, 4, 6], [4.4, 12, 2, 0, 118, 2, 3], [8.4, 11, 2, 0, 104, 2, 2], [9.9, 11, 4, 0, 112, 2, 2],
-  [10.6, 12, 18, 0, 170, 3, 4], [12.4, 12, 18, 0, 175, 3, 5], [13.6, 28, 8, 0, 205, 4, 6], [15.0, 20, 6, 0, 230, 14, 38], [17.0, 20, 6, 0, 230, 14, 38]];
+const KEYS = [HOOK, [1.7, 20, 6, 0, 230, 14, 38], [3.0, 30, 6, 0, 205, 4, 6], [4.4, 12, -5, 0, 118, 2, 3], [8.4, 11, -5, 0, 110, 2, 2], [9.9, 11, -4, 0, 116, 2, 2],
+  [10.6, 12, 0, 0, 170, 3, 4], [13.2, 12, 0, 0, 175, 3, 5], [14.3, 28, 8, 0, 205, 4, 6], [15.5, 20, 6, 0, 230, 14, 38], [17.0, 20, 6, 0, 230, 14, 38]];
 const front = body.userData.front;
-const fadeA = (t) => t < 1.7 ? 1 : t < 2.7 ? 1 - S.smooth((t - 1.7) / 1.0) : t < 14.4 ? 0 : t < 15.4 ? S.smooth((t - 14.4) / 1.0) : 1;
+const fadeA = (t) => t < 1.7 ? 1 : t < 2.7 ? 1 - S.smooth((t - 1.7) / 1.0) : t < 14.8 ? 0 : t < 15.6 ? S.smooth((t - 14.8) / 0.8) : 1;
 let cur = null;
 function setScene(t) {
   const k = kin(t); cur = k;
   rodG.position.x = k.pin; body.position.x = k.x0; lever.position.set(k.pin, 0, 0); lever.rotation.z = k.b * Math.PI / 180;
   const a = fadeA(t); front.material.opacity = 0.04 + 0.96 * a; front.material.depthWrite = a > 0.98; front.visible = a > 0.01; front.castShadow = a > 0.5;
-  const sq = (t > 4.6 && t < 12.9) ? Math.min(1, k.F * 1.1) : 0; M.cam.emissiveIntensity = 0.55 * sq * (t > 9.3 && t < 10.4 ? 1.4 : 1);
+  const sq = (t > 4.6 && t < 13.6) ? Math.min(1, k.F * 1.1) : 0; M.cam.emissiveIntensity = 0.55 * sq * (t > 9.3 && t < 10.4 ? 1.4 : 1);
   const c = S.orbitCam(KEYS, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
 }
 const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
@@ -110,24 +110,37 @@ const win = (t, a, b, f = 0.25) => t < a - f || t > b + f ? 0 : t < a ? (t - (a 
 function overlay(t) {
   const g = st.g2; S.vignette(g, 520); const k = cur;
   const la = (90 - k.g) * Math.PI / 180; const dir = [Math.cos(la), Math.sin(la)], tan = [-dir[1], dir[0]];
-  const tip = [k.pin + dir[0] * 25, dir[1] * 25];
+  const tip = [k.pin + dir[0] * 15, dir[1] * 15];
   // hook
-  if (t < 1.9) { const a = t < 1.5 ? 1 : 1 - (t - 1.5) / 0.4; const [cx, cy] = scr(k.x0 + 12, 0, 6); S.redCircle(g, a, cx, cy, 78, [-250, 200]); S.hookCard(g, a, 'WHY DOES IT', 'STAY SHUT?', 124); }
-  if (t > 16.55) { const a = (t - 16.55) / 0.45; const [cx, cy] = scr(k.x0 + 12, 0, 6); S.redCircle(g, a, cx, cy, 78, [-250, 200]); S.hookCard(g, a, 'WHY DOES IT', 'STAY SHUT?', 124); }
+  if (t < 1.9) { const a = t < 1.5 ? 1 : 1 - (t - 1.5) / 0.4; const [cx, cy] = scr(k.pin + dir[0] * 13, dir[1] * 13, 3); S.redCircle(g, a, cx, cy, 78, [-250, 200]); S.hookCard(g, a, 'WHY DOES IT', 'STAY SHUT?', 124); }
+  if (t > 16.55) { const a = (t - 16.55) / 0.45; const [cx, cy] = scr(k.pin + dir[0] * 13, dir[1] * 13, 3); S.redCircle(g, a, cx, cy, 78, [-250, 200]); S.hookCard(g, a, 'WHY DOES IT', 'STAY SHUT?', 124); }
   // causes: push to close, tug, pull open (arrow at the lever tip, along the swing direction)
-  const arrow = (a, sgn) => { if (a <= 0) return; const p0 = scr(tip[0] - sgn * tan[0] * 22, tip[1] - sgn * tan[1] * 22, 4), p1 = scr(tip[0] - sgn * tan[0] * 4, tip[1] - sgn * tan[1] * 4, 4); S.forceArrow(g, a, p0[0], p0[1], p1[0], p1[1], 24); };
-  arrow(win(t, 2.75, 9.35, 0.2), 1); arrow(win(t, 10.75, 11.25, 0.12), -1); arrow(win(t, 12.55, 13.6, 0.15), -1);
+  const arrow = (a, sgn) => { if (a <= 0) return; const p0 = scr(tip[0] - sgn * tan[0] * 14, tip[1] - sgn * tan[1] * 14, 4), p1 = scr(tip[0] - sgn * tan[0] * 2.5, tip[1] - sgn * tan[1] * 2.5, 4); const ok = (p) => p[0] > 100 && p[0] < 880 && p[1] > 340 && p[1] < 1400; if (ok(p0) && ok(p1)) S.forceArrow(g, a, p0[0], p0[1], p1[0], p1[1], 24); };
+  arrow(win(t, 2.75, 9.35, 0.2), 1); arrow(win(t, 10.75, 11.25, 0.12), -1); arrow(win(t, 13.25, 14.2, 0.15), -1);
   // labels and captions (one at a time)
   { const a = win(t, 2.4, 4.7); if (a > 0) { const [px, py] = scr(k.pin + E * Math.cos(k.b * Math.PI / 180) + 2, 3, 3); S.tag(g, a, 'OFF-CENTER CAM', px, py, 60, -230, 56, '#ffb020'); } }
-  S.caption(g, win(t, 5.0, 8.3), 'IT SQUEEZES THE FORK', 450, 74, '#ffffff');
-  S.caption(g, win(t, 8.45, 10.9), 'PAST THE PEAK...', 450, 84, '#ffd21f');
-  S.caption(g, win(t, 11.05, 13.6), 'SQUEEZE HOLDS IT SHUT', 450, 80, '#ffffff');
+  S.caption(g, win(t, 5.0, 7.9), 'IT SQUEEZES THE FORK', 450, 74, '#ffffff');
+  S.caption(g, win(t, 8.1, 10.4), 'PAST THE PEAK...', 450, 84, '#ffd21f');
+  S.caption(g, win(t, 10.75, 13.3), 'SQUEEZE HOLDS IT SHUT', 450, 80, '#ffffff');
   // squeeze arrows on both sides of the dropout (size follows the clamp force)
-  const sq = (t > 4.75 && t < 13.0) ? k.F : 0; if (sq > 0.02) { const L = 3 + 5 * sq, y = 12.5; const a1 = scr(1 + L + 3, y), b1 = scr(1, y), a2 = scr(-6 - L - 5, y), b2 = scr(-6, y);
-    S.forceArrow(g, Math.min(1, sq * 3), a1[0], a1[1], b1[0], b1[1], 20); S.forceArrow(g, Math.min(1, sq * 3), a2[0], a2[1], b2[0], b2[1], 20); }
+  const sq = (t > 4.75 && t < 13.2) ? k.F : 0; if (sq > 0.02) { const L = 3 + 5 * sq, y = 12.5; const a1 = scr(k.x0 + L + 4, y), b1 = scr(k.x0 + 0.6, y);
+    if (a1[0] < 880 && b1[0] > 100 && a1[1] > 540 && a1[1] < 1110) S.forceArrow(g, Math.min(1, sq * 3), a1[0], a1[1], b1[0], b1[1], 20); }
+  squeezeGraph(g, win(t, 4.7, 13.2, 0.3), k);
   // follow line
-  if (t > 15.3 && t < 16.8) { const a = Math.min(1, (t - 15.3) / 0.25, (16.8 - t) / 0.25); g.save(); g.globalAlpha = a; S.outlined(g, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1380, 54, '#ffffff'); g.restore(); }
+  if (t > 15.55 && t < 16.5) { const a = Math.min(1, (t - 15.55) / 0.2, (16.5 - t) / 0.2); g.save(); g.globalAlpha = a; S.outlined(g, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1380, 54, '#ffffff'); g.restore(); }
 }
+// squeeze vs lever travel: rises once the body touches, peaks at gamma 8, dips 2 % into the closed stop (over the top)
+const Fof = (gm) => { if (gm > 70) return 0; const c = Math.cos(118 * Math.PI / 180); return (c - Math.cos((188 - gm) * Math.PI / 180)) / (c + 1); };
+function squeezeGraph(g, a, k) { if (a <= 0) return; g.save(); g.globalAlpha = a; const x0 = 150, x1 = 820, yb = 1385, H = 150;
+  g.fillStyle = 'rgba(10,12,18,0.74)'; S.rrect(g, 100, 1140, 780, 285, 22); g.fill();
+  g.font = '44px Anton'; g.fillStyle = '#ffffff'; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText('SQUEEZE', 130, 1196);
+  const X = (gm) => x0 + (95 - gm) / 95 * (x1 - x0), Y = (f) => yb - f * H * 0.88 - 8;
+  g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 4; g.beginPath(); g.moveTo(x0, yb); g.lineTo(x1, yb); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 6; g.beginPath(); for (let gm = 95; gm >= 0; gm -= 0.5) { const p = [X(gm), Y(Fof(gm))]; gm === 95 ? g.moveTo(...p) : g.lineTo(...p); } g.stroke();
+  g.strokeStyle = '#ffd21f'; g.setLineDash([10, 9]); g.lineWidth = 4; g.beginPath(); g.moveTo(X(8), Y(1) - 18); g.lineTo(X(8), yb); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = '#ff8a1a'; g.lineWidth = 8; g.beginPath(); for (let gm = 95; gm >= k.g - 0.01; gm -= 0.5) { const p = [X(gm), Y(Fof(gm))]; gm === 95 ? g.moveTo(...p) : g.lineTo(...p); } g.stroke();
+  g.fillStyle = '#ff8a1a'; g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.arc(X(k.g), Y(Fof(k.g)), 15, 0, Math.PI * 2); g.fill(); g.stroke();
+  g.restore(); }
 window.motionPx = () => 0;
 window.probe = (t) => { setScene(t); return { k: cur, cam: [scr(cur.pin, 0), scr(0, 0)] }; };
 S.install(st, setScene, overlay);
