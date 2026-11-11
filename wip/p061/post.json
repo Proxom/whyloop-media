@@ -7,10 +7,39 @@
  "hook": "WHY DOES IT / STAY SHUT?",
  "principle": "The lever turns an off-center cam on a pin at the end of the skewer rod: as it closes, the cam's fat side turns toward the fork and pushes the cam body against the dropout while pulling the rod (and the nut on the other side) tight, and because the cam goes just over its highest point before the lever is fully down, the clamp force pushes the lever further shut instead of open.",
  "caption": "Why doesn't a bike's quick release pop open? 🚲\nGuess: what keeps it shut? 👇\nFollow @whyloop.hq for a new machine every day\n#bike #cycling #howitworks #engineering #mechanism",
- "firstComment": "Answer: it goes over the top 🔧\n\nThe lever turns an off-center cam on the end of the skewer rod. As you close it, the fat side of the cam turns toward the fork. That pushes the cam body hard against the dropout and pulls the rod, so the nut on the other side clamps too. The wheel is squeezed between them.\n\nThe trick: the cam's highest point comes just BEFORE the lever is all the way down. In the last few degrees it loosens very slightly, so the squeeze now pushes the lever further shut, not open. Bumps and vibration can't flip it back. To open it, you have to pull it back over the peak.\n\nThat's also why the lever must go all the way down: if it stops before the peak, the squeeze pushes it open.\n\n(Simplified 3D model; the cam movement is about a millimeter in real life. Designs vary.)\n\nSources:\nSheldon Brown, Bicycle Quick-Release Mechanisms (the cam goes \"over the top\", so the quick release loosens very slightly when the lever is pushed all the way down; vibration then tends to hold it closed): https://sheldonbrown.com/skewers.html\nPark Tool, Wheel Removal and Installation (the cam puts tension on the shaft and pulls the cam and the adjusting nut tight against the dropouts): https://www.parktool.com/en-int/blog/repair-help/wheel-removal-and-installation\nUS Patent 8,905,492 (a lever with an eccentric cam varies the distance between the two stops; about 1 mm of travel over about 120 degrees of cam angle): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8905492",
- "altText": "3D animation of a bicycle front wheel quick release. A red fork, the silver hub with spokes and a black cam body with a silver lever sticking out, under the question Why does it stay shut? The camera turns to the front and the front half of the cam body fades away to show an orange off-center cam on a pin. An orange arrow pushes the lever closed: the cam's fat side, marked yellow, turns toward the fork, the cam body seats on the dropout and arrows show the squeeze growing. Just before the lever is fully down the cam passes its peak and the lever snaps home against its stop. A small tug lifts it and it snaps back. Then a strong pull takes it back over the peak and it opens. Text on screen: Off-center cam. It squeezes the fork. Past the peak. Squeeze holds it shut. Follow, new machine tomorrow.",
- "onScreen": ["INSIDE IT", "WHY DOES IT", "STAY SHUT?", "WHYLOOP", "OFF-CENTER CAM", "IT SQUEEZES THE FORK", "PAST THE PEAK...", "SQUEEZE HOLDS IT SHUT", "FOLLOW → NEW MACHINE TOMORROW"],
- "sources": ["https://sheldonbrown.com/skewers.html", "https://www.parktool.com/en-int/blog/repair-help/wheel-removal-and-installation", "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8905492"],
+ "firstComment": "Answer: it goes over the top 🔧\n\nThe lever turns an off-center cam on the end of the skewer rod. As you close it, the fat side of the cam turns toward the fork. That pushes the cam body hard against the dropout and pulls the rod, so the nut on the other side clamps too. The wheel is squeezed between them.\n\nThe trick: the cam's highest point comes just BEFORE the lever is all the way down. In the last few degrees it loosens very slightly, so the squeeze now pushes the lever further shut, not open. Bumps and vibration can't flip it back. To open it, you have to pull it back over the peak.\n\nThat's also why the lever must go all the way down: if it stops before the peak, the squeeze pushes it open.\n\n(Simplified 3D model; in real life the cam moves the parts only a millimeter or two. Designs vary.)\n\nSources:\nSheldon Brown, Bicycle Quick-Release Mechanisms (the cam goes \"over the top\", so the quick release loosens very slightly when the lever is pushed all the way down; vibration then tends to hold it closed): https://sheldonbrown.com/skewers.html\nPark Tool, Wheel Removal and Installation (the cam puts tension on the shaft and pulls the cam and the adjusting nut tight against the dropouts): https://www.parktool.com/en-int/blog/repair-help/wheel-removal-and-installation\nUS Patent 8,905,492 (a lever with an eccentric cam varies the distance between the two stops; about 1 mm of travel over about 120 degrees of cam angle): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8905492",
+ "altText": "3D animation of a bicycle front wheel quick release. A red fork, the silver hub with spokes and a black cam body with a silver lever sticking out, under the question Why does it stay shut? The camera turns to the front and the front half of the cam body fades away to show an orange off-center cam on a pin. An orange arrow pushes the lever closed: the cam's fat side, marked yellow, turns toward the fork, the cam body slides onto the dropout and a small Squeeze graph rises as the lever closes. Just before the lever is fully down the graph passes its peak and dips slightly as the lever snaps home. A small tug lifts it and it snaps back. Then a strong pull takes it back over the peak and it opens. Text on screen: Off-center cam. It squeezes the fork. Past the peak. Squeeze holds it shut. Follow, new machine tomorrow.",
+ "onScreen": [
+  "INSIDE IT",
+  "WHY DOES IT",
+  "STAY SHUT?",
+  "WHYLOOP",
+  "OFF-CENTER CAM",
+  "SQUEEZE",
+  "IT SQUEEZES THE FORK",
+  "PAST THE PEAK...",
+  "SQUEEZE HOLDS IT SHUT",
+  "FOLLOW → NEW MACHINE TOMORROW"
+ ],
+ "sources": [
+  "https://sheldonbrown.com/skewers.html",
+  "https://www.parktool.com/en-int/blog/repair-help/wheel-removal-and-installation",
+  "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8905492"
+ ],
  "learningApplied": "Data (Metricool 11 Nov 05:10): the B track (wordless) Reels stay ahead (p048 18.7K, p050 9.9K, p052 8.0K, all B); E had 2 in a row (p056, p060) -> group V; track B after p059b/p060 (A). Winner pattern: one small part + a clear snap. Simple one-part mechanism -> 17 s (CLARITY FIRST 12-20 s). Reviewer lessons p057-p060: brushed metal + clearcoat paint instead of flat colors, real context first (fork, spokes, tire), opacity fade only, one label at a time, no text over the snap.",
- "status": "wip"
+ "status": "wip (not scheduled: round 2 visual 5, clarity gate fail)",
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 17.000 s, first/last luma 77.2/76.7, loop seam 0.57",
+  "mechanism": "PASS principle written; eccentric cam E 1.8 / R 6.2, peak at gamma 8, closed 98 % of peak (over the top); check.py full loop 240 Hz: cam-face 0.02 mm, lever clear of fork/body, slot 3.2 > lever 2.6",
+  "facts": "PASS Sheldon Brown skewers, Park Tool wheel removal, US 8,905,492",
+  "text": "PASS pyspellchecker flags only off-center/quick-release (valid), hashtags, handle, mm; hook 124 px, labels 56-84 px, graph title 44 px; safe zones checked",
+  "audio": "PASS -18.2 LUFS, -2.9 dBTP, HP4k gap 49.0 dB; thunks on 9.62/11.5 s",
+  "look": "PASS stills + safe-zone frame; reviewer-noted fork strip to investigate",
+  "clarity": "FAIL x2 (fresh reviewers: 'stays shut' only from prior knowledge)"
+ },
+ "visualScore": {
+  "round1": 5,
+  "round2": 5,
+  "notes": "see NEXT.md"
+ }
 }
