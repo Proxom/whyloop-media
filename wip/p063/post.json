@@ -38,5 +38,20 @@
  ],
  "learningApplied": "11 Nov 21:07 decision: voiceover + the object's real context required (clarity gate). Rotation: 3 V in a row (p058, p062 + p061 wip) -> E. Simple one-part mechanism -> 20 s (CLARITY FIRST 12-20 s band, VO). Two-stage stroke (magazine stops, blade continues) from US 4,315,589.",
  "slot": "2026-11-13T01:00 Europe/London",
- "status": "wip"
+ "status": "reserve (not scheduled)",
+ "visualScore": {
+  "round1": 4,
+  "round2": 4,
+  "notes": "R1: flat 2D-looking front section, hatch caps fill the frame, muddy double-exposure dissolve, blown spot highlight, hook circle on empty space -> fixed (3/4 section camera, 0.3 s dissolve, softer spot, circle on the nose). R2: hatch caps still read as placeholder, hero reads as a red box (no curved head/hinge/anvil visible), dark rail misread as a black paper block, staple wire too thick/tube-like."
+ },
+ "clarity": "PASS (12 Nov 05:07 run, fresh reviewer, frames 2 fps + VO only: explanation correct, 14-year-old YES; notes: problem step only told, not shown; macro shows one groove)",
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 20.0 s, no black first/last frame",
+  "audio": "PASS -15.1 LUFS, -3.0 dBTP, HP4k gap 20.0 dB, no banned sounds (all SFX fundamentals < 1 kHz)",
+  "mechanism": "PASS check.py: wire centreline >= 0.369 mm from the anvil (RW 0.32) over the loop at 240 Hz; folded legs 3.9 mm apart; blade 6.40 in a 6.54 slot; two-stage stroke (magazine stops, blade continues) per US 4,315,589",
+  "facts": "PASS Wikipedia Stapler + US 4,315,589 (opened this run via Parallel fetch)",
+  "text": "PASS pyspellchecker (flags: hashtag/handle only), labels 46-70 px, safe zones checked (red-circle arrow tail reaches into the bottom zone; no text there)",
+  "look": "PASS 6 stills + 0.5 s safe-zone frame, no glitches",
+  "visual": "4 / 4 -> AGENT 6: concept wrong, not scheduled"
+ }
 }

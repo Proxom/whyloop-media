@@ -9,3 +9,9 @@ Rebuild: venv(kokoro-onnx 0.6.1 numpy soundfile shapely): python kin.py; python 
 Render: python3 -m http.server 8765 (repo root); 2 workers: node tools/render/render.js wip/p063/scene.html <out> 30 1 0 600 0.9 1 <w> 2 1080 1920 1 (~4.5 s/frame/worker, ~23 min)
 then tools/render/encode.sh <out> wip/p063/mix.wav stapler_reel.mp4 20 30
 Left: final render -> encode -> HARD GATE -> clarity gate + visual review -> schedule 13 Nov 01:00.
+
+STATUS (12 Nov 05:07 run, end): final v3 = stapler_reel.mp4 + stapler_cover.jpg. HARD GATE PASS, CLARITY GATE PASS (14yo YES).
+Visual: round 1 = 4/10, round 2 = 4/10 -> AGENT 6: concept wrong, do NOT polish this scene and do NOT schedule it (4 is below every threshold).
+RESERVE ONLY. If a later run rebuilds it, the reviewers' points are: no hatch caps (flat solid cap colour or none), a real stapler silhouette in the hook
+(curved head, visible hinge, anvil plate, paper edge + staple about to pierce), lighter rail (dark rail read as a black paper block), thinner flat wire
+(rectangular 0.5 x 0.7 section), AO/contact shadows, show the "straight legs slip out" problem instead of only saying it, both grooves in the macro.
