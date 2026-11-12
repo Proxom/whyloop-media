@@ -4,7 +4,7 @@ import json, math
 W, L, RW, PT, R = 12.2, 6.0, 0.32, 1.5, 0.6
 X0 = -W / 2; SMAX = L - PT - RW; LF = SMAX - math.pi * R / 2; XIN = X0 + R + LF
 LOOP = 20.0
-T = dict(PRESS=[2.4, 3.3], FADE_OUT=[3.4, 4.2], PIERCE=[7.0, 9.6], CURL=[10.0, 14.4], BLADE_UP=[15.0, 15.6], FADE_IN=[16.6, 17.4], HEAD_UP=[17.6, 18.4],
+T = dict(PRESS=[2.4, 3.3], FADE_OUT=[3.75, 4.05], PIERCE=[7.0, 9.6], CURL=[10.0, 14.4], BLADE_UP=[15.0, 15.6], FADE_IN=[16.85, 17.15], HEAD_UP=[17.6, 18.4],
          STAPLE_FADE=[19.3, 19.8], FOLLOW=[18.4, 19.75])
 VO_AT = [0.2, 4.3, 7.0, 10.1, 15.4, 17.9]
 HM_UP = 8.0
