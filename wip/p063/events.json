@@ -1,0 +1,35 @@
+[
+{
+"type": "press",
+"t": 2.95
+},
+{
+"type": "seat",
+"t": 3.3
+},
+{
+"type": "pierce",
+"t": 7.15
+},
+{
+"type": "pierce_out",
+"t": 9.55
+},
+{
+"type": "bend",
+"t0": 10.0,
+"t1": 14.4
+},
+{
+"type": "clinch",
+"t": 14.35
+},
+{
+"type": "blade_up",
+"t": 15.45
+},
+{
+"type": "head_up",
+"t": 18.3
+}
+]

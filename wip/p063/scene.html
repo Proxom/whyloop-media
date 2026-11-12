@@ -1,0 +1,189 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p063 stapler: why do the legs bend in? mm, y up, x across the staple crown, z along the stapler (front = +z, hinge at the back).
+// Section plane z = 0 (through the front staple): every part's front half (z > 0) fades for the inside view.
+import * as S from '/tools/render/lib/studio.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin_240.json')).json();
+const { W, L, RW, PT, R, LOOP, T } = G; const X0 = -W / 2;
+const HZ = -135, HY = PT + L + 4.0, ARM = -HZ; // hinge (y, z)
+
+const st = S.makeStudio({ fov: 32, bg: 0x161a21, envIntensity: 0.85, bloom: 0, near: 2, far: 6000, samples: 0 });
+const { scene, camera } = st;
+const { shapeOf, extrude } = S;
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+const CLIP_BACK = [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0)], CLIP_FRONT = [new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)];
+
+// ---------- materials ----------
+const grain = S.noiseTex(5, 150, 16, 256); grain.repeat.set(0.08, 0.08);
+const brushed = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); const r = S.rng(4); g.fillStyle = '#808080'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 2600; i++) { const y = r() * 512, v = 90 + r() * 80 | 0; g.strokeStyle = `rgba(${v},${v},${v},${0.25 + r() * 0.35})`; g.lineWidth = 0.6 + r() * 1.4; const x = r() * 512, Ln = 80 + r() * 300; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Ln, y + (r() - 0.5) * 2); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.06, 0.06); return t; })();
+const sheets = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 300; const g = c.getContext('2d'); g.fillStyle = '#efeae0'; g.fillRect(0, 0, 64, 300);
+  for (let i = 0; i < 15; i++) { g.fillStyle = 'rgba(120,110,95,0.55)'; g.fillRect(0, i * 20, 64, 2); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 1 / PT); return t; })();
+const M = {
+  base: new THREE.MeshPhysicalMaterial({ color: 0x1c1e22, roughness: 0.5, roughnessMap: grain, metalness: 0.1, clearcoat: 0.4, clearcoatRoughness: 0.35, side: THREE.DoubleSide }),
+  cover: new THREE.MeshPhysicalMaterial({ color: 0xb3261e, roughness: 0.3, metalness: 0.35, clearcoat: 0.9, clearcoatRoughness: 0.12, side: THREE.DoubleSide }),
+  steel: new THREE.MeshPhysicalMaterial({ color: 0xc9d0d8, metalness: 0.95, roughness: 0.3, roughnessMap: brushed, clearcoat: 0.2 }),
+  anvil: new THREE.MeshPhysicalMaterial({ color: 0xd6dbe0, metalness: 0.95, roughness: 0.26, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.02 }),
+  dsteel: new THREE.MeshStandardMaterial({ color: 0x5a616b, metalness: 0.85, roughness: 0.4, roughnessMap: grain }),
+  staple: new THREE.MeshPhysicalMaterial({ color: 0xe2e7ee, metalness: 1.0, roughness: 0.18, clearcoat: 0.3 }),
+  strip: new THREE.MeshPhysicalMaterial({ color: 0xaab2bc, metalness: 1.0, roughness: 0.3 }),
+  blade: new THREE.MeshPhysicalMaterial({ color: 0xb8c0ca, metalness: 0.95, roughness: 0.3, roughnessMap: brushed, emissive: 0xffb000, emissiveIntensity: 0 }),
+  cap: new THREE.MeshStandardMaterial({ map: S.hatchTex('#2b3038', '#3a414c', 0.25), roughness: 0.8, metalness: 0.1 }),
+  capRed: new THREE.MeshStandardMaterial({ map: S.hatchTex('#5a1714', '#6e221e', 0.25), roughness: 0.7, metalness: 0.1 }),
+  paper: new THREE.MeshStandardMaterial({ color: 0xffffff, map: sheets, roughness: 0.9, metalness: 0 }),
+  paperTop: new THREE.MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.92, metalness: 0 }),
+  rubber: new THREE.MeshStandardMaterial({ color: 0x0e0f11, roughness: 0.95 }),
+};
+const fades = [];
+const fclone = (mt) => { const f = mt.clone(); f.transparent = true; f.depthWrite = false; return f; };
+const fadeMesh = (m) => { m.userData.base = m.material; m.userData.fade = Array.isArray(m.material) ? m.material.map(fclone) : fclone(m.material); fades.push(m); return m; };
+const sh = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+// x-y profile extruded along z (front-view section parts)
+const zExt = (prof, z0, z1, mat, bev = 0) => sh(extrude(shapeOf(prof), z0, z1, mat, bev, 24));
+// side silhouette [[z, y]] extruded across x0..x1 (stapler body parts)
+function xExt(prof, x0, x1, mat, bev = 0) { const m = sh(extrude(shapeOf(prof.map(([z, y]) => [-z, y])), x0, x1, mat, bev, 24)); m.rotation.y = Math.PI / 2; return m; }
+// split a mesh factory into a kept back half and a fading front half (world clipping plane z = 0)
+function split(make, parent) { const b = make(); b.material = b.material.clone(); b.material.clippingPlanes = CLIP_BACK; parent.add(b);
+  const f = make(); f.material = f.material.clone(); f.material.clippingPlanes = CLIP_FRONT; parent.add(fadeMesh(f)); return [b, f]; }
+
+// ---------- desk + backdrop ----------
+S.bench(scene, -12.05, 'y', 3000, 3);
+{ const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); const gr = g.createRadialGradient(512, 430, 40, 512, 512, 700);
+  gr.addColorStop(0, '#59606b'); gr.addColorStop(0.45, '#30353e'); gr.addColorStop(1, '#14171c'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const bd = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({ map: t })); bd.position.set(0, 0, -900); scene.add(bd); }
+
+// ---------- base (fixed) ----------
+const BASE_MID = [[19, -12], [19, -4.5], [16.5, -1.8], [-146, -1.8], [-150, -5.5], [-150, -12]];
+const BASE_SIDE = [[19, -12], [19, -4.5], [15, 0], [-146, 0], [-150, -4], [-150, -12]];
+split(() => xExt(BASE_MID, -11.5, 11.5, M.base, 1.0), scene);
+for (const [a, b] of [[-17, -11.5], [11.5, 17]]) split(() => xExt(BASE_SIDE, a, b, M.base, 1.0), scene);
+{ const post = xExt([[-128, 0], [-128, HY - 3], [-133, HY + 3], [-148, HY + 3], [-148, 0]], -9, 9, M.base, 1.0); scene.add(post);
+  const pin = sh(new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 32, 32), M.steel)); pin.rotation.z = Math.PI / 2; pin.position.set(0, HY, HZ); scene.add(pin);
+  for (const z of [10, -140]) { const foot = sh(new THREE.Mesh(new THREE.BoxGeometry(33, 1.2, 8), M.rubber)); foot.position.set(0, -11.4, z); scene.add(foot); } }
+// anvil plate: grooved slab around the staple, plain plate elsewhere
+const ANV = G.ANVIL;
+scene.add(zExt(ANV, -1.1, 0, M.anvil)); scene.add(fadeMesh(zExt(ANV, 0, 1.1, M.anvil)));
+scene.add(zExt(rect(-11, -1.8, 11, 0), -12, -1.1, M.anvil, 0.15)); scene.add(fadeMesh(zExt(rect(-11, -1.8, 11, 0), 1.1, 12, M.anvil, 0.15)));
+for (const s of [-1, 1]) { const rv = sh(new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.3, 24), M.dsteel)); rv.position.set(s * 8.5, 0.02, -8); scene.add(rv); }
+
+// ---------- paper stack (droops outside the base) ----------
+const paperProf = (() => { const top = [], bot = []; for (let i = 0; i <= 60; i++) { const x = -48 + 96 * i / 60; const ax = Math.abs(x); const dy = ax < 18 ? 0 : -Math.pow((ax - 18) / 30, 2) * 9; top.push([x, PT + dy]); bot.push([x, dy]); } return [...bot, ...top.reverse()]; })();
+const paperG = new THREE.Group(); scene.add(paperG);
+{ const b = zExt(paperProf, -22, 0, [M.paperTop, M.paper]); paperG.add(b); const f = zExt(paperProf, 0, 60, [M.paperTop, M.paper]); paperG.add(fadeMesh(f)); }
+
+// ---------- head: magazine (rotates about the hinge) ----------
+const pivot = (g) => { const p = new THREE.Group(); p.position.set(0, HY, HZ); scene.add(p); g.position.set(0, -HY, -HZ); p.add(g); return p; };
+const mag = new THREE.Group(); const magP = pivot(mag);
+const SW = W / 2 + RW + 0.12, MT = PT + L + 1.2;
+for (const s of [-1, 1]) split(() => zExt(rect(s < 0 ? -13 : SW, PT, s < 0 ? -SW : 13, MT), -128, 1.6, M.steel, 0.15), mag);
+mag.add(zExt(rect(-13, MT, 13, MT + 0.8), -128, -0.8, M.steel, 0.1));
+mag.add(zExt(rect(-(W / 2 - RW - 0.15), PT + 0.6, W / 2 - RW - 0.15, PT + L - RW - 0.06), -126, -0.75, M.steel, 0.1));
+mag.add(fadeMesh(zExt(rect(-13, PT, 13, MT + 0.8), 0.75, 1.6, M.steel, 0.15)));
+// staple strip behind the front staple (static in the magazine)
+function stapleGeom(pts, rad = RW) { const c = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2] || 0)), false, 'centripetal'); return new THREE.TubeGeometry(c, Math.max(64, pts.length * 2), rad, 10, false); }
+function straightStaple(yc) { const pts = []; const cr = 0.5;
+  for (let i = 0; i <= 8; i++) pts.push([X0, yc - L + (L - cr) * i / 8]);
+  for (let i = 1; i <= 6; i++) { const a = Math.PI - (Math.PI / 2) * i / 6; pts.push([X0 + cr + cr * Math.cos(a), yc - cr + cr * Math.sin(a)]); }
+  for (let i = 1; i < 10; i++) pts.push([X0 + cr + (W - 2 * cr) * i / 10, yc]);
+  for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 - (Math.PI / 2) * i / 6; pts.push([-X0 - cr + cr * Math.cos(a), yc - cr + cr * Math.sin(a)]); }
+  for (let i = 1; i <= 8; i++) pts.push([-X0, yc - cr - (L - cr) * i / 8]); return pts; }
+{ const g = stapleGeom(straightStaple(PT + L)); for (let i = 1; i <= 60; i++) { const m = sh(new THREE.Mesh(g, M.strip)); m.position.z = -0.645 * i; mag.add(m); } }
+
+// ---------- head: cover + driver blade ----------
+const cov = new THREE.Group(); const covP = pivot(cov);
+const BM = PT + L + RW; // blade bottom in the modelled pose
+const COV = [[3.2, MT + 1.2], [3.2, MT + 7.5], [0, MT + 11.5], [-20, MT + 13.2], [-120, MT + 12.5], [-138, MT + 9], [-140, MT + 1.2]];
+split(() => xExt(COV, -15, 15, M.cover, 1.2), cov);
+const blade = sh(new THREE.Mesh(new THREE.BoxGeometry(2 * (W / 2 + RW - 0.02), 3.4, 0.6), M.blade)); blade.position.set(0, BM + 1.7, 0); cov.add(blade);
+// cut-face caps (section look) for the hollow cover shell and the base
+cov.add(zExt([[-15, MT + 1.2], [15, MT + 1.2], [15, MT + 10.6], [-15, MT + 10.6]], -0.35, -0.02, M.capRed));
+scene.add(zExt([[-17, -12], [17, -12], [17, 0], [11.05, 0], [11.05, -1.8], [-11.05, -1.8], [-11.05, 0], [-17, 0]], -0.35, -0.02, M.cap));
+
+// ---------- the front staple (rebuilt every frame) ----------
+let stapleMesh = null, lastYc = -99;
+function legPts(yc, side) { const x0 = side * W / 2; const pts = []; const cr = 0.5; const ybot = Math.max(0, yc - L), s = Math.max(0, L - yc);
+  const n = 10; for (let i = 0; i <= n; i++) pts.push([x0, yc - cr - (yc - cr - ybot) * i / n]);
+  if (s > 0) { const m = 30; for (let i = 1; i <= m; i++) { const q = s * i / m; if (q <= Math.PI * R / 2) { const ph = q / R; pts.push([x0 - side * (R - R * Math.cos(ph)), -R * Math.sin(ph)]); } else pts.push([x0 - side * (R + q - Math.PI * R / 2), -R]); } }
+  return pts; }
+function fullStaple(yc) { const cr = 0.5; const A = legPts(yc, -1).reverse(); const B = legPts(yc, 1); const top = [];
+  for (let i = 1; i <= 6; i++) { const a = Math.PI - (Math.PI / 2) * i / 6; top.push([X0 + cr + cr * Math.cos(a), yc - cr + cr * Math.sin(a)]); }
+  for (let i = 1; i < 10; i++) top.push([X0 + cr + (W - 2 * cr) * i / 10, yc]);
+  for (let i = 0; i < 6; i++) { const a = Math.PI / 2 - (Math.PI / 2) * i / 6; top.push([-X0 - cr + cr * Math.cos(a), yc - cr + cr * Math.sin(a)]); }
+  const all = [...A, ...top, ...B]; const out = [all[0]]; for (const p of all.slice(1)) { const q = out[out.length - 1]; if (Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.03) out.push(p); } return out; }
+const stapleMat = M.staple.clone(); stapleMat.transparent = true;
+const tipA = sh(new THREE.Mesh(new THREE.SphereGeometry(RW, 16, 12), stapleMat)), tipB = tipA.clone(); scene.add(tipA, tipB);
+function setStaple(yc) { if (Math.abs(yc - lastYc) > 1e-4) { lastYc = yc; if (stapleMesh) { scene.remove(stapleMesh); stapleMesh.geometry.dispose(); }
+    const pts = fullStaple(yc); stapleMesh = sh(new THREE.Mesh(stapleGeom(pts), stapleMat)); scene.add(stapleMesh); tipA.position.set(pts[0][0], pts[0][1], 0); const e = pts[pts.length - 1]; tipB.position.set(e[0], e[1], 0); } }
+
+// ---------- lights ----------
+const key = new THREE.DirectionalLight(0xfff0dc, 2.5); key.position.set(-260, 420, 320); key.target.position.set(0, 0, -40); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); { const c = key.shadow.camera; c.left = -200; c.right = 200; c.top = 200; c.bottom = -200; c.near = 100; c.far = 1500; } key.shadow.bias = -0.0003; key.shadow.normalBias = 0.05; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0xcfe0ff, 2.0); rim.position.set(300, 260, -300); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xbcd4ff, 1.0); rim2.position.set(-40, 420, -200); scene.add(rim2);
+const spot = new THREE.PointLight(0xfff2e0, 900, 0, 2); spot.position.set(-12, 16, 38); scene.add(spot);
+const fill = new THREE.DirectionalLight(0xffe8d0, 0.6); fill.position.set(120, 40, 300); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x2a2420, 0.35));
+
+// ---------- animation ----------
+function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i = Math.floor(f), u = f - i; const A = K[i % K.length], B = K[(i + 1) % K.length];
+  const o = {}; for (const k of ['hm', 'yc', 'blade']) o[k] = A[k] + (B[k] - A[k]) * u; return o; }
+const fadeU = (t) => { const [a0, a1] = T.FADE_OUT, [b0, b1] = T.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
+// camera keys [t, tx, ty, tz, dist, elev, azim] (azim 0 = from the front)
+const EXTQ = new URLSearchParams(location.search).get('ext'); const EXT = EXTQ ? EXTQ.split(',').map(Number) : [-5, 20, -50, 320, 35, -35], EXT2 = [-4, 16, -40, 330, 30, -32], FRW = [0, 3, 0, 120, 10, -12], SEC = [0, 1.2, 0, 62, 3, 0], MAC = [-4.3, 0.2, 0, 34, 2, 0];
+const KEYS = [[0, ...EXT], [T.PRESS[0], ...EXT2], [T.FADE_OUT[0], ...FRW], [T.FADE_OUT[1] + 0.2, ...SEC], [T.CURL[0] - 0.2, ...SEC], [T.CURL[0] + 0.7, ...MAC], [T.CURL[1] - 0.3, ...MAC],
+  [T.CURL[1] + 0.6, ...SEC], [T.FADE_IN[0], ...SEC], [T.FADE_IN[1] + 0.2, ...FRW], [T.HEAD_UP[1] + 0.2, ...EXT2], [LOOP, ...EXT]];
+function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
+  magP.rotation.x = -Math.asin(k.hm / ARM) * -1; covP.rotation.x = Math.asin((k.blade - BM) / ARM);
+  setStaple(k.yc);
+  stapleMat.opacity = 1 - S.smooth((tt - T.STAPLE_FADE[0]) / (T.STAPLE_FADE[1] - T.STAPLE_FADE[0])); stapleMat.depthWrite = stapleMat.opacity > 0.99;
+  M.blade.emissiveIntensity = 0;
+  const bl = Math.max(0, Math.min(1, (tt - T.PIERCE[0] + 0.2) / 0.3, (T.PIERCE[1] + 0.2 - tt) / 0.3)) * 0.3;
+  const fu = fadeU(tt); for (const m of fades) { if (fu <= 0.001) { m.visible = true; m.material = m.userData.base; } else if (fu >= 0.999) m.visible = false; else { m.visible = true; m.material = m.userData.fade; for (const mm of [].concat(m.material)) mm.opacity = 1 - fu; } }
+  for (const m of [blade]) { m.material.emissiveIntensity = bl; }
+  const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos);
+  const j = (t0, a) => (tt > t0 && tt < t0 + 0.35) ? a * Math.exp(-(tt - t0) * 14) * Math.sin((tt - t0) * 70) : 0;
+  camera.position.y += j(T.PRESS[1], 0.5) + j(14.35, 0.12);
+  camera.lookAt(c.target); camera.updateMatrixWorld(); return k; }
+const scr = (v) => S.toScreen(camera, v);
+const P3 = (x, y, z = 0.4) => new THREE.Vector3(x, y, z);
+
+// ---------- overlay ----------
+await document.fonts.load('120px Anton');
+const g2 = st.g2;
+const win = (t, a, b, f = 0.15) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
+function grooveLine(a, side) { if (a <= 0) return; const pts = ANV.filter(p => p[1] < -0.01 || Math.abs(p[0]) > 0.9).filter(p => side * p[0] > 0.9 && side * p[0] < 6.6 && p[1] < 0.01);
+  g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 8; g2.lineJoin = 'round'; g2.shadowColor = 'rgba(255,200,40,0.9)'; g2.shadowBlur = 18; g2.beginPath();
+  pts.forEach((p, i) => { const [x, y] = scr(P3(p[0], p[1], 0.6)); i ? g2.lineTo(x, y) : g2.moveTo(x, y); }); g2.stroke(); g2.restore(); }
+function overlay(t, k) {
+  S.vignette(g2, 560);
+  const hookA = Math.max(0, Math.min(1, (T.PRESS[0] - t) / 0.2), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
+  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.45; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
+    S.hookCard(g2, hookA, 'WHY DO STAPLES', 'BEND IN?', 112); const [x, y] = scr(P3(0, PT, 6)); S.redCircle(g2, hookA, x, y, 92, [210, 170]); }
+  let a;
+  // part names (problem step)
+  if ((a = win(t, 4.3, 6.95, 0.2)) > 0) { S.caption(g2, a, 'STRAIGHT LEGS SLIP OUT', 430, 70);
+    const s1 = scr(P3(3, k.yc + 0.3)); S.tag(g2, a, 'STAPLE', s1[0], s1[1], 150, -110);
+    const s2 = scr(P3(-9.5, PT * 0.5)); S.tag(g2, a, 'PAPER', s2[0], s2[1], -60, 150);
+    const s3 = scr(P3(8.5, -1.0)); S.tag(g2, a, 'ANVIL', s3[0], s3[1], 60, 170); }
+  if ((a = win(t, 7.0, 9.85, 0.2)) > 0) { S.caption(g2, a, 'BLADE PUSHES IT THROUGH', 430, 68, '#ffffff', 1); const s = scr(P3(4, k.blade + 1.5)); S.tag(g2, a, 'BLADE', s[0], s[1], 150, -60); }
+  if ((a = win(t, 10.0, 14.45, 0.2)) > 0) { S.caption(g2, a, 'CURVED GROOVES BEND THEM', 430, 66, '#ffffff', 2); grooveLine(a * (0.6 + 0.4 * Math.sin(t * 6) ** 2), -1); grooveLine(a * 0.8, 1);
+    const s = scr(P3(-3.2, -0.97)); S.tag(g2, a, 'CURVED GROOVE', s[0], s[1], 40, 190); }
+  if ((a = win(t, 14.6, 17.6, 0.2)) > 0) { S.caption(g2, a, 'FOLDED UNDER = LOCKED IN', 430, 70, '#ffd21f'); }
+  if ((a = win(t, T.FOLLOW[0], T.FOLLOW[1], 0.15)) > 0) { g2.save(); g2.globalAlpha = a; S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
+}
+window._st = st; window._set = setAll; window._kin = kinAt; window._scr = scr;
+S.install(st, setAll, (t) => overlay(((t % LOOP) + LOOP) % LOOP, kinAt(t)));
+window.motionPx = (t, fps = 30) => 0;
+</script></body></html>

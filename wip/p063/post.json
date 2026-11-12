@@ -1,0 +1,42 @@
+{
+ "id": "p063",
+ "track": "A",
+ "group": "E",
+ "topic": "Stapler: why do staple legs bend inward? (the head lowers onto the paper, a thin driver blade pushes the front staple through the sheets, two curved clinching grooves in the metal anvil steer the leg tips sideways so the legs fold under the paper toward each other)",
+ "hook": "WHY DO STAPLES / BEND IN?",
+ "principle": "The anvil under the paper is a forming die: its two curved clinching grooves catch the staple's leg tips as the blade drives the staple through the sheets and curl each leg toward the other, flat under the paper, so the staple cannot slip back out.",
+ "caption": "Why do staple legs bend inward? 📎\nGuess: what happens if you turn the metal plate under it? 👇\nFollow @whyloop.hq for a new machine every day\n#stapler #howitworks #mechanism #engineering #satisfying",
+ "firstComment": "Answer: they bend outward instead 🔧\n\nWhen you press a stapler, the magazine stops on the paper and a thin steel blade keeps going: it pushes the front staple out and straight through the sheets. Under the paper sits the anvil, a small metal plate with two curved grooves. Each leg tip runs into a groove, the curve steers it sideways, and the leg folds under the paper toward the other leg. Folded under, the staple can't slip back out.\n\nOn most modern staplers the anvil can be rotated or slid to a second setting. Then the legs bend outward: that's \"pinning\", a temporary staple that holds but is easy to remove.\n\n(Simplified 3D model, enlarged and cut open. Real staplers and staples vary.)\n\nSources:\nWikipedia, Stapler (permanent fastening drives the staple into an anvil, a small metal plate that bends the ends, usually inward; on most modern staplers the anvil rotates or slides to change between bending the ends inward for permanent stapling or outward for pinning; pinning is easily removed): https://en.wikipedia.org/wiki/Stapler\nUS patent 4,315,589, Stapler apparatus (the magazine stops on the anvil and the blade-like driver drives the outermost staple; the anvil has clinching grooves for bending the legs of a staple inwardly; the leg is curled to press against the bottom of the paper): https://patents.google.com/patent/US4315589",
+ "altText": "3D animation of a desktop stapler, cut open, with a voiceover. A red stapler with a black base sits on a stack of white paper on a wooden desk under the question Why do staples bend in? A red circle marks the nose where the staple comes out. The head presses down onto the paper and the front half of the stapler fades away to show a cross-section: a silver staple in the magazine slot above the paper, the paper stack, and under it the steel anvil plate with two small curved grooves. Labels name the staple, the paper and the anvil, with the line Straight legs slip out. 1, a thin steel blade pushes the staple down and its legs pierce the paper. 2, close-up in slow motion: the leg tips run into the curved grooves, highlighted in yellow, and curl sideways under the paper toward each other. The payoff text reads Folded under = locked in. The stapler closes again, the head lifts, and a follow line appears before the video loops.",
+ "onScreen": [
+  "INSIDE IT",
+  "WHY DO STAPLES",
+  "BEND IN?",
+  "WHYLOOP",
+  "STRAIGHT LEGS SLIP OUT",
+  "STAPLE",
+  "PAPER",
+  "ANVIL",
+  "BLADE PUSHES IT THROUGH",
+  "BLADE",
+  "CURVED GROOVES BEND THEM",
+  "CURVED GROOVE",
+  "FOLDED UNDER = LOCKED IN",
+  "FOLLOW → NEW MACHINE TOMORROW"
+ ],
+ "voiceover": [
+  "Why do staple legs bend inward?",
+  "Straight legs would just slip back out of the paper.",
+  "Press down, and a thin blade drives the staple through.",
+  "Under the paper, the metal anvil has two curved grooves. They catch the tips and bend them in.",
+  "Folded under, the staple can't slip out.",
+  "Follow for a new machine every day."
+ ],
+ "sources": [
+  "https://en.wikipedia.org/wiki/Stapler",
+  "https://patents.google.com/patent/US4315589"
+ ],
+ "learningApplied": "11 Nov 21:07 decision: voiceover + the object's real context required (clarity gate). Rotation: 3 V in a row (p058, p062 + p061 wip) -> E. Simple one-part mechanism -> 20 s (CLARITY FIRST 12-20 s band, VO). Two-stage stroke (magazine stops, blade continues) from US 4,315,589.",
+ "slot": "2026-11-13T01:00 Europe/London",
+ "status": "wip"
+}
