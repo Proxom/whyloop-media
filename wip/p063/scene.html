@@ -141,11 +141,11 @@ function kinAt(t) { t = ((t % LOOP) + LOOP) % LOOP; const f = t * 240; const i =
   const o = {}; for (const k of ['hm', 'yc', 'blade']) o[k] = A[k] + (B[k] - A[k]) * u; return o; }
 const fadeU = (t) => { const [a0, a1] = T.FADE_OUT, [b0, b1] = T.FADE_IN; return t < a0 ? 0 : t < a1 ? S.smooth((t - a0) / (a1 - a0)) : t < b0 ? 1 : t < b1 ? 1 - S.smooth((t - b0) / (b1 - b0)) : 0; };
 // camera keys [t, tx, ty, tz, dist, elev, azim] (azim 0 = from the front)
-const EXTQ = new URLSearchParams(location.search).get('ext'); const EXT = EXTQ ? EXTQ.split(',').map(Number) : [-5, 20, -50, 320, 35, -35], EXT2 = [-4, 16, -40, 330, 30, -32], FRW = [0, 3, 0, 120, 10, -12], SEC = [0, 1.2, 0, 62, 3, 0], MAC = [-4.3, 0.2, 0, 34, 2, 0];
+const EXTQ = new URLSearchParams(location.search).get('ext'); const EXT = EXTQ ? EXTQ.split(',').map(Number) : [4, 22, -35, 320, 35, -30], EXT2 = [3, 17, -30, 290, 31, -28], FRW = [0, 3, 0, 120, 10, -12], SEC = [0, 1.2, 0, 62, 3, 0], MAC = [-4.3, 0.2, 0, 34, 2, 0];
 const KEYS = [[0, ...EXT], [T.PRESS[0], ...EXT2], [T.FADE_OUT[0], ...FRW], [T.FADE_OUT[1] + 0.2, ...SEC], [T.CURL[0] - 0.2, ...SEC], [T.CURL[0] + 0.7, ...MAC], [T.CURL[1] - 0.3, ...MAC],
   [T.CURL[1] + 0.6, ...SEC], [T.FADE_IN[0], ...SEC], [T.FADE_IN[1] + 0.2, ...FRW], [T.HEAD_UP[1] + 0.2, ...EXT2], [LOOP, ...EXT]];
 function setAll(t) { const tt = ((t % LOOP) + LOOP) % LOOP; const k = kinAt(tt);
-  magP.rotation.x = -Math.asin(k.hm / ARM) * -1; covP.rotation.x = Math.asin((k.blade - BM) / ARM);
+  magP.rotation.x = -Math.asin(k.hm / ARM); covP.rotation.x = -Math.asin((k.blade - BM) / ARM); // negative x-rotation lifts points in front (+z) of the hinge
   setStaple(k.yc);
   stapleMat.opacity = 1 - S.smooth((tt - T.STAPLE_FADE[0]) / (T.STAPLE_FADE[1] - T.STAPLE_FADE[0])); stapleMat.depthWrite = stapleMat.opacity > 0.99;
   M.blade.emissiveIntensity = 0;
@@ -170,7 +170,7 @@ function overlay(t, k) {
   S.vignette(g2, 560);
   const hookA = Math.max(0, Math.min(1, (T.PRESS[0] - t) / 0.2), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
   if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.45; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
-    S.hookCard(g2, hookA, 'WHY DO STAPLES', 'BEND IN?', 112); const [x, y] = scr(P3(0, PT, 6)); S.redCircle(g2, hookA, x, y, 92, [210, 170]); }
+    S.hookCard(g2, hookA, 'WHY DO STAPLES', 'BEND IN?', 112); const [x, y] = scr(P3(0, PT + 5, 1.5)); S.redCircle(g2, hookA, x, y, 92, [-60, 260]); }
   let a;
   // part names (problem step)
   if ((a = win(t, 4.3, 6.95, 0.2)) > 0) { S.caption(g2, a, 'STRAIGHT LEGS SLIP OUT', 430, 70);
