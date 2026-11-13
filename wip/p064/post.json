@@ -11,8 +11,51 @@
  "caption": "How a Car Engine Really Works 🔥\nGuess: how many crank turns for ONE spark? 👇\nFollow @whyloop.hq for a new machine every day\n#engine #howitworks #carengineering #mechanism #engineering",
  "firstComment": "Answer: two turns 🔧\n\nInside each cylinder, the piston does four strokes:\n1. Intake: the intake valve opens and the piston moves down, pulling in fuel and air.\n2. Compression: both valves close and the piston moves up, squeezing the mixture.\n3. Power: near the top, the spark plug fires. The burning gas pushes the piston down hard. This is the only stroke that does work.\n4. Exhaust: the exhaust valve opens and the piston moves up, pushing the burnt gas out.\n\nThe connecting rod turns that up-and-down push into the crankshaft's spin. Four strokes take two turns of the crankshaft, so the camshafts that open the valves turn at half the crank's speed.\n\n(Simplified 3D model of one cylinder, slowed down. Real engines have several cylinders and different valve layouts.)\n\nSources:\nBritannica, Four-stroke cycle (intake with the inlet valve open, compression with both valves closed, ignition by an electric spark, power, exhaust through the open exhaust valve; each cycle requires four strokes of the piston and two revolutions of the crankshaft): https://www.britannica.com/technology/four-stroke-cycle\nWikipedia, Four-stroke engine (the compressed air-fuel mixture is ignited by a spark plug; the power stroke produces the work that turns the crankshaft; valves are typically operated by a camshaft rotating at half the speed of the crankshaft): https://en.wikipedia.org/wiki/Four-stroke_engine",
  "altText": "3D animation of a one-cylinder car engine, with a voiceover. A gray engine block with a black cam cover, a spark plug wire and a crank pulley, under the question How does an engine run? Text: Fire only pushes. Wheels need spin. The front half of the engine slides away to show the inside: a piston in a cylinder, a rod down to the crankshaft, two valves under two camshafts and a spark plug in the middle. A dial at the bottom counts crank turn 1 of 2 and 2 of 2. 1, intake: the blue intake valve opens, the piston moves down and blue fuel and air flow in. 2, compression: both valves are shut and the piston moves up, squeezing the blue gas. 3, power, in slow motion: the spark plug sparks, the gas flashes orange, Bang!, and the piston is pushed down; an arrow shows the push and a curved arrow shows the crankshaft turning. 4, exhaust: the orange exhaust valve opens and the piston pushes gray burnt gas out. The payoff reads Spark. Push. The crank spins. The engine closes, speeds up and a follow line appears before the video loops.",
- "onScreen": ["HOW DOES AN / ENGINE RUN?", "FIRE ONLY PUSHES", "WHEELS NEED SPIN", "PISTON", "CYLINDER", "ROD", "CRANKSHAFT", "INTAKE", "PISTON DOWN: FUEL + AIR IN", "INTAKE VALVE", "CAMSHAFT", "COMPRESSION", "BOTH VALVES SHUT: SQUEEZE", "SPARK PLUG", "BANG!", "POWER", "PUSH TURNS THE CRANK", "EXHAUST", "PISTON UP: BURNT GAS OUT", "EXHAUST VALVE", "CRANK TURN 1 OF 2", "SPARK. PUSH.", "THE CRANK SPINS.", "FOLLOW → NEW MACHINE TOMORROW"],
- "sources": ["https://www.britannica.com/technology/four-stroke-cycle", "https://en.wikipedia.org/wiki/Four-stroke_engine"],
+ "onScreen": [
+  "HOW DOES AN / ENGINE RUN?",
+  "FIRE ONLY PUSHES",
+  "WHEELS NEED SPIN",
+  "PISTON",
+  "CYLINDER",
+  "ROD",
+  "CRANKSHAFT",
+  "INTAKE",
+  "PISTON DOWN: FUEL + AIR IN",
+  "INTAKE VALVE",
+  "CAMSHAFT",
+  "COMPRESSION",
+  "BOTH VALVES SHUT: SQUEEZE",
+  "SPARK PLUG",
+  "BANG!",
+  "POWER",
+  "PUSH TURNS THE CRANK",
+  "EXHAUST",
+  "PISTON UP: BURNT GAS OUT",
+  "EXHAUST VALVE",
+  "CRANK TURN 1 OF 2",
+  "SPARK. PUSH.",
+  "THE CRANK SPINS.",
+  "FOLLOW → NEW MACHINE TOMORROW"
+ ],
+ "sources": [
+  "https://www.britannica.com/technology/four-stroke-cycle",
+  "https://en.wikipedia.org/wiki/Four-stroke_engine"
+ ],
  "learningApplied": "12 Nov: no hatched cut faces (flat colour caps via back faces), familiar silhouette in the hook (cam cover, plug wire, pulley); clarity format: VO per step, numbered step captions, pinned part tags, active part glow, slow motion at the spark, 2.5 s+ payoff.",
- "status": "wip"
+ "status": "reserve (not scheduled)",
+ "visualScore": {
+  "R1": 4,
+  "R2": 4,
+  "note": "AGENT 6: 4 after round 2 = concept wrong, no more polishing; not schedulable as is"
+ },
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30 fps H.264 yuv420p + AAC, 44.0 s, no black first/last frame (mean 100)",
+  "audio": "PASS -15.1 LUFS, -2.8 dBTP, HP4k gap 22.7 dB; low SFX only (rumble, intake/exhaust breath, combustion whump)",
+  "mechanism": "PASS check.py: slider-crank R43/L145, cams at half crank speed, lift = support function of the drawn cam (err 0.0 mm), valve-piston >= 13 mm, rod-liner 4.7 mm, web-skirt 11 mm, valves shut 235-480 deg, loop = 10 whole cycles",
+  "facts": "PASS Britannica four-stroke cycle + Wikipedia Four-stroke engine (opened this run)",
+  "text": "PASS pyspellchecker (only hashtag/handle flags), labels 44-52 px, captions 52-92 px, safe zones checked on the 0.5 s frame",
+  "look": "PASS 6 stills + safe-zone frame (no glitches, no cut-off text)",
+  "clarity": "PASS (R1 fresh reviewer: explanation correct, 14yo YES; fixed after: POWER caption with the VO, payoff VO = on-screen text, CAMSHAFT tag removed, slower camera move)",
+  "reference": "original 1M+ frames not reachable (youtube.com / i.ytimg.com refused by the network proxy)"
+ }
 }
