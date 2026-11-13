@@ -66,7 +66,7 @@
   "https://www.autotechart.com/how-it-works/differential/"
  ],
  "learningApplied": "CLARITY FIRST (Erkan 10 Nov): multi-step topic 42 s, VO synced per step, problem first, parts named, one step at a time with highlight, slow-mo at the key moment, payoff 3.6 s; quality rules (real object first: the car; camera close on the gears; min label 50 px).",
- "status": "ready (gate passed, visual 5: schedule 12 Nov 17:00 only after 15:00)",
+ "status": "scheduled",
  "qualityAudit": {
   "technical": "1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 42.0 s, no black first/last frame",
   "audio": "-15.0 LUFS, -3.0 dBTP, HP4k gap 20.7 dB",
@@ -80,5 +80,13 @@
   "R1": 4,
   "R2": 5,
   "note": "max 2 rounds reached"
- }
+ },
+ "scheduledAt": "2026-11-14T01:00:00 Europe/London",
+ "metricoolPostId": 427480746,
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p062/differential_reel.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p062/differential_cover.jpg"
+ ],
+ "referenceGate": "original frames not reachable (youtube.com and i.ytimg.com refused by the network proxy, 11 Nov and 13 Nov); our frames scored 6.2 (R2, 11 Nov)",
+ "scheduleNote": "Visual 5 after 2 rounds. Was due 12 Nov 17:00 (runs 12 Nov 13:07 to 13 Nov 13:07 did not happen), so it is a LATE post: AGENT 6 allows 5+ when the slot is late; it takes the next normal slot 14 Nov 01:00 (the 1M+ list keeps its order: #4 engine next)."
 }

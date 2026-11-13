@@ -14,3 +14,4 @@ Reviewer leftovers (not blocking): "ring gear carries them" only as text (not in
 Rebuild: venv(kokoro-onnx 0.6.1 soundfile numpy pillow): python kin.py; python check.py; python vo.py <ttsdir> vo; python audio.py; ../../tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15
 Render: python3 -m http.server 8765 (repo root); 2 workers: node tools/render/render.js wip/p062/scene.html <out> 30 1 0 1260 0.8 0 <w> 2 1080 1920 1 (~18 min)
 then python finalize.py <frames> <fin>; tools/render/encode.sh <fin> mix.wav differential_reel.mp4 42 30
+SCHEDULED (13 Nov 21:07 run): Metricool 427480746, Instagram REEL 14 Nov 2026 01:00 Europe/London, PENDING. 12 Nov 17:00 was missed (no runs from 12 Nov 13:07 to 13 Nov 13:07), so this was a late post into the next normal slot.
