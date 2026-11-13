@@ -11,7 +11,7 @@ LINES = [
  "Three: power. The spark plug fires!",
  "The burning gas pushes the piston down, hard. That push turns the crankshaft.",
  "Four: exhaust. The exhaust valve opens, and the piston pushes the burnt gas out.",
- "Four strokes, two turns of the crank, one push. Again and again.",
+ "Spark, push, and the crankshaft spins. Again and again.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
 info = []
