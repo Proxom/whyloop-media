@@ -69,14 +69,14 @@ export function studioLights(scene, ctr = new THREE.Vector3(), size = 100, up = 
 }
 
 // ---------- textures ----------
-export function woodTex(seed = 7) {
+export function woodTex(seed = 7, blotches = 40) { // blotches = dark stain ellipses (0 for clean single-board close-ups, p065 reviewer)
   const c = document.createElement('canvas'); c.width = 2048; c.height = 2048; const g = c.getContext('2d'); const r = rng(seed);
   g.fillStyle = '#6b4a2f'; g.fillRect(0, 0, 2048, 2048); const plankH = 2048 / 6;
   for (let p = 0; p < 6; p++) { const y0 = p * plankH; const tone = 0.85 + r() * 0.3; g.fillStyle = `rgb(${[118, 82, 52].map(v => (v * tone) | 0).join(',')})`; g.fillRect(0, y0, 2048, plankH);
     const ph = r() * 100; for (let i = 0; i < 260; i++) { const yy = y0 + r() * plankH; const a = 0.025 + r() * 0.06; g.strokeStyle = r() < 0.5 ? `rgba(40,24,12,${a})` : `rgba(190,150,105,${a * 0.6})`; g.lineWidth = 0.8 + r() * 3;
       g.beginPath(); for (let x = 0; x <= 2048; x += 32) { const y = yy + Math.sin(x * 0.0021 + ph + i * 0.37) * 9 + Math.sin(x * 0.011 + i) * 2.5; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
     g.fillStyle = 'rgba(20,12,6,0.85)'; g.fillRect(0, y0, 2048, 3); }
-  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(30,20,10,${0.03 + r() * 0.05})`; g.beginPath(); g.ellipse(r() * 2048, r() * 2048, 30 + r() * 140, 20 + r() * 90, r() * 3, 0, 7); g.fill(); }
+  for (let i = 0; i < blotches; i++) { g.fillStyle = `rgba(30,20,10,${0.03 + r() * 0.05})`; g.beginPath(); g.ellipse(r() * 2048, r() * 2048, 30 + r() * 140, 20 + r() * 90, r() * 3, 0, 7); g.fill(); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
 }
 export function noiseTex(seed, base = 128, amp = 20, size = 512) {

@@ -9,7 +9,7 @@ from shapely.geometry import Point, LineString, Polygon
 from shapely import affinity
 
 D = math.radians
-G = dict(LOOP=18.0, BASE=dict(x0=-49, x1=49, w=45, top=10.0),
+G = dict(LOOP=23.0, BASE=dict(x0=-49, x1=49, w=45, top=10.0),
          A=[0.0, 14.5], RJ=38.2, RW=0.7, JW=17.0,          # jaw: coil axis A, crossbar radius RJ, wire radius RW, half width JW
          P=[-47.5, 11.2], LB=60.0, RB=0.8,                 # locking bar: rear pivot P, length LB, wire radius RB
          Q=[13.0, 12.0],                                   # trigger pintle (hinge) axis
@@ -54,8 +54,8 @@ def plate_pt(u, v, phi):  # point (u along plate from hinge, v above plate cente
     th = G['PHI0'] - phi; return Q + np.array([u * math.cos(th) - v * math.sin(th), u * math.sin(th) + v * math.cos(th)])
 press_pt = lambda phi: plate_pt(18.0, 0.4 + CH['h'], phi)
 # ---------------- timeline ----------------
-T_IN0, T_TOUCH, T_REL = 9.4, 10.9, 12.05     # pencil enters, touches the cheese, lip slips off the tip
-T_SNAP = 0.80                                  # slow-motion swing duration (video seconds)
+T_IN0, T_TOUCH, T_REL = 13.2, 13.9, 16.0     # pencil enters, touches the cheese, lip slips off the tip
+T_SNAP = 1.20                                  # slow-motion swing duration (video seconds)
 PHI_END = PHR + D(1.0)
 EV = dict(touch=T_TOUCH, release=T_REL)
 pen_dir = np.array([math.cos(G['PEN_ANG']), math.sin(G['PEN_ANG'])])
@@ -98,7 +98,7 @@ for i, t in enumerate(ts):
     c = bar_contact(al[i]); be[i] = max(be[i - 1] if peak_i is None else be[i], c)
     if peak_i is None and al[i] < D(98): peak_i = i; break
 tp, bp = ts[peak_i], be[peak_i]; w_end = (be[peak_i] - be[peak_i - 3]) / (3 / 120)
-B_PEAK = bp + D(10); T_PK = tp + 0.22; T_DOWN = T_PK + 0.55
+B_PEAK = bp + D(4); T_PK = tp + 0.22; T_DOWN = T_PK + 0.55
 for i in range(peak_i, len(ts)):
     t = ts[i]
     if t < T_PK: u = (t - tp) / (T_PK - tp); be[i] = bp + (B_PEAK - bp) * (1 - (1 - u) ** 2)
