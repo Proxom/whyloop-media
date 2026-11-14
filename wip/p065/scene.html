@@ -1,0 +1,161 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p065 snap mousetrap "WHAT HOLDS / IT BACK?" (group E, track B wordless). mm; x along the base (rear -x, front +x), y up, z across.
+// Poses come from kin.json (kin.py): jaw angle alpha about the coil axis A, locking-bar angle beta about its rear staple P,
+// trigger press phi about the hinge Q (front down), pencil tip position. check.py verifies the contacts over the whole loop.
+import * as S from '/tools/render/lib/studio.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, EV = G.EV, DIS0 = 16.7;
+const st = S.makeStudio({ fov: 30, bg: 0x181c22, envIntensity: 0.7, bloom: 0, near: 5, far: 6000, samples: 0 });
+const { scene, camera } = st;
+const std = (o) => new THREE.MeshStandardMaterial(o), phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const fine = S.noiseTex(9, 140, 26, 256); fine.repeat.set(0.08, 0.08);
+const wtex = S.woodTex(21); wtex.repeat.set(1, 0.12); wtex.offset.set(0, 0.52);
+const M = {
+  wood: std({ map: wtex, color: new THREE.Color(1.75, 1.45, 1.12), roughness: 0.66 }),
+  woodEnd: std({ color: 0xc89a66, roughness: 0.75 }),
+  wire: phys({ color: 0xb9bfc6, metalness: 0.92, roughness: 0.3, roughnessMap: fine, clearcoat: 0.2 }),
+  jaw: phys({ color: 0xbfc5cc, metalness: 0.92, roughness: 0.28, roughnessMap: fine, clearcoat: 0.2 }),
+  bar: phys({ color: 0xc3c9d0, metalness: 0.92, roughness: 0.28, roughnessMap: fine }),
+  sheet: phys({ color: 0xb4bcc6, metalness: 0.75, roughness: 0.4, roughnessMap: fine }),
+  cheese: std({ color: 0xf0b733, roughness: 0.55 }),
+  cheeseHole: std({ color: 0xc9891c, roughness: 0.7 }),
+  pencil: phys({ color: 0xf2b418, roughness: 0.4, clearcoat: 0.7, clearcoatRoughness: 0.25 }),
+  wood2: std({ color: 0xe9c79a, roughness: 0.7 }), lead: std({ color: 0x2a2a2e, roughness: 0.5 }),
+  ferrule: phys({ color: 0xc8b46e, metalness: 0.9, roughness: 0.3 }),
+  eraser: std({ color: 0xe48b86, roughness: 0.85 }),
+};
+for (const k of ['jaw', 'bar', 'sheet', 'wire']) M[k].emissive = new THREE.Color(0xff7a1a);
+for (const k of ['jaw', 'bar', 'sheet', 'wire']) M[k].emissiveIntensity = 0;
+S.cyclorama(scene, { floorY: 0, zFront: 900, zBack: -260, R: 240, h: 1800, width: 4000, floor: '#2b2f36', wall: '#454d59' });
+const L = S.studioLights(scene, new THREE.Vector3(0, 15, 0), 110);
+const shadowAll = S.shadowAll;
+// ---------- base: one pine board ----------
+const base = new THREE.Mesh(new RoundedBoxGeometry(98, 10, 45, 4, 1.6), M.wood); base.position.set(0, 5, 0); base.castShadow = base.receiveShadow = true; scene.add(base);
+const tube = (pts, r, mat, closed = false, seg = 64) => { const c = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)), closed, 'centripetal'); const m = new THREE.Mesh(new THREE.TubeGeometry(c, seg, r, 12, closed), mat); m.castShadow = m.receiveShadow = true; return m; };
+function rounded(path, rad = 3, n = 6) { // polyline with rounded corners -> dense point list
+  const out = [path[0]]; for (let i = 1; i < path.length - 1; i++) { const p = new THREE.Vector3(...path[i]), a = new THREE.Vector3(...path[i - 1]).sub(p).normalize(), b = new THREE.Vector3(...path[i + 1]).sub(p).normalize();
+    const p0 = p.clone().addScaledVector(a, rad), p1 = p.clone().addScaledVector(b, rad); for (let k = 0; k <= n; k++) { const u = k / n; const q = p0.clone().multiplyScalar((1 - u) ** 2).addScaledVector(p, 2 * u * (1 - u)).addScaledVector(p1, u * u); out.push(q.toArray()); } }
+  out.push(path[path.length - 1]); return out; }
+const staple = (x, z, top, span = 3.2, along = 'x', r = 0.55) => { const pts = along === 'x' ? [[x - span / 2, 8.5, z], [x - span / 2, top, z], [x + span / 2, top, z], [x + span / 2, 8.5, z]] : [[x, 8.5, z - span / 2], [x, top, z - span / 2], [x, top, z + span / 2], [x, 8.5, z + span / 2]];
+  const m = tube(rounded(pts, 1.0, 5), r, M.wire, false, 40); scene.add(m); return m; };
+// ---------- spring coils (static) + spring arms pressing on the base ----------
+const [AX, AY] = G.A, RW = G.RW, JW = G.JW;
+for (const s of [-1, 1]) { const pts = []; const z0 = s * 8.6, z1 = s * 15.6, turns = 6.5, rc = 3.0;
+  for (let i = 0; i <= 260; i++) { const u = i / 260, th = u * turns * Math.PI * 2; pts.push([AX + rc * Math.cos(th), AY + rc * Math.sin(th), z0 + (z1 - z0) * u]); }
+  scene.add(tube(pts, RW, M.wire, false, 700));
+  scene.add(tube(rounded([[AX + 3.0, AY, z0], [AX + 3.0, 11.0, z0 - s * 0.6], [-16, 10.75, s * 6.5], [-24, 10.75, s * 6.5]], 2.5), RW, M.wire, false, 80)); }
+staple(AX, 0, AY + RW + 0.75, 3.4);
+// ---------- jaw (rotates about the coil axis, alpha from kin) ----------
+const jaw = new THREE.Group(); jaw.position.set(AX, AY, 0); scene.add(jaw);
+{ const R = G.RJ; jaw.add(tube(rounded([[0, 0, -JW], [R, 0, -JW], [R, 0, JW], [0, 0, JW]], 3.2, 8), RW, M.jaw, false, 220));
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(RW, RW, 2 * JW, 16), M.jaw); ax.rotation.x = Math.PI / 2; jaw.add(ax);
+  for (const s of [-1, 1]) jaw.add(tube([[0, 0, s * JW], [0, 0, s * (JW - 0.01)]], RW, M.jaw, false, 2)); }
+// ---------- locking bar (rotates about its rear staple P) ----------
+const [PX, PY] = G.P; const bar = new THREE.Group(); bar.position.set(PX, PY, 0); scene.add(bar);
+{ const b = new THREE.Mesh(new THREE.CylinderGeometry(G.RB, G.RB, G.LB - 1.6, 16), M.bar); b.rotation.z = -Math.PI / 2; b.position.x = (G.LB + 1.6) / 2; b.castShadow = true; bar.add(b);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(G.RB, 16, 12), M.bar); tip.position.x = G.LB; bar.add(tip);
+  const eye = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.55, 10, 24), M.bar); eye.position.x = 0.2; eye.castShadow = true; bar.add(eye); }
+{ const pts = [[PX, 8.5, -2.4], [PX, PY, -2.4], [PX, PY, 2.4], [PX, 8.5, 2.4]]; scene.add(tube(rounded(pts, 0.8, 5), 0.5, M.wire, false, 40)); }
+// ---------- trigger: sheet plate + catch (upright + rearward lip) + cheese, rotates about the hinge Q ----------
+const [QX, QY] = G.Q; const trig = new THREE.Group(); trig.position.set(QX, QY, 0); scene.add(trig);
+const poly = (pts, z0, z1, mat) => { const sh = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0] - QX, p[1] - QY))); const g = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false }); g.translate(0, 0, z0); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; return m; };
+trig.add(poly(G.plate, -8, 8, M.sheet));
+trig.add(poly(G.catch[0], -3.2, 3.2, M.sheet)); trig.add(poly(G.catch[1], -3.2, 3.2, M.sheet));
+{ const eye = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 12, 20, 1, true), M.sheet); eye.rotation.x = Math.PI / 2; eye.material.side = THREE.DoubleSide; trig.add(eye);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 17, 12), M.wire); pin.rotation.x = Math.PI / 2; pin.position.set(QX, QY, 0); scene.add(pin);
+  for (const z of [-7.6, 7.6]) { const pts = [[QX - 1.6, 8.5, z], [QX - 1.6, QY, z], [QX + 1.6, QY, z], [QX + 1.6, 8.5, z]]; scene.add(tube(rounded(pts, 1.1, 5), 0.55, M.wire, false, 40)); } }
+const cheese = new THREE.Group(); trig.add(cheese); cheese.rotation.z = G.PHI0;
+{ const CH = G.CH, w = CH.x1 - CH.x0; const g = new RoundedBoxGeometry(w, CH.h, CH.w, 3, 0.9); const c = new THREE.Mesh(g, M.cheese); c.position.set(CH.x0 + w / 2, 0.4 + CH.h / 2, 0); c.castShadow = c.receiveShadow = true; cheese.add(c);
+  const r = S.rng(4); for (let i = 0; i < 7; i++) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.7 + r() * 0.9, 12, 8), M.cheeseHole); const side = i % 3;
+    if (side === 0) h.position.set(CH.x0 + 1.5 + r() * (w - 3), 0.4 + 1.2 + r() * (CH.h - 2.4), CH.w / 2 - 0.25); else if (side === 1) h.position.set(CH.x0 + 1.5 + r() * (w - 3), 0.4 + 1.2 + r() * (CH.h - 2.4), -CH.w / 2 + 0.25); else h.position.set(CH.x0 + w + 0.25 - 0.5, 0.4 + 1.2 + r() * (CH.h - 2.4), -3 + r() * 6);
+    h.scale.set(1, 1, 0.35); cheese.add(h); } }
+// ---------- pencil (held from off-screen; eraser end presses the cheese) ----------
+const pencil = new THREE.Group(); scene.add(pencil); const PR = G.PEN_R;
+{ const along = (len, r, mat, at, seg = 24) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), mat); m.position.y = at + len / 2; m.castShadow = true; pencil.add(m); return m; };
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(PR, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.eraser); cap.rotation.x = 0; pencil.add(cap);
+  along(6.5, PR, M.eraser, 0); along(8, PR + 0.35, M.ferrule, 6.5, 32);
+  for (let i = 0; i < 4; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(PR + 0.38, 0.22, 8, 32), M.ferrule); t.rotation.x = Math.PI / 2; t.position.y = 7.5 + i * 2; pencil.add(t); }
+  const hex = along(170, PR + 0.5, M.pencil, 14.5, 6); hex.rotation.y = Math.PI / 6; }
+const penDir = new THREE.Vector3(G.pen_dir[0], G.pen_dir[1], 0);
+pencil.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), penDir);
+// ---------- kinematics lookup ----------
+const DT = 1 / 120;
+function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+// ---------- camera ----------
+const CAM = [
+  [0.0, 4, 18, 0, 265, 34, 38], [2.5, 4, 17, 0, 240, 31, 34],
+  [3.5, -10, 24, 0, 250, 24, 22], [5.6, -10, 24, 0, 238, 23, 20],
+  [8.3, -6, 21, 0, 228, 21, 24], [9.1, 11, 17.5, 0, 78, 9, 9], [10.5, 11, 17.5, 0, 72, 9, 9],
+  [11.1, 21, 22, 0, 130, 13, 16], [12.05, 21, 22, 0, 124, 13, 16], [12.6, 6, 32, 0, 300, 12, 18],
+  [16.7, 6, 31, 0, 285, 13, 20], [18.0, 6, 31, 0, 280, 13, 21]];
+const hl = (t, a, b, f = 0.3) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+function setScene(t) {
+  const [, al, be, ph, px, py] = kin(t);
+  jaw.rotation.z = al; bar.rotation.z = be; trig.rotation.z = -ph; pencil.position.set(px, py, 0);
+  pencil.visible = t > 9.3 && t < DIS0 + 1.5;
+  const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
+  M.wire.emissiveIntensity = 0.0; M.jaw.emissiveIntensity = 0.35 * hl(t, 2.8, 5.6); M.bar.emissiveIntensity = 0.35 * hl(t, 5.8, 8.4); M.sheet.emissiveIntensity = 0;
+}
+// ---------- overlay ----------
+const scr = (x, y, z) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+function arcArrow(g2, a, pts) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; g2.lineJoin = 'round';
+  for (const [w, col] of [[22, '#000'], [13, '#ff7a1a']]) { g2.strokeStyle = col; g2.lineWidth = w; g2.beginPath(); pts.slice(0, -1).forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); }
+  const p1 = pts[pts.length - 2], p2 = pts[pts.length - 1], ang = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]);
+  g2.fillStyle = '#ff7a1a'; g2.strokeStyle = '#000'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(p2[0], p2[1]); g2.lineTo(p2[0] - 46 * Math.cos(ang - 0.5), p2[1] - 46 * Math.sin(ang - 0.5)); g2.lineTo(p2[0] - 46 * Math.cos(ang + 0.5), p2[1] - 46 * Math.sin(ang + 0.5)); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function pill(g2, a, text, y, size = 46, bg = 'rgba(12,14,20,0.86)', fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; S.rrect(g2, S.CX - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = bg; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, S.CX, y + 2); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0);
+  const [, al, be, ph] = kin(t);
+  const lipW = (() => { const c = G.catch[1]; const x = (c[0][0] + c[1][0]) / 2, y = c[0][1] + 0.4; const dx = x - G.Q[0], dy = y - G.Q[1]; return [G.Q[0] + dx * Math.cos(-ph) - dy * Math.sin(-ph), G.Q[1] + dx * Math.sin(-ph) + dy * Math.cos(-ph)]; })();
+  const lip0 = (() => { const c = G.catch[1]; return [(c[0][0] + c[1][0]) / 2, c[0][1] + 0.4]; })();
+  // hook (0-2.6 s) and again at the loop end so the last frame matches the first
+  const hk = t < 3 ? 1 - S.smooth((t - 2.35) / 0.35) : S.smooth((t - 16.9) / 0.9);
+  if (hk > 0) { S.hookCard(g2, hk, 'WHAT HOLDS', 'IT BACK?', 124);
+    const [cx, cy] = t < 3 ? scr(lipW[0], lipW[1], 0) : (() => { const keep = camera.position.clone(); const c0 = S.orbitCam(CAM, 0); camera.position.copy(c0.pos); camera.lookAt(c0.target); camera.updateMatrixWorld(); const p = scr(lip0[0], lip0[1], 0); camera.position.copy(keep); setScene(Math.min(t, DIS0)); return p; })();
+    S.redCircle(g2, hk, cx, cy, 70, [-230, 150]); }
+  // step captions
+  S.caption(g2, fade(t, 2.75, 5.75), 'THE SPRING WANTS TO SNAP', 440, 66, '#ffffff', 1);
+  S.caption(g2, fade(t, 5.75, 8.45), 'A THIN BAR HOLDS IT BACK', 440, 66, '#ffffff', 2);
+  S.caption(g2, fade(t, 8.45, 10.95), 'ITS TIP HOOKS A TINY LIP', 440, 66, '#ffffff', 3);
+  S.caption(g2, fade(t, 10.95, 13.45), 'A TOUCH TILTS THE LIP OFF', 440, 66, '#ffffff', 4);
+  // tags
+  const a1 = fade(t, 3.0, 5.7); if (a1 > 0) { const [sx, sy] = scr(AX, AY + 3, 12); S.tag(g2, a1, 'SPRING', sx, sy, 60, 150);
+    const c = [AX + G.RJ * Math.cos(al), AY + G.RJ * Math.sin(al)]; const [jx, jy] = scr(c[0], c[1], -6); S.tag(g2, a1, 'JAW', jx, jy, 60, 170);
+    const pts = []; for (let k = 0; k <= 24; k++) { const aa = G.A0 - (G.A0 - Math.PI * 0.62) * k / 24 * Math.min(1, (t - 3.0) / 0.9); pts.push(scr(AX + G.RJ * 0.8 * Math.cos(aa), AY + G.RJ * 0.8 * Math.sin(aa), 0)); }
+    if (t > 3.2) arcArrow(g2, a1, pts); }
+  const a2 = fade(t, 6.0, 8.4); if (a2 > 0) { const m = 30; const [bx, by] = scr(G.P[0] + m * Math.cos(be), G.P[1] + m * Math.sin(be), 0); S.tag(g2, a2, 'LOCKING BAR', bx, by, -60, -160); }
+  const a3 = fade(t, 9.2, 11.9); if (a3 > 0) { const [lx, ly] = scr(lipW[0], lipW[1] + 0.4, 0); S.tag(g2, a3, 'LIP', lx, ly, -90, -170); const [tx, ty] = scr(G.tip0[0] - 2, G.tip0[1], 0); S.tag(g2, a3 * fade(t, 9.4, 11.9), 'BAR TIP', tx, ty, -120, 150); }
+  const a4 = fade(t, 10.9, 12.0); if (a4 > 0) { const c = G.CH; const [ux, uy] = scr(G.Q[0] + 27, G.Q[1] + 1.5, 6); S.tag(g2, a4, 'TRIGGER', ux, uy, 40, 170); }
+  pill(g2, fade(t, 12.1, 12.95, 0.15), 'SLOW MOTION', 1395, 46);
+  if (t > 12.8 && t < 13.5) { const a = fade(t, 12.83, 13.5, 0.12); const k = 1 + 0.25 * Math.exp(-(t - 12.83) * 12); g2.save(); g2.translate(S.CX, 760); g2.scale(k, k); S.outlined(g2, 'SNAP!', 0, 0, 150, '#ffd21f'); g2.restore(); g2.globalAlpha = 1; void a; }
+  // payoff
+  const ap = fade(t, 13.5, 16.5, 0.3); if (ap > 0) { g2.save(); g2.globalAlpha = ap; S.outlined(g2, 'A TINY LIP', S.CX, 520, 112, '#ffffff'); S.outlined(g2, 'HOLDS THE SPRING', S.CX, 640, 104, '#ffd21f'); g2.restore(); }
+  // follow line (small, lower safe area) before the loop
+  const af = fade(t, 16.2, 17.55, 0.25); if (af > 0) pill(g2, af, 'FOLLOW → A NEW MACHINE EVERY DAY', 1395, 44, 'rgba(12,14,20,0.8)', '#ffffff');
+}
+// ---------- frame harness with the loop dissolve (end pose -> the set pose at t = 0) ----------
+window.motionPx = (t) => (t > EV.release - 0.02 && t < EV.hit + 0.15) ? 40 : 0;
+window.renderFrame = (t, sub = 1, shutter = 0.5, fps = 30) => {
+  const { g2, W, H, renderer, composer, P } = st; g2.setTransform(1, 0, 0, 1, 0, 0); g2.globalAlpha = 1; g2.clearRect(0, 0, W, H);
+  for (let i = 0; i < sub; i++) { const ts = t + (sub > 1 ? ((i + 0.5) / sub - 0.5) * shutter / fps : 0); setScene(Math.min(ts, DIS0)); composer.render();
+    g2.globalAlpha = 1 / (i + 1); g2.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height, 0, 0, W, H); }
+  if (t > DIS0) { setScene(0); composer.render(); g2.globalAlpha = S.smooth((t - DIS0) / (LOOP - DIS0)); g2.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height, 0, 0, W, H); }
+  g2.globalAlpha = 1; setScene(t > DIS0 ? Math.min(t, DIS0) : t); S.overlayBegin(st); overlay(t); g2.fillStyle = 'rgba(255,255,255,0.004)'; g2.fillRect(0, 0, 1, 1);
+  if (P.safe) S.safeZones(g2);
+  return st.out.toDataURL('image/png');
+};
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
