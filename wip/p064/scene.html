@@ -16,64 +16,87 @@ const THREE = S.THREE;
 const G = await (await fetch('geom.json')).json();
 const K = await (await fetch('kin_240.json')).json();
 const LOOP = G.LOOP, R = G.R, L = G.L, DECK = G.DECK, EV = G.EV, VX = 21, VZ = 14, VH = 13;
-const st = S.makeStudio({ fov: 30, bg: 0x20262f, envIntensity: 1.05, bloom: 0, near: 20, far: 20000, samples: 0 });
+const st = S.makeStudio({ fov: 30, bg: 0x1c222b, envIntensity: 0.75, bloom: 0, near: 20, far: 20000, samples: 0 });
 const { scene, camera } = st;
 const std = (o) => new THREE.MeshStandardMaterial(o), phys = (o) => new THREE.MeshPhysicalMaterial(o);
 const grain = S.noiseTex(5, 150, 16, 256); grain.repeat.set(0.02, 0.02);
+const fine = S.noiseTex(9, 140, 26, 256); fine.wrapS = fine.wrapT = THREE.RepeatWrapping; fine.repeat.set(0.06, 0.06);
 const clip = new THREE.Plane(new THREE.Vector3(0, 0, -1), 500);
 const CL = [clip];
+// cut faces: back faces of the clipped solids, lit as if they were the flat section plane z = clip (normal +z): satin painted section
+function capMat(color) { const m = std({ color, roughness: 0.72, metalness: 0.05, side: THREE.BackSide, clippingPlanes: CL });
+  m.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize((viewMatrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz); nonPerturbedNormal = normal;'); };
+  return m; }
 const M = {
-  block: phys({ color: 0x9aa2aa, metalness: 0.95, roughness: 0.34, roughnessMap: grain, clippingPlanes: CL, clipShadows: true }),
-  head: phys({ color: 0xa8b0b8, metalness: 0.95, roughness: 0.3, roughnessMap: grain, clippingPlanes: CL, clipShadows: true }),
-  cover: phys({ color: 0x1d2128, metalness: 0.3, roughness: 0.35, clearcoat: 0.8, clippingPlanes: CL, clipShadows: true }),
-  cutBlock: new THREE.MeshBasicMaterial({ color: 0xc8452a, side: THREE.BackSide, clippingPlanes: CL }),
-  cutCover: new THREE.MeshBasicMaterial({ color: 0x9c3a22, side: THREE.BackSide, clippingPlanes: CL }),
-  bore: phys({ color: 0xc7ccd2, metalness: 1.0, roughness: 0.22, roughnessMap: grain, side: THREE.BackSide, clippingPlanes: CL }),
-  piston: phys({ color: 0xaeb5bd, metalness: 1.0, roughness: 0.4, roughnessMap: grain, clearcoat: 0.3 }),
+  block: std({ color: 0x858c93, metalness: 0.6, roughness: 0.52, roughnessMap: fine, clippingPlanes: CL, clipShadows: true }),   // cast aluminium
+  head: std({ color: 0x8e959c, metalness: 0.6, roughness: 0.48, roughnessMap: fine, clippingPlanes: CL, clipShadows: true }),
+  polish: phys({ color: 0xaab1b8, metalness: 0.9, roughness: 0.2, clearcoat: 0.5, clippingPlanes: CL, clipShadows: true }),     // polished side cover
+  cover: phys({ color: 0x17191d, metalness: 0.2, roughness: 0.55, roughnessMap: fine, clearcoat: 0.35, clearcoatRoughness: 0.4, clippingPlanes: CL, clipShadows: true }),  // black wrinkle valve cover
+  chrome: phys({ color: 0xe6e9ec, metalness: 1.0, roughness: 0.12, clippingPlanes: CL, clipShadows: true }),
+  pipeIn: std({ color: 0x23262b, roughness: 0.7, side: THREE.BackSide, clippingPlanes: CL }),
+  cutBlock: capMat(0x7a2216),
+  cutCover: capMat(0x4f1810),
+  bore: std({ color: 0x7d838a, metalness: 0.7, roughness: 0.34, roughnessMap: grain, side: THREE.BackSide, clippingPlanes: CL }),
+  piston: std({ color: 0x969ca2, metalness: 0.3, roughness: 0.62, roughnessMap: fine }),
   ring: std({ color: 0x2a2d33, metalness: 0.8, roughness: 0.4 }),
-  rod: phys({ color: 0x5f6873, metalness: 1.0, roughness: 0.3, roughnessMap: grain }),
-  crank: phys({ color: 0x4b525b, metalness: 1.0, roughness: 0.32, roughnessMap: grain }),
-  journal: phys({ color: 0xd8dde2, metalness: 1.0, roughness: 0.18 }),
-  valveI: phys({ color: 0x47a8ff, metalness: 0.7, roughness: 0.3, clearcoat: 0.4 }),
-  valveE: phys({ color: 0xff8a2a, metalness: 0.7, roughness: 0.3, clearcoat: 0.4 }),
+  rod: std({ color: 0x70767e, metalness: 0.85, roughness: 0.34, roughnessMap: grain }),
+  crank: std({ color: 0x70767e, metalness: 0.85, roughness: 0.34, roughnessMap: grain }),
+  journal: std({ color: 0xcfd3d8, metalness: 0.9, roughness: 0.24 }),
+  valveI: std({ color: 0x3f9cf0, metalness: 0.55, roughness: 0.32 }),
+  valveE: std({ color: 0xf08226, metalness: 0.55, roughness: 0.32 }),
   spring: std({ color: 0x9aa3ac, metalness: 0.9, roughness: 0.35 }),
-  cam: phys({ color: 0xb8bfc6, metalness: 1.0, roughness: 0.25, roughnessMap: grain }),
+  cam: std({ color: 0xc0c6cc, metalness: 0.9, roughness: 0.26, roughnessMap: grain }),
   plug: phys({ color: 0xf2f2ee, metalness: 0.0, roughness: 0.25, clearcoat: 0.8 }),
-  hex: phys({ color: 0xc8ced5, metalness: 1.0, roughness: 0.25 }),
+  hex: std({ color: 0xc8ced5, metalness: 0.95, roughness: 0.25 }),
   boot: std({ color: 0x15161a, roughness: 0.6 }),
-  pulley: phys({ color: 0x2b2f36, metalness: 0.8, roughness: 0.35 }),
+  pulley: std({ color: 0x2b2f36, metalness: 0.8, roughness: 0.35 }),
+  bolt: std({ color: 0x9aa1a8, metalness: 0.95, roughness: 0.28 }),
 };
 for (const k of ['piston', 'rod', 'crank', 'valveI', 'valveE', 'cam', 'plug']) M[k].userData.base = M[k].color.clone();
+for (const k of ['piston', 'valveI', 'valveE']) M[k].side = THREE.DoubleSide;  // lathe profiles are wound inside-out: render both faces so the piston is solid
 const eng = new THREE.Group(); scene.add(eng);
 const solid = (geo, mat, cut = M.cutBlock) => { const g = new THREE.Group(); const a = new THREE.Mesh(geo, mat); const b = new THREE.Mesh(geo, cut); a.castShadow = a.receiveShadow = true; g.add(a, b); return g; };
-// ---------- block: cylinder (x-z rect with the bore hole, extruded along y from 60 to DECK) ----------
+// ---------- barrel: core (bore hole) + deep cooling fins, extruded along y from 60 to DECK ----------
 const BW = 78, BZ = 72, BR = G.BORE / 2;
-{ const sh = S.shapeOf(S.roundRect(-BW, -BZ, BW, BZ, 8), [S.circle(0, 0, BR + 0.4, 96, true)]);
-  const geo = new THREE.ExtrudeGeometry(sh, { depth: DECK - 60, bevelEnabled: false, curveSegments: 48 }); geo.rotateX(-Math.PI / 2); geo.translate(0, 60, 0);
-  eng.add(solid(geo, M.block));
+const yExtrude = (ring, holes, y0, y1, mat, cut) => { const geo = new THREE.ExtrudeGeometry(S.shapeOf(ring, holes), { depth: y1 - y0, bevelEnabled: false, curveSegments: 48 }); geo.rotateX(-Math.PI / 2); geo.translate(0, y0, 0); geo.computeVertexNormals(); return solid(geo, mat, cut); };
+{ const hole = [S.circle(0, 0, BR + 0.4, 96, true)];
+  eng.add(yExtrude(S.roundRect(-56, -56, 56, 56, 18), hole, 60, DECK, M.block));
   const liner = new THREE.Mesh(new THREE.CylinderGeometry(BR + 0.5, BR + 0.5, DECK - 60, 96, 1, true), M.bore); liner.position.y = (DECK + 60) / 2; eng.add(liner);
-  for (let i = 0; i < 4; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(2 * BW + 8, 5, 2 * BZ + 8), M.block); f.position.y = 90 + i * 34; eng.add(f); } }  // cooling ribs
-// crankcase: hollow (x-y ring extruded along z) + back wall + front wall
-{ const outer = S.roundRect(-112, -118, 112, 62, 26), inner = S.roundRect(-100, -106, 100, 60, 18);
+  for (let y = 70; y < DECK - 8; y += 11) { const w = 92 - 6 * Math.max(0, (80 - y) / 10); eng.add(yExtrude(S.roundRect(-w, -84, w, 84, 20), hole, y, y + 4.2, M.block)); } }
+// crankcase: hollow (x-y ring extruded along z) + back wall + front wall + round polished side cover with bolts
+{ const outer = S.roundRect(-112, -118, 112, 62, 30), inner = S.roundRect(-100, -106, 100, 60, 20);
   const sh = S.shapeOf(outer, [inner.slice().reverse()]); const geo = new THREE.ExtrudeGeometry(sh, { depth: 2 * BZ, bevelEnabled: false, curveSegments: 16 }); geo.translate(0, 0, -BZ);
   eng.add(solid(geo, M.block));
   const back = new THREE.Mesh(new THREE.BoxGeometry(224, 180, 8), M.block); back.position.set(0, -28, -BZ + 4); back.receiveShadow = true; eng.add(back);
   const front = solid(new THREE.BoxGeometry(224, 180, 8), M.block); front.position.set(0, -28, BZ - 4); eng.add(front);
+  const sc = new THREE.Group(); const disc = solid(new THREE.CylinderGeometry(94, 98, 14, 96), M.polish); disc.rotation.x = Math.PI / 2; sc.add(disc);
+  const rim = solid(new THREE.TorusGeometry(95, 3.2, 12, 96), M.polish); sc.add(rim);
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; const b = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.6, 6, 6), M.bolt); b.rotation.x = Math.PI / 2; b.position.set(84 * Math.cos(a), 84 * Math.sin(a), 9); b.material = M.bolt; sc.add(b); }
+  sc.position.set(0, -24, BZ + 7); S.shadowAll(sc); eng.add(sc);
   const pan = solid(new RoundedBoxGeometry(236, 30, 2 * BZ + 14, 3, 8), M.cover, M.cutCover); pan.position.set(0, -128, 0); eng.add(pan); }
 // ---------- head (x-y profile with ports + combustion roof), extruded along z ----------
 const HT = 300; // head top
-const pipes = [];
 { const geo = new RoundedBoxGeometry(2 * BW + 14, HT - DECK, 2 * BZ + 6, 3, 6); const h = solid(geo, M.head); h.position.set(0, (DECK + HT) / 2, 0); eng.add(h);
-  // ports (dark channels), shown cut in half by the clip plane
+  // head fins on the front and back faces (short, clear of the side ports)
+  for (const z of [-1, 1]) for (let i = 0; i < 4; i++) { const f = solid(new RoundedBoxGeometry(2 * BW + 4, 4, 14, 1, 1.5), M.head); f.position.set(0, DECK + 10 + i * 15, z * (BZ + 9)); eng.add(f); }
   const portMat = std({ color: 0x2c3138, metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide, clippingPlanes: CL });
   for (const s of [-1, 1]) { const c = new THREE.CatmullRomCurve3([new THREE.Vector3(s * VX, DECK + 2, 0), new THREE.Vector3(s * (VX + 18), DECK + 30, 0), new THREE.Vector3(s * 70, DECK + 50, 0), new THREE.Vector3(s * 120, DECK + 56, 0)]);
-    const tb = new THREE.Mesh(new THREE.TubeGeometry(c, 40, 15, 24, false), portMat); eng.add(tb);
-    const pipe = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(s * 92, DECK + 55, -40), new THREE.Vector3(s * 150, DECK + 58, -40), new THREE.Vector3(s * 190, DECK + 40, -40)]), 20, 17, 24, false), M.cover); pipe.castShadow = true; pipe.visible = false; pipes.push(pipe); eng.add(pipe); } }
-// cam cover (valve cover) over the cams
+    eng.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, 15, 24, false), portMat)); } }
+// exhaust: chrome header pipe from the right port, down the side (cut in half with the engine)
+{ const c = new THREE.CatmullRomCurve3([new THREE.Vector3(82, DECK + 56, 0), new THREE.Vector3(150, DECK + 60, 0), new THREE.Vector3(196, DECK + 20, 0), new THREE.Vector3(206, DECK - 80, 0), new THREE.Vector3(210, -60, 0), new THREE.Vector3(228, -150, 0)]);
+  const g = new THREE.TubeGeometry(c, 80, 15, 28, false); const o = new THREE.Mesh(g, M.chrome), i = new THREE.Mesh(g, M.pipeIn); o.castShadow = true; eng.add(o, i);
+  const fl = solid(new THREE.CylinderGeometry(21, 21, 8, 32), M.head); fl.rotation.z = Math.PI / 2; fl.position.set(90, DECK + 57, 0); eng.add(fl); }
+// intake: carburettor body + round air filter on the left port
+{ const tube = solid(new THREE.CylinderGeometry(15, 15, 46, 32), M.head); tube.rotation.z = Math.PI / 2; tube.position.set(-106, DECK + 57, 0); eng.add(tube);
+  const carb = solid(new RoundedBoxGeometry(44, 52, 50, 3, 6), M.block); carb.position.set(-148, DECK + 57, 0); eng.add(carb);
+  const filt = solid(new THREE.CylinderGeometry(46, 46, 34, 64), M.cover, M.cutCover); filt.rotation.z = Math.PI / 2; filt.position.set(-190, DECK + 57, 0); eng.add(filt);
+  const cap = solid(new THREE.CylinderGeometry(40, 46, 6, 64), M.polish); cap.rotation.z = Math.PI / 2; cap.position.set(-210, DECK + 57, 0); eng.add(cap); }
+// cam cover (valve cover) over the cams: black wrinkle finish with polished ribs
 const CAM_Y = G.CAM_Y;
 { const cv = solid(new RoundedBoxGeometry(2 * BW + 30, 112, 2 * BZ + 16, 4, 26), M.cover, M.cutCover); cv.position.set(0, HT + 56, 0); eng.add(cv);
-  const lip = solid(new RoundedBoxGeometry(2 * BW + 36, 10, 2 * BZ + 22, 2, 4), M.head); lip.position.set(0, HT + 4, 0); eng.add(lip); }
-// timing cover at the back (hides the belt that turns the cams at half crank speed)
+  const lip = solid(new RoundedBoxGeometry(2 * BW + 36, 10, 2 * BZ + 22, 2, 4), M.head); lip.position.set(0, HT + 4, 0); eng.add(lip);
+  for (const x of [-56, -36, 36, 56]) { const r = solid(new RoundedBoxGeometry(7, 10, 2 * BZ - 6, 2, 3), M.polish); r.position.set(x, HT + 113, 0); eng.add(r); } }
+// timing cover at the back (hides the chain that turns the cams at half crank speed)
 { const tc = new THREE.Mesh(new RoundedBoxGeometry(250, 560, 14, 3, 6), M.cover); tc.position.set(0, 120, -BZ - 12); tc.receiveShadow = true; eng.add(tc); }
 // ---------- crankshaft ----------
 const crank = new THREE.Group(); eng.add(crank); const pulley = new THREE.Group();
@@ -82,10 +105,11 @@ const crank = new THREE.Group(); eng.add(crank); const pulley = new THREE.Group(
   for (let i = 0; i <= 24; i++) { const a = Math.PI + 0.25 + (Math.PI - 0.5) * i / 24; pts.push([56 * Math.cos(a), 56 * Math.sin(a)]); }
   for (const z of [-20, 20]) { const w = S.extrude(S.shapeOf(pts), -6, 6, M.crank, 2, 12); w.position.z = z; crank.add(w); }
   const pin = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 46, 32), M.journal); pin.rotation.x = Math.PI / 2; pin.position.y = R; crank.add(pin);
-  const pul = new THREE.Mesh(new THREE.CylinderGeometry(46, 46, 22, 48), M.pulley); pul.rotation.x = Math.PI / 2; pul.position.z = BZ + 26; pulley.add(pul);
-  for (let i = 0; i < 3; i++) { const g = new THREE.Mesh(new THREE.TorusGeometry(46, 2.2, 8, 48), M.ring); g.position.z = BZ + 19 + i * 7; pulley.add(g); }
-  const mk = new THREE.Mesh(new THREE.BoxGeometry(8, 22, 4), std({ color: 0xffd21f, emissive: 0x332800 })); mk.position.set(0, 32, BZ + 38); pulley.add(mk); crank.add(pulley);
-  S.shadowAll(crank); }
+  const pul = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, 18, 48), M.pulley); pul.rotation.x = Math.PI / 2; pul.position.set(0, 0, BZ + 32); pulley.add(pul);
+  for (let i = 0; i < 3; i++) { const g = new THREE.Mesh(new THREE.TorusGeometry(40, 2, 8, 48), M.ring); g.position.z = BZ + 26 + i * 6; pulley.add(g); }
+  const nut = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 8, 6), M.bolt); nut.rotation.x = Math.PI / 2; nut.position.z = BZ + 44; pulley.add(nut);
+  const mk = new THREE.Mesh(new THREE.BoxGeometry(7, 20, 4), std({ color: 0xffd21f, emissive: 0x332800 })); mk.position.set(0, 28, BZ + 42); pulley.add(mk); crank.add(pulley);
+  pulley.position.y = 0; S.shadowAll(crank); }
 // ---------- connecting rod ----------
 const rod = new THREE.Group(); eng.add(rod);
 { const big = new THREE.Mesh(new THREE.TorusGeometry(19, 7, 16, 40), M.rod); rod.add(big);
@@ -109,7 +133,6 @@ function valve(sx, sz, mat) { const g = new THREE.Group(); g.position.set(sx * V
   const hd = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [VH, 0], [VH, 2], [5, 9], [3.5, 14]].map(([r, y]) => new THREE.Vector2(r, y)), 48), mat); hd.position.y = DECK; mv.add(hd);
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, G.STEM - 12, 16), mat); stem.position.y = DECK + (G.STEM - 12) / 2 + 6; mv.add(stem);
   const tap = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 12, 32), M.journal); tap.position.y = DECK + G.STEM - 6; mv.add(tap);
-  // spring: helix from the head (y = HT - 4) up to under the tappet; rebuilt scale with lift
   const pts = []; const turns = 6; for (let i = 0; i <= turns * 24; i++) { const a = i / 24 * Math.PI * 2; pts.push(new THREE.Vector3(9 * Math.cos(a), i / (turns * 24), 9 * Math.sin(a))); }
   const sp = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, 1.6, 6, false), M.spring); g.add(sp);
   S.shadowAll(g); return { mv, sp }; }
@@ -133,16 +156,20 @@ const plug = new THREE.Group(); eng.add(plug);
   S.shadowAll(plug); }
 const sparkMat = new THREE.MeshBasicMaterial({ color: 0xbfe4ff, transparent: true, opacity: 0, depthWrite: false });
 const spark = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 12), sparkMat); spark.position.set(0, DECK - 3, 0); spark.renderOrder = 5; eng.add(spark);
-// ---------- flow particles (intake from the left port, exhaust out of the right port) ----------
-const NP = 14; const pI = [], pE = [];
+// ---------- flow: soft gas puffs (intake from the left port, exhaust out of the right port) ----------
+const NP = 16; const pI = [], pE = [];
 const pathI = new THREE.CatmullRomCurve3([new THREE.Vector3(-150, DECK + 57, 0), new THREE.Vector3(-70, DECK + 50, 0), new THREE.Vector3(-VX - 18, DECK + 28, 0), new THREE.Vector3(-VX, DECK - 6, -6), new THREE.Vector3(-8, DECK - 30, 0)]);
 const pathE = new THREE.CatmullRomCurve3([new THREE.Vector3(8, DECK - 30, 0), new THREE.Vector3(VX, DECK - 6, 6), new THREE.Vector3(VX + 18, DECK + 28, 0), new THREE.Vector3(70, DECK + 50, 0), new THREE.Vector3(170, DECK + 52, 0)]);
-const pmI = new THREE.MeshStandardMaterial({ color: 0x6cc0ff, emissive: 0x2a7fd0, emissiveIntensity: 0.9, roughness: 0.6 }), pmE = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, emissive: 0x3a3f46, emissiveIntensity: 0.6, roughness: 0.8 });
-for (let i = 0; i < NP; i++) { const a = new THREE.Mesh(new THREE.SphereGeometry(5.5, 12, 10), pmI); eng.add(a); pI.push(a); const b = new THREE.Mesh(new THREE.SphereGeometry(6, 12, 10), pmE); eng.add(b); pE.push(b); }
+const puff = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,0.95)'); g.addColorStop(0.45, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const pmI = new THREE.SpriteMaterial({ map: puff, color: 0x7cc6ff, transparent: true, depthWrite: false, opacity: 0.9 }), pmE = new THREE.SpriteMaterial({ map: puff, color: 0xa7adb5, transparent: true, depthWrite: false, opacity: 0.85 });
+for (let i = 0; i < NP; i++) { const a = new THREE.Sprite(pmI); a.renderOrder = 4; eng.add(a); pI.push(a); const b = new THREE.Sprite(pmE); b.renderOrder = 4; eng.add(b); pE.push(b); }
 // ---------- studio set ----------
-S.cyclorama(scene, { floorY: -144, zFront: 3000, zBack: -900, R: 500, h: 4000, width: 8000, floor: '#2d333c', wall: '#3d4654' });
+S.cyclorama(scene, { floorY: -144, zFront: 3000, zBack: -900, R: 500, h: 4000, width: 8000, floor: '#2b3038', wall: '#3a4250' });
 const lights = S.studioLights(scene, new THREE.Vector3(0, 140, 0), 420);
-const lamp = new THREE.PointLight(0xfff2e0, 1.4, 0, 0); camera.add(lamp); lamp.position.set(150, 220, 0); scene.add(camera);
+const lamp = new THREE.PointLight(0xfff2e0, 1.2, 0, 0); camera.add(lamp); lamp.position.set(150, 220, 0); scene.add(camera);
+// contact shadow under the engine
+{ const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const g = x.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, 'rgba(0,0,0,0.75)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); const m = new THREE.Mesh(new THREE.PlaneGeometry(520, 300), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(0, -143.5, 0); scene.add(m); }
 // ---------- kinematics ----------
 const C = Object.fromEntries(G.cols.map((n, i) => [n, i]));
 function kinAt(t) { t = Math.max(0, Math.min(LOOP, t)); const f = t * G.FPS; const i = Math.min(Math.floor(f), K.length - 2), u = f - i; const A = K[i], B = K[i + 1]; const o = {};
@@ -164,13 +191,13 @@ function gasState(phi) { const c = new THREE.Color(); let e = 0.35, o = 0.42;
 // highlight (active parts glow, the rest dims)
 const HL = [[6.9, 9.0, ['piston']], [9.0, 11.6, ['rod', 'crank']], [12.2, 17.6, ['valveI', 'piston']], [18.0, 22.4, ['piston']], [22.6, 25.2, ['plug']], [25.2, 32.2, ['piston', 'rod', 'crank']], [32.6, 37.9, ['valveE', 'piston']]];
 const PARTS = ['piston', 'rod', 'crank', 'valveI', 'valveE', 'cam', 'plug'];
-const GLOW = { piston: 0xffffff, rod: 0xffd21f, crank: 0xffd21f, valveI: 0x47a8ff, valveE: 0xff8a2a, cam: 0, plug: 0xbfe4ff };
+const GLOW = { piston: 0xffc94a, rod: 0xffd21f, crank: 0xffd21f, valveI: 0x47a8ff, valveE: 0xff8a2a, cam: 0, plug: 0xbfe4ff };
 function highlight(t) { let dimAll = 0; const act = {}; for (const [a, b, ps] of HL) { const u = Math.max(0, Math.min(1, (t - a) / 0.3, (b - t) / 0.3)); if (u > 0) { dimAll = Math.max(dimAll, u); for (const p of ps) act[p] = Math.max(act[p] || 0, u); } }
   const pulse = 0.75 + 0.25 * Math.sin(t * TAU * 1.2);
   for (const p of PARTS) { const m = M[p], a = act[p] || 0, d = dimAll * (1 - a); m.color.copy(m.userData.base).multiplyScalar(1 - 0.55 * d); m.emissive.setHex(GLOW[p]).multiplyScalar(0.14 * a * pulse); } }
 // camera keys [t, tx, ty, tz, dist, elev, azim]
-const HOOK = [0, 420, 0, 1350, 12, 30], HOOK2 = [0, 220, 0, 1550, 10, 22], CUT = [0, 130, 0, 1800, 8, 12], TOP = [0, 205, 0, 1250, 6, 10], SPK = [0, 215, 0, 1050, 5, 8],
-  POW = [0, 60, 0, 1550, 6, 8], EXH = [0, 205, 0, 1250, 6, -8], PAY = [0, 140, 0, 1900, 10, 18];
+const HOOK = [-10, 290, 0, 1680, 14, 32], HOOK2 = [0, 200, 0, 1600, 10, 22], CUT = [0, 150, 0, 1450, 7, 10], TOP = [0, 262, 0, 1080, 6, 9], SPK = [0, 252, 0, 900, 5, 7],
+  POW = [0, 150, 0, 1380, 6, 8], EXH = [0, 262, 0, 1080, 6, -8], PAY = [0, 180, 0, 1650, 11, 20];
 const KEYS = [[0, ...HOOK], [5.4, ...HOOK2], [7.0, ...CUT], [11.4, ...CUT], [12.6, ...TOP], [22.2, ...TOP], [23.2, ...SPK], [25.6, ...SPK], [27.8, ...POW], [31.6, ...POW], [32.8, ...EXH], [37.8, ...EXH], [38.8, ...PAY], [42.2, ...PAY], [LOOP, ...HOOK]];
 let kk = null; const clipZ = (t) => t < 5.6 ? 500 : t < 7.2 ? 500 - 500 * ramp(t, 5.6, 7.2) : t < 41.4 ? 0 : 500 * ramp(t, 41.4, 43.4);
 function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k; const th = k.th;
@@ -185,11 +212,11 @@ function setAll(t) { const tt = tl(t); const k = kinAt(tt); kk = k; const th = k
   const phi = ((th % (2 * TAU)) + 2 * TAU) % (2 * TAU); const gs = gasState(phi); gasMat.color.copy(gs.c); gasMat.emissive.copy(gs.c); gasMat.emissiveIntensity = gs.e; gasMat.opacity = gs.o;
   // spark + flash: around phi = SPARK each cycle
   const ds = phi - G.SPARK; const sA = ds > -0.04 && ds < 0.35 ? Math.max(0, 1 - Math.abs(ds - 0.05) / 0.3) : 0; sparkMat.opacity = sA; spark.scale.setScalar(0.6 + sA);
-  const fA = ds > 0 && ds < 2.2 ? Math.exp(-ds / 0.5) * Math.min(1, ds / 0.08) : 0; flash.intensity = 9e4 * fA;
+  const fA = ds > 0 && ds < 2.2 ? Math.exp(-ds / 0.5) * Math.min(1, ds / 0.08) : 0; flash.intensity = 3.5e4 * fA;
   // particles
-  const fl = (lift, sgn, arr, path, base) => { for (let i = 0; i < NP; i++) { const u = ((base + i / NP) % 1 + 1) % 1; const p = path.getPointAt(u); arr[i].position.copy(p); arr[i].visible = lift > 0.6; arr[i].scale.setScalar(Math.min(1, lift / 3)); } };
+  const fl = (lift, sgn, arr, path, base) => { for (let i = 0; i < NP; i++) { const u = ((base + i / NP) % 1 + 1) % 1; const p = path.getPointAt(u); arr[i].position.copy(p); arr[i].visible = lift > 0.6; arr[i].scale.setScalar(20 * Math.min(1, lift / 3) * (0.8 + 0.4 * ((i * 37) % 10) / 10)); } };
   fl(k.lin, 1, pI, pathI, (th / (Math.PI)) * 0.9); fl(k.lex, 1, pE, pathE, (th / (Math.PI)) * 0.9);
-  clip.constant = clipZ(tt); pulley.visible = clip.constant > 80; for (const p of pipes) p.visible = clip.constant > 80;
+  clip.constant = clipZ(tt); pulley.visible = clip.constant > 80;
   highlight(tt);
   const c = S.orbitCam(KEYS, tt); camera.position.copy(c.pos); camera.up.set(0, 1, 0); camera.lookAt(c.target); camera.updateMatrixWorld();
   return k; }
@@ -202,8 +229,8 @@ const STEPS = [[E.intake, E.comp - 0.05, 'INTAKE', 1, '#47a8ff'], [E.comp, 22.35
 function overlay(t, k) {
   S.vignette(g2, 560); let a;
   const hookA = Math.max(0, Math.min(1, (2.7 - t) / 0.25), Math.min(1, (t - (LOOP - 0.3)) / 0.2));
-  if (hookA > 0) { g2.save(); g2.globalAlpha = hookA * 0.5; const gr = g2.createRadialGradient(S.CX, 560, 40, S.CX, 560, 420); gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 120, 1080, 880); g2.restore();
-    S.hookCard(g2, hookA, 'HOW DOES AN', 'ENGINE RUN?', 112); const [x, y] = W2(new THREE.Vector3(0, HT + 118, 0)); S.redCircle(g2, hookA, x, y, 62, [-250, 110]); if (hookA > 0.5) S.tag(g2, hookA, 'SPARK PLUG', x, y + 40, 150, 120, 46); }
+  if (hookA > 0) {
+    hookTitle(hookA); const [x, y] = W2(new THREE.Vector3(0, HT + 118, 0)); S.redCircle(g2, hookA, x, y, 58, [-230, 100]); if (hookA > 0.5) S.tag(g2, hookA, 'SPARK PLUG', x, y + 30, 140, 110, 46); }
   // the problem: a push, but wheels need spin
   if ((a = win(t, 2.9, 6.5)) > 0) { S.caption(g2, a, 'FIRE ONLY PUSHES', 440, 72, '#ffffff'); S.caption(g2, a * ramp(t, 4.4, 4.8), 'WHEELS NEED SPIN', 530, 72, '#ffd21f');
     const [x, y] = W2(new THREE.Vector3(0, DECK + 10, BZ)); S.forceArrow(g2, a, x - 120, y - 150, x - 120, y + 60, 24);
@@ -214,10 +241,12 @@ function overlay(t, k) {
     [12.3, 17.6, 'INTAKE VALVE', () => new THREE.Vector3(-VX, DECK - k.lin + 4, -VZ), -150, -150], [22.5, 25.0, 'SPARK PLUG', () => new THREE.Vector3(0, DECK + 30, 0), 170, -170], [32.6, 37.9, 'EXHAUST VALVE', () => new THREE.Vector3(VX, DECK - k.lex + 4, VZ), 150, -150]];
   for (const tg of TAGS) if ((a = win(t, tg[0], tg[1])) > 0) { const [x, y] = W2(tg[3]()); S.tag(g2, a, tg[2], x, y, tg[4], tg[5], 52); }
   // step captions + sub lines
-  for (const s of STEPS) if ((a = win(t, s[0], s[1])) > 0) S.caption(g2, a, s[2], 440, 76, s[4], s[3]);
+  let bandA = 0; for (const s of STEPS) bandA = Math.max(bandA, win(t, s[0], s[1]));
+  if (bandA > 0) { g2.save(); g2.globalAlpha = bandA; g2.fillStyle = 'rgba(8,10,14,0.66)'; S.rrect(g2, 70, 340, 850, 236, 26); g2.fill(); g2.restore(); }
+  for (const s of STEPS) if ((a = win(t, s[0], s[1])) > 0) S.caption(g2, a, s[2], 438, 80, s[4], s[3]);
   const SUB = [[E.intake + 0.4, E.comp - 0.1, 'PISTON DOWN: FUEL + AIR IN', '#ffffff'], [E.comp + 0.4, 22.3, 'BOTH VALVES SHUT: SQUEEZE', '#ffffff'],
     [E.power + 1.4, E.exhaust - 0.1, 'PUSH TURNS THE CRANK', '#ffd21f'], [E.exhaust + 0.4, E.end - 0.05, 'PISTON UP: BURNT GAS OUT', '#ffffff']];
-  for (const s of SUB) if ((a = win(t, s[0], s[1])) > 0) S.caption(g2, a, s[2], 520, 52, s[3]);
+  for (const s of SUB) if ((a = win(t, s[0], s[1])) > 0) S.caption(g2, a, s[2], 538, 66, s[3]);
   if ((a = win(t, E.spark - 0.02, E.spark + 1.4, 0.08)) > 0) { g2.save(); g2.globalAlpha = a; const sc = 1 + 0.15 * Math.max(0, 1 - (t - E.spark) / 0.3); g2.translate(S.CX, 640); g2.scale(sc, sc); S.outlined(g2, 'BANG!', 0, 0, 130, '#ffb21f'); g2.restore(); }
   // power push: arrow on the piston and spin arrow on the crank
   if ((a = win(t, E.power + 0.2, E.exhaust - 0.4)) > 0) { const [x, y] = W2(new THREE.Vector3(0, ppin(k.th) + 40, 0)); S.forceArrow(g2, a, x + 150, y - 70, x + 150, y + 90, 22);
@@ -229,14 +258,17 @@ function overlay(t, k) {
     S.caption(g2, a, 'SPARK. PUSH.', 470, 92, '#ffffff'); S.caption(g2, a, 'THE CRANK SPINS.', 600, 92, '#ffd21f'); }
   if ((a = win(t, 41.8, 43.5, 0.15)) > 0) { g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(10,12,18,0.75)'; S.rrect(g2, 110, 1340, 770, 84, 24); g2.fill(); S.outlined(g2, 'FOLLOW → NEW MACHINE TOMORROW', S.CX, 1400, 54, '#ffffff'); g2.restore(); }
 }
-function cycleDial(a, th, t) { const x = 132, y = 1346, r = 46; g2.save(); g2.globalAlpha = a;
-  g2.fillStyle = 'rgba(10,12,18,0.72)'; S.rrect(g2, 66, 1270, 318, 156, 22); g2.fill();
+function hookTitle(a) { g2.save(); g2.globalAlpha = a; g2.font = '38px Anton'; const bw = g2.measureText('INSIDE IT').width + 40, by = 336;
+  g2.fillStyle = '#ffd21f'; S.rrect(g2, S.CX - bw / 2, by, bw, 54, 12); g2.fill(); g2.fillStyle = '#10141c'; g2.textAlign = 'center'; g2.fillText('INSIDE IT', S.CX, by + 42);
+  S.outlined(g2, 'HOW DOES AN', S.CX, 484, 100, '#ffffff'); S.outlined(g2, 'ENGINE RUN?', S.CX, 590, 100, '#ffd21f'); g2.restore(); }
+function cycleDial(a, th, t) { const x = 112, y = 1356, r = 40; g2.save(); g2.globalAlpha = a;
+  g2.fillStyle = 'rgba(10,12,18,0.72)'; S.rrect(g2, 62, 1290, 262, 132, 20); g2.fill();
   const cols = ['#47a8ff', '#7b8cff', '#ff8a2a', '#c3c8ce']; const phi = ((th % (2 * TAU)) + 2 * TAU) % (2 * TAU); const cur = (t >= 22.4 && t < EV.power) ? 2 : Math.floor(phi / Math.PI);
   g2.translate(x, y); for (let i = 0; i < 4; i++) { g2.beginPath(); g2.strokeStyle = cols[i]; g2.globalAlpha = a * (i === cur ? 1 : 0.35); g2.lineWidth = 16; g2.arc(0, 0, r, -Math.PI / 2 + i * Math.PI / 2 + 0.04, -Math.PI / 2 + (i + 1) * Math.PI / 2 - 0.04); g2.stroke(); }
   g2.globalAlpha = a; const q = -Math.PI / 2 + phi / 2; g2.strokeStyle = '#ffffff'; g2.lineWidth = 8; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(0, 0); g2.lineTo((r - 6) * Math.cos(q), (r - 6) * Math.sin(q)); g2.stroke();
   g2.fillStyle = '#fff'; g2.beginPath(); g2.arc(0, 0, 9, 0, 7); g2.fill(); g2.restore();
-  g2.save(); g2.globalAlpha = a; g2.font = '48px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff';
-  const turn = phi < TAU ? 1 : 2; g2.fillText('TURN ' + turn + '/2', x + 66, y - 26); g2.font = '44px Anton'; g2.fillStyle = cols[cur]; g2.fillText(['INTAKE', 'SQUEEZE', 'POWER', 'EXHAUST'][cur], x + 66, y + 30); g2.restore(); }
+  g2.save(); g2.globalAlpha = a; g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff';
+  const turn = phi < TAU ? 1 : 2; g2.fillText('TURN ' + turn + '/2', x + 54, y - 22); g2.font = '44px Anton'; g2.fillStyle = cols[cur]; g2.fillText(['INTAKE', 'SQUEEZE', 'POWER', 'EXHAUST'][cur], x + 54, y + 26); g2.restore(); }
 function spinArrow(a, x, y, R0, t, col) { if (y < 330 || y > 1430) return; g2.save(); g2.globalAlpha = a; g2.translate(x, y); g2.rotate((t * 1.6) % TAU); g2.strokeStyle = col; g2.lineWidth = 12; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10;
   g2.beginPath(); g2.arc(0, 0, R0, 0, Math.PI * 1.4); g2.stroke(); const ex = R0 * Math.cos(Math.PI * 1.4), ey = R0 * Math.sin(Math.PI * 1.4); const ang = Math.PI * 1.4 + Math.PI / 2;
   g2.fillStyle = col; g2.beginPath(); g2.moveTo(ex + 30 * Math.cos(ang), ey + 30 * Math.sin(ang)); g2.lineTo(ex + 22 * Math.cos(ang + 2.2), ey + 22 * Math.sin(ang + 2.2)); g2.lineTo(ex + 22 * Math.cos(ang - 2.2), ey + 22 * Math.sin(ang - 2.2)); g2.closePath(); g2.fill(); g2.restore(); }
