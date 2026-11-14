@@ -43,7 +43,7 @@
   "https://openstax.org/books/college-physics-2e/pages/9-5-simple-machines"
  ],
  "learningApplied": "Rotation: last 3 Instagram Reels were V (p058, p062, p064) and track A, so this one is E + track B (wordless). Reviewer lessons: real recognisable object in the hook (whole trap, cheese), cutaway not needed (open mechanism), close side macro on the key contact, AO + SMAA on, no hatch caps, darker cyclorama, one idea per step with numbered captions and pinned tags, slow motion at the snap.",
- "status": "ready",
+ "status": "scheduled",
  "mediaUrls": [
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p065/mousetrap_reel.mp4",
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p065/mousetrap_cover.jpg"
@@ -61,5 +61,7 @@
   "text": "PASS pyspellchecker (only handle/hashtag/proper-noun flags), hook 124 px, captions 64 px, tags 46 px, safe zones checked on the 0.5 s frame",
   "look": "PASS 6 stills + safe-zone frame + snap/pinned frames reviewed (no glitches, black frames, cut-off text)",
   "clarity": "R1 FAIL (14yo NO: release too fast, no why) -> fixed; R2 PASS (explanation correct incl. lever, 14yo YES); R2 wording fixes applied (one verb TILTS, JAW PUSHES HARD / TIP: SMALL FORCE)"
- }
+ },
+ "scheduledAt": "2026-11-15T01:00:00 Europe/London",
+ "metricoolPostId": 428040044
 }
