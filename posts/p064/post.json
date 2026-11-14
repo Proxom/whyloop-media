@@ -42,20 +42,22 @@
   "https://en.wikipedia.org/wiki/Four-stroke_engine"
  ],
  "learningApplied": "13 Nov reviewer R2 rebuild: recognisable outside (finned barrel, ribbed valve cover, chrome exhaust, air filter, polished side cover), lit satin section caps, opaque cast aluminium + solid matte piston, closer camera, fixed dark caption band at the top, 1.3x subtitles, soft gas puffs, contact shadow. Clarity format kept (VO per step, numbered steps, pinned tags, slow motion at the spark).",
- "status": "rendering (rebuild v3)",
+ "status": "scheduled",
  "visualScore": {
   "v2_R1": 4,
   "v2_R2": 4,
-  "note": "v2 scene retired; v3 rebuild scored fresh"
+  "v3_R1": 5,
+  "v3_R2": 5,
+  "note": "v3 rebuild (14 Nov 05:07): 5 after 2 rounds; scheduled because only the HARD GATE blocks (AGENT 0/5) and the 17:00 slot must not be empty (priority 1); 13:07 run may replace it with a 6+ Reel"
  },
  "qualityAudit": {
-  "technical": "PASS 1080x1920 30 fps H.264 yuv420p + AAC, 44.0 s, no black first/last frame (mean 100)",
-  "audio": "PASS -15.1 LUFS, -2.8 dBTP, HP4k gap 22.7 dB; low SFX only (rumble, intake/exhaust breath, combustion whump)",
-  "mechanism": "PASS check.py: slider-crank R43/L145, cams at half crank speed, lift = support function of the drawn cam (err 0.0 mm), valve-piston >= 13 mm, rod-liner 4.7 mm, web-skirt 11 mm, valves shut 235-480 deg, loop = 10 whole cycles",
+  "technical": "PASS 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 44.0 s, first/last frame luma 90.9",
+  "audio": "PASS -15.1 LUFS, -2.8 dBTP, HP4k gap 19.3 dB (mix unchanged)",
+  "mechanism": "PASS check.py re-run 14 Nov: lift err 0.0 mm, valve-piston 13.02 mm, rod-liner 4.68 mm, web-skirt 11.0 mm, valves shut 235-480 deg, loop 10.0 cycles; new static parts (fins, pipes, covers) clear of all moving parts",
   "facts": "PASS Britannica four-stroke cycle + Wikipedia Four-stroke engine (opened this run)",
-  "text": "PASS pyspellchecker (only hashtag/handle flags), labels 44-52 px, captions 52-92 px, safe zones checked on the 0.5 s frame",
-  "look": "PASS 6 stills + safe-zone frame (no glitches, no cut-off text)",
-  "clarity": "PASS (R1 fresh reviewer: explanation correct, 14yo YES; fixed after: POWER caption with the VO, payoff VO = on-screen text, CAMSHAFT tag removed, slower camera move)",
-  "reference": "original 1M+ frames not reachable (youtube.com / i.ytimg.com refused by the network proxy)"
+  "text": "PASS pyspellchecker (only handle/hashtag/URL flags), hook 100 px, captions 60-80 px, labels 44-52 px, safe zones checked on the 0.5 s frame",
+  "look": "PASS 6 stills + safe-zone frame reviewed (no glitches, black frames or cut-off text)",
+  "clarity": "PASS v3 R1 fresh reviewer: explanation correct (piston/rod/crank turn the push into spin; intake, compression, spark+power, exhaust), 14yo YES; round-2 changes were framing/overlay only (crank kept in view, crank arrow synced, TURN 1 OF 2)",
+  "reference": "original 1M+ frames not reachable (youtube.com / i.ytimg.com blocked by the network proxy); reference criteria scored by the visual reviewer: recognisable 6, materials 4, one idea per step 7, labels 8"
  }
 }
