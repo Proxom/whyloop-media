@@ -21,3 +21,8 @@ REBUILD v3 (14 Nov 05:07 run, ig-intelligent-sagan-s9yyor): scene.html model/mat
 - Camera: hook d 1680 (title in the top band, engine 650-1800 px), parts d 1450, chamber d 1080, spark d 900, power d 1380.
 - Overlay: compact hook title, dark caption band 340-576 px, subs 66 px, smaller dial (62-324 px).
 - Render: AO on = 7.7 s/frame/worker (too slow, 56 min); final uses ao 0: node tools/render/render.js wip/p064/scene.html <out> 30 1 0 1320 0.8 0 <w> 3 1080 1920 1
+
+SCHEDULED (14 Nov 05:07 run): v3 round 2 = media/p064/engine_reel.mp4 + engine_cover.jpg -> Instagram 14 Nov 17:00 (Metricool 427770814, PENDING).
+Gates: HARD GATE PASS, CLARITY PASS (14yo YES), visual R1 5 / R2 5. Reviewer leftovers for the toolkit: AO/HDRI-like lighting (AO costs 2.5x render time),
+opaque caption card or none over the head, air filter cropped at the left edge in chamber shots (frame x or shorten intake), exaggerated valve lift / per-valve highlight,
+burnt gas visible in exhaust, crank + rod tinted by the combustion flash (exclude them from the point light or lower it).
