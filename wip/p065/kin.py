@@ -73,7 +73,10 @@ def pen_tip(t):
 # jaw hit on the pencil: first alpha below A0 at which the crossbar touches the pencil body capsule (at the pressed pose)
 pt_end = pen_tip(20.0); pen_seg = LineString([tuple(pt_end), tuple(pt_end + pen_dir * 200)])
 alphas = np.linspace(A0, 0, 20000)
-AH = next(a for a in alphas if Point(*crossbar(a)).distance(pen_seg) <= G['PEN_R'] + RW + 0.05); G['AH'] = float(AH)
+def pen_r(sv): return G['PEN_R'] if sv < 6.5 else G['PEN_R'] + 0.62   # eraser 3.6; ferrule rings / hex body up to 4.22 (scene.html)
+def pen_gap(c):
+    sv = float(np.dot(c - pt_end, pen_dir)); sv = max(0.0, sv); return float(np.linalg.norm(c - pt_end - sv * pen_dir)) - pen_r(sv) - RW
+AH = next(a for a in alphas if pen_gap(crossbar(a)) <= 0.05); G['AH'] = float(AH)
 def alpha_t(t):
     if t < T_REL: return A0
     u = (t - T_REL) / T_SNAP

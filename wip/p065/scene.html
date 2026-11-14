@@ -147,12 +147,12 @@ function overlay(t) {
   const xC = AX + G.RJ * Math.cos(G.A0), yC = AY + G.RJ * Math.sin(G.A0);  // where the bar crosses the jaw
   const a2 = fade(t, 6.0, 8.5); if (a2 > 0) { const m = 34; const [bx, by] = scr(G.P[0] + m * Math.cos(be), G.P[1] + m * Math.sin(be), 0); S.tag(g2, a2, 'LOCKING BAR', bx, by, 40, -170);
     const [cx, cy] = scr(xC, yC + 1.5, 0); S.forceArrow(g2, a2, cx, cy - 190, cx, cy - 14, 24); S.tag(g2, a2, 'HOLDS THE JAW', cx, cy + 4, 50, 150); }
-  const a25 = fade(t, 8.8, 11.1); if (a25 > 0) { const [cx, cy] = scr(xC, yC + 1.4, 0); S.forceArrow(g2, a25, cx, cy + 230, cx, cy + 12, 34); S.tag(g2, a25, 'BIG PUSH', cx, cy + 120, 40, 120);
+  const a25 = fade(t, 8.8, 11.1); if (a25 > 0) { const [cx, cy] = scr(xC, yC + 1.4, 0); S.forceArrow(g2, a25, cx, cy + 230, cx, cy + 12, 34); S.tag(g2, a25, 'JAW PUSHES HARD', cx, cy + 120, 40, 120);
     const [hx, hy] = scr(G.P[0], G.P[1], 0); S.tag(g2, a25, 'HINGE', hx, hy, 30, -150);
-    const [tx, ty] = scr(G.tip0[0], G.tip0[1] + 0.8, 0); S.forceArrow(g2, a25, tx, ty + 70, tx, ty + 10, 18); S.tag(g2, a25, 'SMALL FORCE', tx, ty, -40, -170); }
+    const [tx, ty] = scr(G.tip0[0], G.tip0[1] + 0.8, 0); S.forceArrow(g2, a25, tx, ty + 70, tx, ty + 10, 18); S.tag(g2, a25, 'TIP: SMALL FORCE', tx, ty, -40, -170); }
   const a3 = fade(t, 11.9, 14.4); if (a3 > 0) { const [lx, ly] = scr(lipW[0], lipW[1] + 0.4, 0); S.tag(g2, a3, 'LIP', lx, ly, -90, -170); const [tx, ty] = scr(G.tip0[0] - 2, G.tip0[1], 0); S.tag(g2, a3, 'BAR TIP', tx, ty, -120, 150); }
   const a4 = fade(t, 13.9, 15.2); if (a4 > 0) { const [ux, uy] = scr(G.Q[0] + 27, G.Q[1] + 1.5, 6); S.tag(g2, a4, 'TRIGGER', ux, uy, 40, 170); }
-  const a5 = fade(t, 14.4, 16.2); if (a5 > 0) { const [lx, ly] = scr(lipW[0], lipW[1] + 1.4, 0); S.forceArrow(g2, a5, lx - 20, ly - 70, lx + 140, ly - 70, 18); S.tag(g2, a5, 'LIP SLIDES OFF', lx, ly - 70, 60, -110); }
+  const a5 = fade(t, 14.4, 16.2); if (a5 > 0) { const [lx, ly] = scr(lipW[0], lipW[1] + 1.4, 0); S.forceArrow(g2, a5, lx - 20, ly - 70, lx + 140, ly - 70, 18); S.tag(g2, a5, 'LIP TILTS AWAY', lx, ly - 70, 60, -110); }
   pill(g2, fade(t, 16.0, 17.3, 0.15), 'SLOW MOTION', 1395, 46);
   if (t > 17.15 && t < 17.8) { const k = 1 + 0.25 * Math.exp(-(t - 17.18) * 12); g2.save(); g2.globalAlpha = fade(t, 17.18, 17.8, 0.12); g2.translate(S.CX, 760); g2.scale(k, k); S.outlined(g2, 'SNAP!', 0, 0, 150, '#ffd21f'); g2.restore(); }
   // payoff
