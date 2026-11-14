@@ -9,4 +9,4 @@ post.json (copy spellchecked: only handle/hashtag flags; sources Hooker patent +
 Rebuild: python3 kin.py && python3 check.py && python3 audio.py && ../../tools/render/master.sh vo_stem.wav bed_stem.wav mix.wav 0 0 -18
 Render: python3 -m http.server 8765 --bind 127.0.0.1 (repo root); 3 workers: node tools/render/render.js wip/p065/scene.html <out> 30 0 0 540 1 1 <w> 3 1080 1920 1
 then tools/render/encode.sh <out> wip/p065/mix.wav mousetrap_reel.mp4 18 30
-Left: final render -> encode -> HARD GATE -> clarity gate + visual review -> schedule 15 Nov 01:00.
+Status: final v2 (23 s) moved to media/p065; scheduled for 15 Nov 01:00 (see post.json).

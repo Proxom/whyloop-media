@@ -43,5 +43,23 @@
   "https://openstax.org/books/college-physics-2e/pages/9-5-simple-machines"
  ],
  "learningApplied": "Rotation: last 3 Instagram Reels were V (p058, p062, p064) and track A, so this one is E + track B (wordless). Reviewer lessons: real recognisable object in the hook (whole trap, cheese), cutaway not needed (open mechanism), close side macro on the key contact, AO + SMAA on, no hatch caps, darker cyclorama, one idea per step with numbered captions and pinned tags, slow motion at the snap.",
- "status": "rendering"
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p065/mousetrap_reel.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p065/mousetrap_cover.jpg"
+ ],
+ "visualScore": {
+  "R1": 5,
+  "R2": 6,
+  "notes": "R1: small framing, flat grey sheet parts, no grounding -> fixed (closer cameras, galvanised bevelled sheet, contact shadow, darker backdrop, clean wood). R2 (6): fill the frame more, real HDRI + brushed normal maps, more realistic pencil/cheese, yellow animated ring instead of red circle (series template keeps the red circle)."
+ },
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 23.0 s, first/last frame luma 85.5",
+  "audio": "PASS -18.1 LUFS (music-only), -3.1 dBTP, HP4k gap 49.0 dB; low soft SFX on kin events (touch, release, snap, bar landing)",
+  "mechanism": "PASS check.py over the loop: bar-lip 0.05 mm, crossbar-bar 0.00 (resting contact), crossbar-base 0.009 mm, crossbar-pencil 0.045 mm with the real pencil profile (ferrule 4.22 mm; R2 overlap of 0.55 mm found by the reviewer and fixed), plate-base 1.07 mm; release at 9.0 deg trigger tilt from the lip/tip geometry",
+  "facts": "PASS Hooker US 528,671 + Wikipedia Mousetrap + OpenStax College Physics 2e 9.5 (opened 14 Nov 13:15-13:45)",
+  "text": "PASS pyspellchecker (only handle/hashtag/proper-noun flags), hook 124 px, captions 64 px, tags 46 px, safe zones checked on the 0.5 s frame",
+  "look": "PASS 6 stills + safe-zone frame + snap/pinned frames reviewed (no glitches, black frames, cut-off text)",
+  "clarity": "R1 FAIL (14yo NO: release too fast, no why) -> fixed; R2 PASS (explanation correct incl. lever, 14yo YES); R2 wording fixes applied (one verb TILTS, JAW PUSHES HARD / TIP: SMALL FORCE)"
+ }
 }
