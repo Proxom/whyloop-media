@@ -10,7 +10,7 @@
  "principle": "In a four-stroke engine the piston goes down (intake, intake valve open), up (compression, both valves shut), is pushed down by the burning gas after the spark (power, the only stroke that does work) and goes up again (exhaust, exhaust valve open); the connecting rod and crankshaft turn this up-and-down push into rotation, and one cycle takes two crank turns while the cams turn once.",
  "caption": "How an Engine Really Works 🔥\nGuess: how many crank turns for ONE spark? 👇\nFollow @whyloop.hq for a new machine every day\n#engine #howitworks #mechanism #engineering #mechanicalengineering",
  "firstComment": "Answer: two turns 🔧\n\nInside each cylinder, the piston does four strokes:\n1. Intake: the intake valve opens and the piston moves down, pulling in fuel and air.\n2. Compression: both valves close and the piston moves up, squeezing the mixture.\n3. Power: near the top, the spark plug fires. The burning gas pushes the piston down hard. This is the only stroke that does work.\n4. Exhaust: the exhaust valve opens and the piston moves up, pushing the burnt gas out.\n\nThe connecting rod turns that up-and-down push into the crankshaft's spin. Four strokes take two turns of the crankshaft, so the camshafts that open the valves turn at half the crank's speed.\n\n(Simplified 3D model of a one-cylinder engine, slowed down. Car engines usually have several cylinders and different valve layouts, but each cylinder runs this same cycle.)\n\nSources:\nBritannica, Four-stroke cycle (intake with the inlet valve open, compression with both valves closed, ignition by an electric spark, power, exhaust through the open exhaust valve; each cycle requires four strokes of the piston and two revolutions of the crankshaft): https://www.britannica.com/technology/four-stroke-cycle\nWikipedia, Four-stroke engine (the compressed air-fuel mixture is ignited by a spark plug; the power stroke produces the work that turns the crankshaft; valves are typically operated by a camshaft rotating at half the speed of the crankshaft): https://en.wikipedia.org/wiki/Four-stroke_engine",
- "altText": "3D animation of a one-cylinder engine, with a voiceover. A finned aluminum engine with a black ribbed valve cover, a spark plug wire, a chrome exhaust pipe, an air filter and a round polished side cover, under the question How does an engine run? A red circle marks the spark plug. Text: Fire only pushes. Wheels need spin. The front half of the engine slides away to show the inside, with the cut faces in red: a piston in a cylinder, a rod down to the crankshaft, two valves under two camshafts and a spark plug in the middle. A small dial at the bottom counts turn 1 of 2 and 2 of 2. 1, intake: the blue intake valve opens, the piston moves down and blue fuel and air flow in. 2, compression: both valves are shut and the piston moves up, squeezing the blue gas. 3, power, in slow motion: the spark plug sparks, the gas flashes orange, Bang!, and the piston is pushed down; an arrow shows the push and a curved arrow shows the crankshaft turning. 4, exhaust: the orange exhaust valve opens and the piston pushes gray burnt gas out. The payoff reads Spark. Push. The crank spins. The engine closes and a follow line appears before the video loops.",
+ "altText": "3D animation of a one-cylinder engine, with a voiceover. A finned aluminum engine with a black ribbed valve cover, a spark plug wire, a chrome exhaust pipe, an air filter and a round polished side cover, under the question How does an engine run? A red circle marks the spark plug. Text: Fire only pushes. Wheels need spin. The front half of the engine slides away to show the inside, with the cut faces in red: a piston in a cylinder, a rod down to the crankshaft, two valves under two camshafts and a spark plug in the middle. A small dial at the bottom counts turn 1 of 2 and turn 2 of 2. 1, intake: the blue intake valve opens, the piston moves down and blue fuel and air flow in. 2, compression: both valves are shut and the piston moves up, squeezing the blue gas. 3, power, in slow motion: the spark plug sparks, the gas flashes orange, Bang!, and the piston is pushed down; an arrow shows the push and a curved arrow shows the crankshaft turning. 4, exhaust: the orange exhaust valve opens and the piston pushes gray burnt gas out. The payoff reads Spark. Push. The crank spins. The engine closes and a follow line appears before the video loops.",
  "onScreen": [
   "HOW DOES AN / ENGINE RUN?",
   "FIRE ONLY PUSHES",
@@ -20,7 +20,7 @@
   "ROD",
   "CRANKSHAFT",
   "INTAKE",
-  "PISTON DOWN: FUEL + AIR IN",
+  "PISTON DOWN: FUEL AND AIR IN",
   "INTAKE VALVE",
   "CAMSHAFT",
   "COMPRESSION",
@@ -32,7 +32,7 @@
   "EXHAUST",
   "PISTON UP: BURNT GAS OUT",
   "EXHAUST VALVE",
-  "CRANK TURN 1 OF 2",
+  "TURN 1 OF 2",
   "SPARK. PUSH.",
   "THE CRANK SPINS.",
   "FOLLOW → NEW MACHINE TOMORROW"
