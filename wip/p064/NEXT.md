@@ -13,3 +13,11 @@ opaque cast-aluminium block/head, solid polished piston (no glassy look), crank 
 step titles in a fixed dark band at the top clear of the geometry, subtitles 1.3x larger, soft gas sprites instead of white beads.
 14 Nov 17:00 (1M+ #4) is EMPTY: the 05:07 run must rebuild #4 with these fixes (kin.py/check.py/vo/audio are reusable; only the model, materials and camera change),
 or, if the rebuild cannot reach 5+, make the next list item (#5 combination lock) for 17:00 and come back to #4.
+
+REBUILD v3 (14 Nov 05:07 run, ig-intelligent-sagan-s9yyor): scene.html model/materials/camera rebuilt per R2 (kin/vo/audio unchanged, mix.wav reused).
+- Outside: finned single-cylinder engine (14 barrel fins, head fins, black ribbed valve cover, chrome exhaust header, carb + round air filter, polished side cover with 10 bolts, pulley).
+- Materials: section caps = capMat() (BackSide, normal forced to +z in the shader => lit satin red), cast aluminium (metal 0.6 / rough 0.52), matte piston.
+- BUG FIXED (toolkit lesson): LatheGeometry profiles here are wound inside-out -> only the far inner half rendered = "glassy piston". Use side: DoubleSide on lathe parts.
+- Camera: hook d 1680 (title in the top band, engine 650-1800 px), parts d 1450, chamber d 1080, spark d 900, power d 1380.
+- Overlay: compact hook title, dark caption band 340-576 px, subs 66 px, smaller dial (62-324 px).
+- Render: AO on = 7.7 s/frame/worker (too slow, 56 min); final uses ao 0: node tools/render/render.js wip/p064/scene.html <out> 30 1 0 1320 0.8 0 <w> 3 1080 1920 1
