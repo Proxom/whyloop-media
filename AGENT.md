@@ -2,6 +2,17 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 14 Nov 2026 20:25): 1 Reel A DAY AT 17:00 ONLY + NEW QUEUE RULE — overrides every other slot, schedule and queue rule in this file
+- From now on: exactly 1 Reel a day, at 17:00 Europe/London (Metricool brand 7675089). The 01:00 slot is CLOSED (as 21:00 already is): never schedule anything new at 01:00 or 21:00. This overrides "2 a day", "01:00 and 17:00", the 01:00 style/family rotation and every other mention of 01:00 below.
+- Reels already scheduled for 01:00 stay as they are (already made, do not delete or move them). They count in QUEUE.
+- The daily 17:00 Reel keeps its current rule: the next item on the 1M+ list, in order, with the same hard gate and quality standard. Rotation/family/series rules now apply across days instead of across slots.
+- QUEUE = future non-draft posts in Metricool + finished, gate-passed Reels not yet scheduled.
+  - QUEUE 3 or more: do NOT make a new Reel. Short check only (max 15 min: next 17:00 slots filled, last posts PUBLISHED, metrics note), then end.
+  - QUEUE 1 or 2 (or 0): make Reels in this run until QUEUE is 3, one after another, each to the full hard gate, each scheduled at the next empty 17:00. Stop early if the run's time cap is reached; the next run continues. Never lower the gate to reach 3.
+  - The next 17:00 slot is always filled first.
+- Daily report: note posts per day changed to 1 on 15 Nov; compare views per Reel and followers per day, 2 a day vs 1 a day.
+- Keep runs short and lean.
+
 ## STATUS + NEXT (Erkan, 10 Nov 2026 20:21) — read before anything else
 - The gearbox remake p059b is DONE: Erkan moved it to 10 Nov 20:30 himself. Do not reschedule, re-render or delete anything for it. The two older override/remake blocks below about the gearbox are finished: ignore them.
 - Erkan's verdict on p059b: "still not very good, only slightly better". So quality must rise further.
