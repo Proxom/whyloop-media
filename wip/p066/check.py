@@ -13,7 +13,7 @@ print('min pin-fly gap (deg)', round(mn, 4), '-> mm at RP', round(mn * 3.14159 /
 # latch tooth vs cam: cam rim radius 10.0 < R - D - 0.5
 CAM_R = 10.0; ok &= CAM_R < G['R'] - G['D'] - 0.5; print('cam clear of latch by', round(G['R'] - G['D'] - CAM_R, 2), 'mm')
 # gates aligned at the end, reading matches the combination
-fin = K[-1]; print('final readings', [round(x / 9) % 40 for x in G['TH'][1:]], 'gate angles at end', [round(((G['G_LOC'][i] + fin[i + 1]) + 180) % 360 - 180, 3) for i in (1, 2, 3)])
+fin = K[-1]; print('final readings', [(-round(x / 9)) % 40 for x in G['TH'][1:]], 'gate angles at end', [round(((G['G_LOC'][i] + fin[i + 1]) + 180) % 360 - 180, 3) for i in (1, 2, 3)])
 # lever: rests on the rims (cannot turn 0.5 deg) whenever beta = 0; never overlaps a wheel; does not rise again after it starts to drop
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location('kin_mod', 'kin.py')

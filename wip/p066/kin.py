@@ -12,8 +12,8 @@ DELTA = math.degrees((PIN_W + FLY_W) / RP)
 GATE_W, TOOTH_W, CHAMF = 17.0, 9.0, 7.0   # gate opening, latch tooth and chamfer widths (degrees at the rim)
 NUM = 40; DEG_PER = 360 / NUM
 COMBO = [15, 35, 5]
-TH = [0, 1215, 315, 765]  # right 3 turns + to 15; left 2 turns past 35 to 35; right 1 turn past 5 to 5 (reading = theta/9 mod 40)
-for a, n in zip(TH[1:], COMBO): assert round(a / DEG_PER) % NUM == n
+TH = [0, 1305, 405, 1035]  # right 3 turns + to 15; left 2 turns past 35 to 35; right 1 turn past 5 to 5 (numbers run clockwise on the face, so turning right counts DOWN: reading = -theta/9 mod 40)
+for a, n in zip(TH[1:], COMBO): assert (-round(a / DEG_PER)) % NUM == n
 # dial motion: (t0, t1, theta0, theta1, accel, decel)
 SEGS = [(10.9, 21.0, TH[0], TH[1], 0.8, 1.2), (25.2, 32.0, TH[1], TH[2], 0.7, 1.1), (35.0, 39.6, TH[2], TH[3], 0.6, 2.4)]
 def trap(t, t0, t1, a0, a1, ta, td):

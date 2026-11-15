@@ -9,3 +9,13 @@ Rebuild: venv(kokoro-onnx 0.6.1 numpy soundfile shapely pyspellchecker): python 
 Render: python3 -m http.server 8765 --bind 127.0.0.1 (repo root); 3 workers: node tools/render/render.js wip/p066/scene.html <out> 30 1 0 1464 0.7 1 <w> 3 1080 1920 1 (~1.5 s/frame effective, ~37 min)
 then tools/render/encode.sh <out> wip/p066/mix.wav lock_reel.mp4 48.8 30
 Left: final render -> encode -> HARD GATE -> clarity gate + visual review -> schedule 15 Nov 17:00.
+
+STATUS (15 Nov 05:07 run, ig-sweet-lamport-wi7v75):
+v1 (lock_reel_v1.mp4 + lock_cover_v1.jpg): HARD GATE PASS (1080x1920 30 fps H.264 + AAC, 48.8 s, -15.1 LUFS / -3.0 dBTP, gap 19.3 dB, no black first/last, loop seam diff 0.26, no frame spikes except the smooth 39.7-40.0 s pull-back).
+CLARITY GATE round 1 = PASS (fresh reviewer explained it correctly; 14yo YES). Visual round 1 = 5/10 (flat plastic wheels, foggy ghost housing, too tight; chip tick out of sync; ghost shackle half-disc over the latch).
+Round-2 fixes DONE in code (not yet in a finished render): metal wheels (metalness 0.88 + brushed roughness), ghost body 6 %, shackle hidden in the latch close-up, wider inside camera (dist ~134),
+chips in wheel order 1-2-3 + 42 px heading, a wheel only ticks when it is still (no flashing tick), chips gone before the wide open shot, pickup tags 1.5 s and anchored on the picked-up wheel's fly,
+REAL DIAL DIRECTION: numbers now run clockwise on the face, so turning right counts DOWN (reviewer: a real 40-number lock reads downward) -> TH = [0, 1305, 405, 1035]; kin/check/audio re-run (check PASS, -15.0 LUFS, gap 19.5 dB).
+v2 render was started at 06:20 UTC into scratchpad (lost if the run ends first).
+IF lock_reel.mp4 in this folder is still v1 (48.8 s, dial counts UP): NEXT RUN = render v2 (command above, ~38 min) -> encode -> HARD GATE (qc_video/qc_audio + spike scan) -> visual round 2 review (6 stills) ->
+  6+ = schedule 15 Nov 17:00 (move to media/p066 + posts/p066, wait for raw URL 200). Below 6 and the slot < 2 h away: schedule the best gate-passing version (5 allowed by AGENT 6). Clarity already PASSED (re-check only if the story changes).

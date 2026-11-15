@@ -34,7 +34,8 @@ const M = {
   lockerDark: std({ color: 0x1b2128, roughness: 0.8, transparent: true, opacity: 1 }),
   hasp: phys({ color: 0xa9b0b8, metalness: 1.0, roughness: 0.35, transparent: true, opacity: 1 }),
 };
-const WM = [null, 1, 2, 3].map(i => i && phys({ color: WCOL[i], metalness: 0.65, roughness: 0.3, clearcoat: 0.4, roughnessMap: fine, emissive: new THREE.Color(WCOL[i]), emissiveIntensity: 0 }));
+const brushedW = S.noiseTex(13, 150, 50, 512); brushedW.repeat.set(0.03, 0.03);
+const WM = [null, 1, 2, 3].map(i => i && phys({ color: WCOL[i], metalness: 0.88, roughness: 0.26, clearcoat: 0.35, clearcoatRoughness: 0.15, roughnessMap: brushedW, emissive: new THREE.Color(WCOL[i]), emissiveIntensity: 0 }));
 S.cyclorama(scene, { floorY: -60, zFront: 900, zBack: -140, R: 120, h: 1800, width: 4000, floor: '#20252c', wall: '#39414c' });
 const L = S.studioLights(scene, new THREE.Vector3(0, 12, 0), 70);
 // ---------- locker door + hasp staple (context, fades out) ----------
@@ -51,7 +52,7 @@ const idx = new THREE.Mesh(new THREE.CircleGeometry(1.6, 3), std({ color: 0xffff
 const dial = new THREE.Group(); scene.add(dial);
 { const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); g.fillStyle = '#15171b'; g.fillRect(0, 0, 1024, 1024);
   g.translate(512, 512); g.fillStyle = '#f4f4f0'; g.strokeStyle = '#f4f4f0';
-  for (let n = 0; n < 40; n++) { const a = -n * 9 * D2R; // number n sits n*9 deg COUNTER-clockwise from the top (canvas y down -> flip)
+  for (let n = 0; n < 40; n++) { const a = n * 9 * D2R; // number n sits n*9 deg clockwise from the top (like a real dial: turning right counts down)
     g.save(); g.rotate(a); g.lineWidth = n % 5 ? 5 : 9; g.beginPath(); g.moveTo(0, -500); g.lineTo(0, n % 5 ? -458 : -430); g.stroke();
     if (n % 5 === 0) { g.font = 'bold 64px Anton'; g.textAlign = 'center'; g.fillText(String(n), 0, -352); } g.restore(); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
@@ -104,18 +105,18 @@ const speed = (t, j) => Math.abs(kin(t + 0.04)[j] - kin(t - 0.04)[j]) / 0.08;
 // ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
 const CAM = [
   [0.0, 0, 20, 0, 255, 6, 14], [2.8, 0, 19, 0, 240, 7, 18],
-  [4.8, 3, 6, -3, 132, 12, 58], [10.6, 3, 6, -3, 126, 12, 60],
-  [20.6, 3, 6, -3, 122, 12, 58], [21.8, 1, 10, -3, 88, 18, 54], [24.7, 1, 10, -3, 84, 18, 52],
-  [25.7, 3, 6, -3, 126, 12, 60], [31.6, 3, 6, -3, 122, 12, 62], [32.5, 1, 10, -3, 88, 18, 56], [34.6, 1, 10, -3, 84, 18, 54],
-  [35.6, 3, 6, -3, 124, 12, 60], [37.9, 3, 6, -3, 118, 12, 62], [38.6, 0, 13, -2.5, 66, 4, 76], [39.5, 0, 13, -2.5, 64, 4, 74],
+  [4.8, 1, 7, -1, 138, 13, 54], [10.6, 1, 7, -1, 134, 13, 56],
+  [20.6, 1, 7, -1, 132, 13, 54], [21.8, 1, 10, -3, 100, 18, 52], [24.7, 1, 10, -3, 96, 18, 50],
+  [25.7, 1, 7, -1, 136, 13, 56], [31.6, 1, 7, -1, 132, 13, 58], [32.5, 1, 10, -3, 100, 18, 54], [34.6, 1, 10, -3, 96, 18, 52],
+  [35.6, 1, 7, -1, 134, 13, 56], [37.9, 1, 7, -1, 128, 13, 58], [38.6, 0, 13, -2.5, 72, 4, 76], [39.5, 0, 13, -2.5, 70, 4, 74],
   [40.5, 0, 22, 0, 190, 12, 34], [47.3, 0, 21, 0, 182, 12, 32]];
 const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
-const ghost = (t) => 1 - 0.86 * S.smooth((t - 3.1) / 1.3) + 0.86 * S.smooth((t - 39.9) / 0.9);
+const ghost = (t) => 1 - 0.94 * S.smooth((t - 3.1) / 1.3) + 0.94 * S.smooth((t - 39.9) / 0.9);
 function setScene(t) {
   const k = kin(t);
   dial.rotation.z = -k[1] * D2R; for (const i of [1, 2, 3]) wheels[i].rotation.z = -k[i + 1] * D2R;
   lever.rotation.z = -k[5] * D2R; shackle.position.y = k[6];
-  const gs = ghost(t); M.chrome.opacity = 0.35 + 0.65 * (gs - 0.14) / 0.86; M.chrome.depthWrite = gs > 0.98;
+  const gs = ghost(t); M.chrome.opacity = (0.14 + 0.86 * (gs - 0.06) / 0.94) * (1 - fade(t, 38.45, 39.75, 0.3)); shackle.visible = M.chrome.opacity > 0.005; M.chrome.depthWrite = gs > 0.98;
   const gb = ghost(t); M.body.opacity = gb; M.body.depthWrite = gb > 0.98; body.castShadow = gb > 0.98;
   const gl = 1 - S.smooth((t - 3.0) / 1.0); for (const m of [M.locker, M.lockerDark, M.hasp]) { m.opacity = gl; m.depthWrite = gl > 0.98; } locker.visible = gl > 0.01;
   for (const i of [1, 2, 3]) WM[i].emissiveIntensity = t > 9 && t < 40 ? 0.32 * Math.min(1, speed(t, i + 1) / 40) : 0;
@@ -130,14 +131,14 @@ function arcArrow(g2, a, pts) { if (a <= 0 || pts.length < 3) return; g2.save();
   g2.fillStyle = '#ff7a1a'; g2.strokeStyle = '#000'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(p2[0], p2[1]); g2.lineTo(p2[0] - 44 * Math.cos(ang - 0.5), p2[1] - 44 * Math.sin(ang - 0.5)); g2.lineTo(p2[0] - 44 * Math.cos(ang + 0.5), p2[1] - 44 * Math.sin(ang + 0.5)); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
 function pill(g2, a, text, y, size = 46, bg = 'rgba(12,14,20,0.86)', fg = '#ffd21f', x = S.CX) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = bg; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
 const hexc = (c) => '#' + c.toString(16).padStart(6, '0');
-function chips(g2, a, k) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const y = 1335, w = 236, gap = 18, x0 = S.CX - (3 * w + 2 * gap) / 2;
-  [3, 2, 1].forEach((i, n) => { const x = x0 + n * (w + gap); const g = Math.abs(wrap(G.G_LOC[i] + k[i + 1])); const okk = g < 4.5;
+function chips(g2, a, k, t) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const y = 1335, w = 236, gap = 18, x0 = S.CX - (3 * w + 2 * gap) / 2;
+  [1, 2, 3].forEach((i, n) => { const x = x0 + n * (w + gap); const g = Math.abs(wrap(G.G_LOC[i] + k[i + 1])); const okk = t > 38.8 ? g < 12 : (g < 4.5 && speed(t, i + 1) < 2);
     S.rrect(g2, x, y - 38, w, 76, 18); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.lineWidth = 5; g2.strokeStyle = hexc(WCOL[i]); g2.stroke();
     g2.font = '40px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff'; g2.fillText(`WHEEL ${i}`, x + 22, y + 2);
     const cx = x + w - 40; g2.lineWidth = 8; g2.lineCap = 'round';
     if (okk) { g2.strokeStyle = '#3ddc84'; g2.beginPath(); g2.moveTo(cx - 14, y); g2.lineTo(cx - 3, y + 12); g2.lineTo(cx + 16, y - 14); g2.stroke(); }
     else { g2.strokeStyle = 'rgba(255,255,255,0.35)'; g2.beginPath(); g2.arc(cx, y, 13, 0, Math.PI * 2); g2.stroke(); } });
-  g2.font = '34px Anton'; g2.textAlign = 'center'; g2.fillStyle = '#ffd21f'; g2.fillText('NOTCH UNDER THE LATCH?', S.CX, y - 66); g2.restore(); }
+  g2.font = '42px Anton'; g2.textAlign = 'center'; g2.fillStyle = '#ffd21f'; g2.lineWidth = 7; g2.strokeStyle = '#000'; g2.strokeText('NOTCH UNDER THE LATCH?', S.CX, y - 70); g2.fillText('NOTCH UNDER THE LATCH?', S.CX, y - 70); g2.restore(); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = kin(t);
   // hook (and again at the loop end so the last frame matches the first)
@@ -158,19 +159,19 @@ function overlay(t) {
   S.caption(g2, fade(t, 32.0, 35.0), 'STOP AT 35', 440, 68, '#ffffff', 4);
   S.caption(g2, fade(t, 35.0, 39.4), 'RIGHT TO 5', 440, 68, '#ffffff', 5);
   // dial reading
-  const ar = fade(t, 10.9, 39.6); if (ar > 0) { const n = ((Math.round(k[1] / 9) % 40) + 40) % 40; pill(g2, ar, `DIAL  ${n}`, 560, 50, 'rgba(12,14,20,0.86)', '#ffffff'); }
+  const ar = fade(t, 10.9, 39.6); if (ar > 0) { const n = (((-Math.round(k[1] / 9)) % 40) + 40) % 40; pill(g2, ar, `DIAL  ${n}`, 560, 50, 'rgba(12,14,20,0.86)', '#ffffff'); }
   // turn-direction arrow around the dial
   const turning = [[10.9, 21.0, 1], [25.2, 32.0, -1], [35.0, 39.4, 1]].find(s => t > s[0] + 0.1 && t < s[1] - 0.25);
   if (turning) { const dir = turning[2], a0 = k[1] - dir * 20; const pts = []; for (let s = 0; s <= 20; s++) pts.push(scr(...wpt(a0 + dir * (s / 20) * 100, 23.5, 15.5)));
     arcArrow(g2, fade(t, turning[0] + 0.1, turning[1] - 0.25, 0.3), pts); }
   // pickups: tag at the contact point for 1.8 s
-  for (const p of EV.picks) { const a = fade(t, p.t - 0.1, Math.min(p.t + 1.9, p.t > 37 ? 38.5 : 99), 0.15); if (a <= 0) continue; const ang = k[p.wheel + 1] + P0 + (p.dir === 'R' ? 1 : -1) * G.DELTA / 2;
-    const z = (WZ[p.wheel] + (p.wheel === 1 ? 5.8 : WZ[p.wheel - 1] - WT / 2)) / 2 + (p.wheel === 1 ? 0.7 : 0); const [x, y] = scr(...wpt(ang, G.RP, z));
+  for (const p of EV.picks) { const a = fade(t, p.t - 0.1, Math.min(p.t + 1.5, p.t > 36 ? 38.5 : 99), 0.15); if (a <= 0) continue; const ang = k[p.wheel + 1] + P0;
+    const z = WZ[p.wheel] + WT / 2 + 0.95; /* on the fly of the wheel being picked up */ const [x, y] = scr(...wpt(ang, G.RP, z));
     const pr = 1 + 0.5 * Math.exp(-(t - p.t) * 6); g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.beginPath(); g2.arc(x, y, 34 * pr, 0, Math.PI * 2); g2.stroke(); g2.restore();
     S.tag(g2, a, p.wheel === 1 && p.t < 20 ? 'PIN CATCHES WHEEL 1' : `PICKS UP WHEEL ${p.wheel}`, x, y, 60, Math.min(-200, 900 - y), 44); }
-  const as = fade(t, 25.6, 31.8); if (as > 0) { const [x, y] = scr(...wpt(45, 13, WZ[3])); S.tag(g2, as, 'WHEEL 3 STAYS PUT', x, y, 40, -150, 42, hexc(0xff7fae)); }
+  const as = fade(t, 25.6, 27.6); if (as > 0) { const [x, y] = scr(...wpt(45, 13, WZ[3])); S.tag(g2, as, 'WHEEL 3 STAYS PUT', x, y, 40, -150, 42, hexc(0xff7fae)); }
   for (const [a0, a1, i] of [[21.4, 25.0, 3], [32.2, 34.9, 2]]) { const a = fade(t, a0, a1); if (a <= 0) continue; const [x, y] = scr(0.6, G.R - G.D * 0.6, WZ[i]); S.tag(g2, a, `NOTCH ${i} IN PLACE`, x, y, 90, -170, 44, '#3ddc84'); }
-  chips(g2, fade(t, 19.6, 43.0), k);
+  chips(g2, fade(t, 19.6, 40.4), k, t);
   // latch drop + open
   const ad = fade(t, 38.9, 40.9, 0.15); if (ad > 0) { const [x, y] = scr(0, 13.5, -2.5); S.tag(g2, ad, 'LATCH DROPS IN', x, y, 80, -150, 44); }
   if (t > EV.drop1 - 0.05 && t < EV.drop1 + 0.7) { const kk = 1 + 0.25 * Math.exp(-(t - EV.drop1) * 12); g2.save(); g2.globalAlpha = fade(t, EV.drop1 - 0.05, EV.drop1 + 0.7, 0.1); g2.translate(S.CX, 760); g2.scale(kk, kk); S.outlined(g2, 'CLICK!', 0, 0, 140, '#ffd21f'); g2.restore(); }
