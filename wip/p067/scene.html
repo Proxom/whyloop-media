@@ -15,25 +15,37 @@ const THREE = S.THREE;
 const G = await (await fetch('geom.json')).json();
 const K = await (await fetch('kin.json')).json();
 const LOOP = G.LOOP, EV = G.EV, D2R = Math.PI / 180, Y0 = 950, XK = G.XK;
-const st = S.makeStudio({ fov: 30, bg: 0x6f8496, envIntensity: 0.6, bloom: 0, near: 5, far: 12000, samples: 0 });
+const st = S.makeStudio({ fov: 30, bg: 0x9fb7c9, envIntensity: 0.85, bloom: 0, near: 5, far: 12000, samples: 0 });
 const { scene, camera } = st;
 const phys = (o) => new THREE.MeshPhysicalMaterial(o), std = (o) => new THREE.MeshStandardMaterial(o);
 const fine = S.noiseTex(9, 140, 30, 256); fine.repeat.set(0.03, 0.03);
-const vwood = (seed, rep = [1, 1], tone = 1) => { const t = S.woodTex(seed, 12); t.center.set(0.5, 0.5); t.rotation = Math.PI / 2; t.repeat.set(rep[0], rep[1]);
+const vwood = (seed, rep = [1, 1], tone = 1) => { const t = S.woodTex(seed, 12); { const g = t.image.getContext('2d'); const r = S.rng(seed * 13);
+    for (let i = 0; i < 9; i++) { const x = r() * 2048, y = r() * 2048, a = 10 + r() * 22; const gr = g.createRadialGradient(x, y, 1, x, y, a * 2.2); gr.addColorStop(0, 'rgba(45,25,12,0.95)'); gr.addColorStop(0.35, 'rgba(70,42,20,0.7)'); gr.addColorStop(1, 'rgba(70,42,20,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, a * 2.6, a * 1.2, 0, 0, 7); g.fill(); }
+    for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(150,140,120,${0.04 + r() * 0.06})`; g.fillRect(r() * 2048, 0, 40 + r() * 200, 2048); } t.needsUpdate = true; } t.center.set(0.5, 0.5); t.rotation = Math.PI / 2; t.repeat.set(rep[0], rep[1]);
   return std({ map: t, roughness: 0.78, metalness: 0, color: new THREE.Color(0.86 * tone, 0.8 * tone, 0.76 * tone) }); };
 const M = {
-  galv: phys({ color: 0xb9c0c7, metalness: 1.0, roughness: 0.34, roughnessMap: fine, clearcoat: 0.15 }),
+  galv: phys({ color: 0xc3c9cf, metalness: 1.0, roughness: 0.27, roughnessMap: fine, clearcoat: 0.3, clearcoatRoughness: 0.2 }),
   black: phys({ color: 0x1c1d20, metalness: 0.55, roughness: 0.42, clearcoat: 0.4, clearcoatRoughness: 0.35 }),
   screw: phys({ color: 0x9aa0a6, metalness: 1.0, roughness: 0.3 }),
   board: vwood(3, [0.25, 1]), rail: vwood(5, [1, 0.25], 0.85), post: vwood(8, [0.3, 1], 0.92), stop: vwood(11, [0.3, 1], 0.7),
 };
 for (const m of [M.galv, M.black, M.screw]) { m.transparent = true; m.opacity = 1; }
-S.cyclorama(scene, { floorY: 0, zFront: 3500, zBack: -900, R: 500, h: 4000, width: 30000, floor: '#33362b', wall: '#7d93a6' });
+{ const c = document.createElement('canvas'); c.width = 4096; c.height = 1024; const g = c.getContext('2d'); const r = S.rng(77);
+  const sky = g.createLinearGradient(0, 0, 0, 600); sky.addColorStop(0, '#9fb7c9'); sky.addColorStop(1, '#d9dccd'); g.fillStyle = sky; g.fillRect(0, 0, 4096, 1024);
+  g.filter = 'blur(26px)'; for (let i = 0; i < 520; i++) { const x = r() * 4096, y = 560 + r() * 380 - Math.sin(x * 0.004) * 40; const s = 30 + r() * 90; const gr = 55 + r() * 75;
+    g.fillStyle = `rgb(${(gr * 0.72) | 0},${(gr * 0.86) | 0},${(gr * 0.62) | 0})`; g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
+  for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,236,190,${0.08 + r() * 0.12})`; g.beginPath(); g.arc(r() * 4096, 520 + r() * 260, 12 + r() * 30, 0, 7); g.fill(); }
+  g.filter = 'blur(18px)'; g.fillStyle = '#4a5238'; g.fillRect(0, 930, 4096, 94); g.filter = 'none';
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1);
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(7000, 7000, 7000, 96, 1, true), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, color: 0xc4c4c4 })); cyl.position.y = 3000 - 400; scene.add(cyl);
+  const fl = new THREE.Mesh(new THREE.CircleGeometry(7000, 64), std({ color: 0x55593f, roughness: 0.95, map: S.noiseTex(31, 128, 40, 512) })); fl.material.map.repeat.set(60, 60); fl.material.map.colorSpace = THREE.SRGBColorSpace;
+  fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; scene.add(fl); }
 const Lt = S.studioLights(scene, new THREE.Vector3(0, Y0, 0), 420);
 // ---------- posts ----------
 const post = new THREE.Mesh(new THREE.BoxGeometry(100, 1250, 90), M.post); post.position.set(60, 625, -45); scene.add(post);
 const cap = new THREE.Mesh(new RoundedBoxGeometry(116, 24, 106, 2, 4), M.stop); cap.position.set(60, 1262, -45); scene.add(cap);
-const stopStrip = new THREE.Mesh(new THREE.BoxGeometry(40, 420, 24), M.stop); stopStrip.position.set(-10, 820, -48); scene.add(stopStrip);
+const stopStrip = new THREE.Mesh(new THREE.BoxGeometry(40, 1070, 24), M.stop); stopStrip.position.set(-10, 615, -48); scene.add(stopStrip);
 const hpost = new THREE.Mesh(new THREE.BoxGeometry(100, 1250, 90), M.post); hpost.position.set(-960, 625, -45); scene.add(hpost);
 const hcap = cap.clone(); hcap.position.x = -960; scene.add(hcap);
 // ---------- gate (rotates about the hinge axis x=-900, z=-36) ----------
@@ -42,8 +54,8 @@ const gadd = (m, x, y, z) => { m.position.set(x - G.HX, y, z - G.HZ); gate.add(m
 for (let i = 0; i < 6; i++) { const w = 140, gap = 6, x0 = -894 + i * (w + gap); const h = 1080 - Math.abs(i - 2.5) * 14;
   gadd(new THREE.Mesh(new RoundedBoxGeometry(w, h, 22, 2, 2.5), M.board), x0 + w / 2, 80 + h / 2, -11); }
 for (const y of [260, 860]) gadd(new THREE.Mesh(new THREE.BoxGeometry(880, 110, 14), M.rail), -455, y, -29);
-for (const y of [260, 860]) { const s = gadd(new THREE.Mesh(new RoundedBoxGeometry(330, 34, 5, 2, 1.5), M.black), -735, y, 2.5);
-  const k = gadd(new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 60, 20), M.black), -903, y, 2); }
+const straps = []; for (const y of [260, 860]) { const s = gadd(new THREE.Mesh(new RoundedBoxGeometry(330, 34, 5, 2, 1.5), M.black), -735, y, 2.5);
+  const k = gadd(new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 60, 20), M.black), -903, y, 2); straps.push(s, k); }
 // pivot plate + pin, keep staple
 gadd(new THREE.Mesh(new THREE.CylinderGeometry(22, 22, 3, 40), M.black), -150, Y0 + 10, 1.5).rotation.x = Math.PI / 2;
 gadd(new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 14, 20), M.galv), -150, Y0 + 10, 9).rotation.x = Math.PI / 2;
@@ -53,7 +65,7 @@ gadd(new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 2.5, 24), M.galv), -150, Y0
 for (const [x, y] of [[-150, Y0 + 26], [-150, Y0 - 6], [-40, Y0 + 40], [-40, Y0 - 20]]) gadd(new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 1.6, 16), M.screw), x, y, 3.4).rotation.x = Math.PI / 2;
 // the bar (pivot group at the pin)
 const barG = new THREE.Group(); gadd(barG, -150, Y0 + 10, 10);
-{ const sh = new THREE.Shape(); const x0 = -20, x1 = 85 - (-150), h = 10; sh.moveTo(x0 + 10, -h); sh.lineTo(x1 - 8, -h); sh.quadraticCurveTo(x1, -h, x1, -h + 8); sh.lineTo(x1, h - 8); sh.quadraticCurveTo(x1, h, x1 - 8, h); sh.lineTo(x0 + 10, h); sh.absarc(x0 + 10, 0, 10, Math.PI / 2, 3 * Math.PI / 2, false);
+{ const sh = new THREE.Shape(); const x0 = -20, x1 = 69 - (-150), h = 10; sh.moveTo(x0 + 10, -h); sh.lineTo(x1 - 8, -h); sh.quadraticCurveTo(x1, -h, x1, -h + 8); sh.lineTo(x1, h - 8); sh.quadraticCurveTo(x1, h, x1 - 8, h); sh.lineTo(x0 + 10, h); sh.absarc(x0 + 10, 0, 10, Math.PI / 2, 3 * Math.PI / 2, false);
   const hole = new THREE.Path(); hole.absarc(0, 0, 4.6, 0, Math.PI * 2, true); sh.holes.push(hole);
   const bar = S.extrude(sh, -3, 3, M.galv, 0.5, 20); barG.add(bar);
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 16, 16), M.galv); stem.rotation.x = Math.PI / 2; stem.position.set(60, 0, 10); barG.add(stem);
@@ -68,14 +80,14 @@ S.shadowAll(scene); scene.traverse(m => { if (m.isMesh && m.geometry.type === 'B
 const DT = 1 / G.FPS_K;
 function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
 // ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
-const HOOK = [0, -10, Y0 + 95, 40, 1150, 14, 34];
+const HOOK = [0, -30, Y0 + 75, 40, 860, 13, 34];
 const CAM = [HOOK, [2.7, 20, Y0 + 65, 25, 940, 15, 37],
   [2.71, -430, 640, 160, 3500, 15, 30], [5.9, -430, 640, 160, 3350, 15, 31],
-  [7.0, -40, Y0 + 40, 25, 1060, 12, 28], [9.8, -40, Y0 + 40, 25, 1020, 12, 30],
-  [10.8, 58, Y0 + 14, 46, 620, 8, 78], [14.2, 58, Y0 + 12, 36, 560, 8, 77],
-  [15.0, 60, Y0 + 8, 18, 400, 8, 76], [17.2, 60, Y0 + 8, 16, 380, 8, 77],
-  [17.8, 60, Y0 + 8, 20, 420, 8, 76], [20.4, 60, Y0 + 8, 20, 410, 8, 76],
-  [21.2, 58, Y0 + 12, 34, 600, 9, 70], [23.3, 58, Y0 + 12, 34, 580, 9, 68],
+  [7.0, -40, Y0 + 40, 25, 1000, 12, 28], [9.7, -40, Y0 + 40, 25, 960, 12, 30],
+  [10.5, 60, Y0 + 8, 40, 400, 7, 84], [14.2, 60, Y0 + 8, 34, 380, 7, 83],
+  [15.0, 60, Y0 + 6, 20, 300, 7, 82], [17.2, 60, Y0 + 6, 18, 290, 7, 83],
+  [17.8, 60, Y0 + 6, 22, 320, 7, 82], [20.4, 60, Y0 + 6, 22, 315, 7, 82],
+  [21.2, 60, Y0 + 8, 32, 420, 8, 78], [23.3, 60, Y0 + 8, 32, 400, 8, 76],
   [25.3, ...HOOK.slice(1)], [26.4, ...HOOK.slice(1)]];
 const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
 const latchA = (t) => t < 2.7 ? 1 : (t < 6.0 ? 0 : S.smooth((t - 6.0) / 0.7));
@@ -83,7 +95,7 @@ function setScene(t) {
   const k = kin(t);
   gate.rotation.y = -k[1] * D2R; barG.rotation.z = Math.atan(k[2] / G.LP);
   const la = latchA(t); for (const m of [M.galv, M.black, M.screw]) { m.opacity = la; m.depthWrite = la > 0.98; }
-  barG.visible = keeper.visible = la > 0.01;
+  barG.visible = keeper.visible = la > 0.01; for (const s of straps) s.visible = !(t > 10.0 && t < 23.6);
   const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
 }
 // ---------- overlay ----------
@@ -109,14 +121,15 @@ function overlay(t) {
   S.caption(g2, fade(t, 2.75, 4.25), 'PUSH IT SHUT...', 440, 72, '#ffffff');
   const ap2 = fade(t, 3.0, 4.1, 0.2); if (ap2 > 0) { const [x, y] = scr(...gateP(-200, 600, 0)); S.forceArrow(g2, ap2, x - 190, y - 30, x, y + 20); }
   // parts
-  S.caption(g2, fade(t, 6.3, 10.5), 'A BAR AND A CATCH', 440, 72, '#ffffff');
-  const a1 = fade(t, 6.6, 10.4); if (a1 > 0) { S.tag(g2, a1, 'BAR', ...scr(...gateP(-95, Y0 + 20, 13)), -60, 190, 46);
-    S.tag(g2, fade(t, 7.2, 10.4), 'PIN', ...scr(...gateP(-150, Y0 + 10, 16)), -40, -170, 46);
-    S.tag(g2, fade(t, 8.0, 10.4), 'CATCH', ...kp(40, 0), 70, -190, 46); S.tag(g2, fade(t, 8.6, 10.4), 'RAMP', ...kp(44, 1), 40, 200, 44, '#ffd21f'); }
+  S.caption(g2, fade(t, 6.3, 10.2), 'A BAR AND A CATCH', 440, 72, '#ffffff');
+  const a1 = fade(t, 6.6, 9.8); if (a1 > 0) { S.tag(g2, a1, 'BAR', ...scr(...gateP(-95, Y0 + 20, 13)), -60, 190, 46);
+    S.tag(g2, fade(t, 7.2, 9.8), 'PIN', ...scr(...gateP(-150, Y0 + 10, 16)), -40, -170, 46);
+    S.tag(g2, fade(t, 8.0, 9.8), 'CATCH', ...kp(40, 0), 70, -190, 46); S.tag(g2, fade(t, 8.6, 9.8), 'RAMP', ...kp(44, 1), 40, 200, 44, '#ffd21f'); }
   // steps (side view)
   const rampPts = [kp(62, -10), kp(22.5, 13.2), kp(19.6, 14)];
-  S.caption(g2, fade(t, 10.7, 14.35), 'RAMP LIFTS THE BAR', 440, 68, '#ffffff', 1);
-  poly(g2, fade(t, 10.9, 14.6) * (0.75 + 0.25 * Math.sin(t * 6)), rampPts, '#ffd21f', 12);
+  S.caption(g2, fade(t, 10.2, 14.35), 'RAMP LIFTS THE BAR', 440, 68, '#ffffff', 1);
+  poly(g2, fade(t, 10.6, 14.6) * (0.75 + 0.25 * Math.sin(t * 6)), rampPts, '#ffd21f', 12);
+  const ac = fade(t, 10.4, 11.9, 0.2); if (ac > 0) { const [x, y] = kp(80, -45); S.forceArrow(g2, ac, x - 150, y, x + 40, y, 24); S.tag(g2, ac, 'GATE CLOSES', x - 150, y, 10, 120, 42, '#ff7a1a'); }
   const au = fade(t, 12.0, 14.3); if (au > 0) { const [x, y] = scr(...gateP(XK + 25, Y0 + k[2] + 10, 10)); S.forceArrow(g2, au, x + 30, y + 120, x + 30, y - 10, 22); }
   S.caption(g2, fade(t, 14.35, 17.4), 'GRAVITY DROPS IT IN', 440, 68, '#ffffff', 2);
   const ad = fade(t, 14.9, 15.6, 0.15); if (ad > 0) { const [x, y] = scr(...gateP(XK + 25, Y0 + k[2] + 10, 10)); S.forceArrow(g2, ad, x + 30, y - 150, x + 30, y - 30, 22); }
