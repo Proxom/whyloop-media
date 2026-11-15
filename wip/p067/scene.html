@@ -80,7 +80,7 @@ S.shadowAll(scene); scene.traverse(m => { if (m.isMesh && m.geometry.type === 'B
 const DT = 1 / G.FPS_K;
 function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
 // ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
-const HOOK = [0, -30, Y0 + 75, 40, 860, 13, 34];
+const HOOK = [0, 30, Y0 + 55, 40, 880, 13, 34];
 const CAM = [HOOK, [2.7, 20, Y0 + 65, 25, 940, 15, 37],
   [2.71, -430, 640, 160, 3500, 15, 30], [5.9, -430, 640, 160, 3350, 15, 31],
   [7.0, -40, Y0 + 40, 25, 1000, 12, 28], [9.7, -40, Y0 + 40, 25, 960, 12, 30],
