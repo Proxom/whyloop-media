@@ -2,6 +2,11 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 15 Nov 2026 14:59): QUEUE TARGET = 2 (was 3) — overrides the queue numbers in every rule below
+- QUEUE 2 or more: do NOT make a new video. Short check only (max 15 min), then end.
+- QUEUE 0 or 1: make videos until QUEUE is 2 (same gate, next empty 17:00 slots).
+- Every other rule below that says "QUEUE 3", "QUEUE is 3", "QUEUE >= 2" or "until 3" as the condition for building engines, kit work or long-video work now means QUEUE 2 (full). Videos already scheduled stay.
+
 ## TOP OVERRIDE (Erkan, 15 Nov 2026 14:23): STUDIO KIT + SHORT REELS + DATA — higher quality, lower credits, more views. Overrides every older rule it contradicts (incl. "CLARITY FIRST — LENGTH FOLLOWS THE TOPIC" of 10 Nov, the REFERENCE GATE re-score loop, and the 2-round visual review).
 
 Why: Reels stall around 1,500 views, credits per Reel are high, visual scores stay 4-5/10 because each Reel builds its 3D scene from scratch and then loops reviews.
