@@ -1,0 +1,193 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p066 combination padlock "WHY SPIN IT / 3 TIMES?" (group E, track A voice). mm; x right, y up, z toward the viewer (dial in front).
+// kin.json rows: [t, cam/dial, wheel1 (front), wheel2, wheel3 (back), latch beta (deg, clockwise), shackle pop (mm)]; angles in degrees CLOCKWISE seen from the front.
+import * as S from '/tools/render/lib/studio.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, DIS0 = G.DIS0, EV = G.EV, D2R = Math.PI / 180;
+const st = S.makeStudio({ fov: 30, bg: 0x14181e, envIntensity: 0.75, bloom: 0, near: 5, far: 6000, samples: 0 });
+const { scene, camera } = st;
+const std = (o) => new THREE.MeshStandardMaterial(o), phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const brushed = S.noiseTex(5, 120, 40, 512); brushed.repeat.set(0.02, 0.6);
+const fine = S.noiseTex(9, 140, 26, 256); fine.repeat.set(0.08, 0.08);
+const WCOL = [null, 0x2f7dff, 0x14c29a, 0xe8457d];
+const M = {
+  body: phys({ color: 0xc4c9cf, metalness: 1.0, roughness: 0.3, roughnessMap: brushed, clearcoat: 0.3, transparent: true, opacity: 1 }),
+  dial: phys({ color: 0x15171b, metalness: 0.2, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.2 }),
+  steel: phys({ color: 0x9aa1aa, metalness: 1.0, roughness: 0.3, roughnessMap: fine }),
+  cam: phys({ color: 0x4a5059, metalness: 1.0, roughness: 0.32, roughnessMap: fine }),
+  pin: phys({ color: 0xff8a1a, metalness: 0.5, roughness: 0.3, clearcoat: 0.5, emissive: new THREE.Color(0xff6a00), emissiveIntensity: 0.25 }),
+  lever: phys({ color: 0xd9a441, metalness: 1.0, roughness: 0.28, roughnessMap: fine }),
+  chrome: phys({ color: 0xe8ebef, metalness: 1.0, roughness: 0.14, transparent: true, opacity: 1 }),
+  locker: std({ color: 0x5f7488, roughness: 0.5, metalness: 0.35, transparent: true, opacity: 1 }),
+  lockerDark: std({ color: 0x1b2128, roughness: 0.8, transparent: true, opacity: 1 }),
+  hasp: phys({ color: 0xa9b0b8, metalness: 1.0, roughness: 0.35, transparent: true, opacity: 1 }),
+};
+const WM = [null, 1, 2, 3].map(i => i && phys({ color: WCOL[i], metalness: 0.65, roughness: 0.3, clearcoat: 0.4, roughnessMap: fine, emissive: new THREE.Color(WCOL[i]), emissiveIntensity: 0 }));
+S.cyclorama(scene, { floorY: -60, zFront: 900, zBack: -140, R: 120, h: 1800, width: 4000, floor: '#20252c', wall: '#39414c' });
+const L = S.studioLights(scene, new THREE.Vector3(0, 12, 0), 70);
+// ---------- locker door + hasp staple (context, fades out) ----------
+const locker = new THREE.Group(); scene.add(locker);
+{ const door = new THREE.Mesh(new RoundedBoxGeometry(700, 900, 6, 3, 2), M.locker); door.position.set(0, 120, -48); door.receiveShadow = true; locker.add(door);
+  for (let i = 0; i < 6; i++) { const v = new THREE.Mesh(new RoundedBoxGeometry(60, 5, 2, 2, 1), M.lockerDark); v.position.set(0, 120 + i * 11, -44.6); locker.add(v); }
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(26, 34, 2.5, 3, 1), M.hasp); plate.position.set(0, 59, -44); locker.add(plate);
+  const tab = new THREE.Mesh(new RoundedBoxGeometry(12, 3, 54, 2, 1), M.hasp); tab.position.set(0, 59.45, -18); tab.castShadow = true; locker.add(tab);
+  const lip = new THREE.Mesh(new RoundedBoxGeometry(12, 7, 2.5, 2, 1), M.hasp); lip.position.set(0, 61.5, 8.3); locker.add(lip); }
+// ---------- body (ghosts out in the cutaway) ----------
+const body = new THREE.Mesh(new RoundedBoxGeometry(48, 54, 22, 6, 5.5), M.body); body.castShadow = true; body.receiveShadow = true; scene.add(body);
+const idx = new THREE.Mesh(new THREE.CircleGeometry(1.6, 3), std({ color: 0xffffff, roughness: 0.4 })); idx.position.set(0, 23.2, 11.03); idx.rotation.z = -Math.PI / 2; scene.add(idx);
+// ---------- dial + spindle + drive cam (one rigid part) ----------
+const dial = new THREE.Group(); scene.add(dial);
+{ const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); g.fillStyle = '#15171b'; g.fillRect(0, 0, 1024, 1024);
+  g.translate(512, 512); g.fillStyle = '#f4f4f0'; g.strokeStyle = '#f4f4f0';
+  for (let n = 0; n < 40; n++) { const a = -n * 9 * D2R; // number n sits n*9 deg COUNTER-clockwise from the top (canvas y down -> flip)
+    g.save(); g.rotate(a); g.lineWidth = n % 5 ? 5 : 9; g.beginPath(); g.moveTo(0, -500); g.lineTo(0, n % 5 ? -458 : -430); g.stroke();
+    if (n % 5 === 0) { g.font = 'bold 64px Anton'; g.textAlign = 'center'; g.fillText(String(n), 0, -352); } g.restore(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  const face = new THREE.Mesh(new THREE.CircleGeometry(19.2, 96), phys({ map: t, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.2 })); face.position.z = 15.52; dial.add(face);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 4.5, 120, 1, true), M.dial); rim.rotation.x = Math.PI / 2; rim.position.z = 13.25; dial.add(rim);
+  { const gs = []; for (let k = 0; k < 72; k++) { const a = k / 72 * Math.PI * 2; const g = new THREE.BoxGeometry(0.9, 0.7, 3.6); g.rotateZ(-a); g.translate(20.1 * Math.sin(a), 20.1 * Math.cos(a), 13.25); gs.push(g); } dial.add(new THREE.Mesh(mergeGeometries(gs), M.dial)); }
+  const knob = new THREE.Mesh(new THREE.CylinderGeometry(7, 7.6, 2.0, 64), M.dial); knob.rotation.x = Math.PI / 2; knob.position.z = 16.5; dial.add(knob);
+  const spindle = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 5.2, 24), M.steel); spindle.rotation.x = Math.PI / 2; spindle.position.z = 8.6; dial.add(spindle);
+  const cam = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 1.4, 72), M.cam); cam.rotation.x = Math.PI / 2; cam.position.z = 6.5; dial.add(cam);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.775, 0.775, 1.9, 20), M.pin); pin.rotation.x = Math.PI / 2; pin.position.set(G.RP * Math.sin(215 * D2R), G.RP * Math.cos(215 * D2R), 5.8 - 0.95); dial.add(pin); }
+S.shadowAll(dial);
+// ---------- fixed post the wheels ride on ----------
+{ const post = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 2.9, 14.6, 24), M.steel); post.rotation.x = Math.PI / 2; post.position.z = -3.3; scene.add(post); }
+// ---------- wheels: chamfered gate at G_LOC (clockwise from the top), fly on the front face, drive pin on the back face (both at 0 deg) ----------
+const WZ = [null, 2.0, -2.5, -7.0], WT = 1.4;
+const P0 = 215; // base angle of every pin + fly (same on all parts, so the kinematics are unchanged); puts the right-turn pickups on the visible upper right
+const wrap = (a) => ((a + 180) % 360 + 360) % 360 - 180;
+function wheelShape(g) { const pts = []; const n = 360; const hb = G.GATE_W / 2, ht = hb + G.CHAMF;
+  for (let k = 0; k < n; k++) { const a = k * 360 / n; const d = Math.abs(wrap(a - g)); const r = d <= hb ? G.R - G.D : (d >= ht ? G.R : G.R - G.D + G.D * (d - hb) / G.CHAMF);
+    pts.push([r * Math.sin(a * D2R), r * Math.cos(a * D2R)]); }
+  const holes = [S.circle(0, 0, 3.2, 40)]; for (const a of [120, 240]) { const aa = (g + a) * D2R; holes.push(S.circle(6.2 * Math.sin(aa), 6.2 * Math.cos(aa), 1.7, 24)); }
+  return S.shapeOf(pts.reverse(), holes); }
+const wheels = [null];
+for (const i of [1, 2, 3]) { const w = new THREE.Group(); w.position.z = WZ[i]; scene.add(w);
+  const m = S.extrude(wheelShape(G.G_LOC[i]), -WT / 2, WT / 2, WM[i], 0.18, 24); w.add(m);
+  const fly = new THREE.Mesh(new RoundedBoxGeometry(2.0, 1.6, 1.9, 2, 0.25), WM[i]); fly.position.set(G.RP * Math.sin(P0 * D2R), G.RP * Math.cos(P0 * D2R), WT / 2 + 0.95); fly.rotation.z = -P0 * D2R; w.add(fly);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.775, 0.775, 1.9, 20), M.pin); pin.rotation.x = Math.PI / 2; pin.position.set(G.RP * Math.sin(P0 * D2R), G.RP * Math.cos(P0 * D2R), -WT / 2 - 0.95); w.add(pin);
+  S.shadowAll(w); wheels.push(w); }
+// ---------- latch lever (bell crank) ----------
+const lever = new THREE.Group(); lever.position.set(G.PV[0], G.PV[1], 0); scene.add(lever);
+{ const loc = (pts) => pts.map(p => [p[0] - G.PV[0], p[1] - G.PV[1]]);
+  const armTooth = loc([[-7.6, 15.0], [-1.02, 15.0], [-1.02, 13.03], [1.02, 13.03], [1.02, 16.6], [-7.6, 16.6]]);
+  lever.add(S.extrude(S.shapeOf(armTooth), -8.2, 3.2, M.lever, 0.15));
+  const up = loc([[-7.75, 15.0], [-6.25, 15.0], [-6.25, 23.6], [-11.0, 23.6], [-11.0, 21.5], [-7.75, 21.5]]);
+  lever.add(S.extrude(S.shapeOf(up), -1.2, 1.2, M.lever, 0.15));
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 13, 16), M.steel); ax.rotation.x = Math.PI / 2; ax.position.z = -2.5; lever.add(ax); }
+S.shadowAll(lever);
+// ---------- shackle (left leg = the short leg with the groove) ----------
+const shackle = new THREE.Group(); scene.add(shackle);
+{ const SR = 3.6; const cyl = (x, y0, y1, r = SR) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, 40), M.chrome); m.position.set(x, (y0 + y1) / 2, 0); shackle.add(m); };
+  cyl(-13.5, 19, 21.3); cyl(-13.5, 21.3, 23.3, 2.4); cyl(-13.5, 23.3, 48); cyl(13.5, 17, 48);
+  const arc = new THREE.Mesh(new THREE.TorusGeometry(13.5, SR, 32, 80, Math.PI), M.chrome); arc.position.set(0, 48, 0); shackle.add(arc);
+  for (const y of [19]) { const cap = new THREE.Mesh(new THREE.SphereGeometry(SR, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.chrome); cap.position.set(-13.5, y, 0); shackle.add(cap); }
+  const cap2 = new THREE.Mesh(new THREE.SphereGeometry(SR, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.chrome); cap2.position.set(13.5, 17, 0); shackle.add(cap2); }
+S.shadowAll(shackle);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(DIS0, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const speed = (t, j) => Math.abs(kin(t + 0.04)[j] - kin(t - 0.04)[j]) / 0.08;
+// ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
+const CAM = [
+  [0.0, 0, 20, 0, 255, 6, 14], [2.8, 0, 19, 0, 240, 7, 18],
+  [4.8, 3, 6, -3, 132, 12, 58], [10.6, 3, 6, -3, 126, 12, 60],
+  [20.6, 3, 6, -3, 122, 12, 58], [21.8, 1, 10, -3, 88, 18, 54], [24.7, 1, 10, -3, 84, 18, 52],
+  [25.7, 3, 6, -3, 126, 12, 60], [31.6, 3, 6, -3, 122, 12, 62], [32.5, 1, 10, -3, 88, 18, 56], [34.6, 1, 10, -3, 84, 18, 54],
+  [35.6, 3, 6, -3, 124, 12, 60], [37.9, 3, 6, -3, 118, 12, 62], [38.6, 0, 13, -2.5, 66, 4, 76], [39.5, 0, 13, -2.5, 64, 4, 74],
+  [40.5, 0, 22, 0, 190, 12, 34], [47.3, 0, 21, 0, 182, 12, 32]];
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const ghost = (t) => 1 - 0.86 * S.smooth((t - 3.1) / 1.3) + 0.86 * S.smooth((t - 39.9) / 0.9);
+function setScene(t) {
+  const k = kin(t);
+  dial.rotation.z = -k[1] * D2R; for (const i of [1, 2, 3]) wheels[i].rotation.z = -k[i + 1] * D2R;
+  lever.rotation.z = -k[5] * D2R; shackle.position.y = k[6];
+  const gs = ghost(t); M.chrome.opacity = 0.35 + 0.65 * (gs - 0.14) / 0.86; M.chrome.depthWrite = gs > 0.98;
+  const gb = ghost(t); M.body.opacity = gb; M.body.depthWrite = gb > 0.98; body.castShadow = gb > 0.98;
+  const gl = 1 - S.smooth((t - 3.0) / 1.0); for (const m of [M.locker, M.lockerDark, M.hasp]) { m.opacity = gl; m.depthWrite = gl > 0.98; } locker.visible = gl > 0.01;
+  for (const i of [1, 2, 3]) WM[i].emissiveIntensity = t > 9 && t < 40 ? 0.32 * Math.min(1, speed(t, i + 1) / 40) : 0;
+  const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
+}
+// ---------- overlay ----------
+const scr = (x, y, z) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+const wpt = (angCW, r, z) => [r * Math.sin(angCW * D2R), r * Math.cos(angCW * D2R), z];
+function arcArrow(g2, a, pts) { if (a <= 0 || pts.length < 3) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; g2.lineJoin = 'round';
+  for (const [w, col] of [[20, '#000'], [12, '#ff7a1a']]) { g2.strokeStyle = col; g2.lineWidth = w; g2.beginPath(); pts.slice(0, -1).forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); }
+  const p1 = pts[pts.length - 2], p2 = pts[pts.length - 1], ang = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]);
+  g2.fillStyle = '#ff7a1a'; g2.strokeStyle = '#000'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(p2[0], p2[1]); g2.lineTo(p2[0] - 44 * Math.cos(ang - 0.5), p2[1] - 44 * Math.sin(ang - 0.5)); g2.lineTo(p2[0] - 44 * Math.cos(ang + 0.5), p2[1] - 44 * Math.sin(ang + 0.5)); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function pill(g2, a, text, y, size = 46, bg = 'rgba(12,14,20,0.86)', fg = '#ffd21f', x = S.CX) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = bg; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+const hexc = (c) => '#' + c.toString(16).padStart(6, '0');
+function chips(g2, a, k) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const y = 1335, w = 236, gap = 18, x0 = S.CX - (3 * w + 2 * gap) / 2;
+  [3, 2, 1].forEach((i, n) => { const x = x0 + n * (w + gap); const g = Math.abs(wrap(G.G_LOC[i] + k[i + 1])); const okk = g < 4.5;
+    S.rrect(g2, x, y - 38, w, 76, 18); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.lineWidth = 5; g2.strokeStyle = hexc(WCOL[i]); g2.stroke();
+    g2.font = '40px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff'; g2.fillText(`WHEEL ${i}`, x + 22, y + 2);
+    const cx = x + w - 40; g2.lineWidth = 8; g2.lineCap = 'round';
+    if (okk) { g2.strokeStyle = '#3ddc84'; g2.beginPath(); g2.moveTo(cx - 14, y); g2.lineTo(cx - 3, y + 12); g2.lineTo(cx + 16, y - 14); g2.stroke(); }
+    else { g2.strokeStyle = 'rgba(255,255,255,0.35)'; g2.beginPath(); g2.arc(cx, y, 13, 0, Math.PI * 2); g2.stroke(); } });
+  g2.font = '34px Anton'; g2.textAlign = 'center'; g2.fillStyle = '#ffd21f'; g2.fillText('NOTCH UNDER THE LATCH?', S.CX, y - 66); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = kin(t);
+  // hook (and again at the loop end so the last frame matches the first)
+  const hk = t < 3 ? 1 - S.smooth((t - 2.45) / 0.4) : S.smooth((t - 47.45) / 1.0);
+  if (hk > 0) { S.hookCard(g2, hk, 'WHY SPIN IT', '3 TIMES?', 124);
+    const c0 = t < 3 ? null : (() => { const keep = camera.position.clone(); const q = camera.quaternion.clone(); const c = S.orbitCam(CAM, 0); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld(); const p = scr(0, 0, 16); camera.position.copy(keep); camera.quaternion.copy(q); camera.updateMatrixWorld(); return p; })();
+    const [cx, cy] = c0 || scr(0, 0, 16); S.redCircle(g2, hk, cx, cy, 150, [-250, -60]); }
+  // set-up captions
+  S.caption(g2, fade(t, 3.1, 6.6), '3 WHEELS, EACH WITH A NOTCH', 440, 62, '#ffffff');
+  S.caption(g2, fade(t, 6.6, 10.8), 'LATCH NEEDS ALL 3 NOTCHES', 440, 62, '#ffffff');
+  const aw = fade(t, 3.6, 10.6); if (aw > 0) for (const i of [1, 2, 3]) { const [x, y] = scr(...wpt(70, 13, WZ[i])); S.tag(g2, aw, `WHEEL ${i}`, x, y, 150, [-250, -120, 10][i - 1], 44); }
+  const an = fade(t, 4.4, 6.6); if (an > 0) { const i = 3, g = G.G_LOC[i] + k[i + 1]; const [x, y] = scr(...wpt(g, G.R - G.D / 2, WZ[i])); S.tag(g2, an, 'NOTCH', x, y, -60, -150, 42); }
+  const al = fade(t, 6.8, 10.6); if (al > 0) { const [x, y] = scr(-3, 16.6, 3.2); S.tag(g2, al, 'LATCH', x, y, -80, -150, 42); const [tx, ty] = scr(0, 12.2, -2.5); S.tag(g2, al, 'BLOCKED BY THE RIMS', tx, ty, 60, 230, 40, '#ff7a1a'); }
+  // steps
+  S.caption(g2, fade(t, 10.9, 21.0), 'TURN RIGHT 3 TIMES', 440, 68, '#ffffff', 1);
+  S.caption(g2, fade(t, 21.0, 25.2), 'STOP AT 15', 440, 68, '#ffffff', 2);
+  S.caption(g2, fade(t, 25.2, 32.0), 'TURN LEFT 2 TIMES', 440, 68, '#ffffff', 3);
+  S.caption(g2, fade(t, 32.0, 35.0), 'STOP AT 35', 440, 68, '#ffffff', 4);
+  S.caption(g2, fade(t, 35.0, 39.4), 'RIGHT TO 5', 440, 68, '#ffffff', 5);
+  // dial reading
+  const ar = fade(t, 10.9, 39.6); if (ar > 0) { const n = ((Math.round(k[1] / 9) % 40) + 40) % 40; pill(g2, ar, `DIAL  ${n}`, 560, 50, 'rgba(12,14,20,0.86)', '#ffffff'); }
+  // turn-direction arrow around the dial
+  const turning = [[10.9, 21.0, 1], [25.2, 32.0, -1], [35.0, 39.4, 1]].find(s => t > s[0] + 0.1 && t < s[1] - 0.25);
+  if (turning) { const dir = turning[2], a0 = k[1] - dir * 20; const pts = []; for (let s = 0; s <= 20; s++) pts.push(scr(...wpt(a0 + dir * (s / 20) * 100, 23.5, 15.5)));
+    arcArrow(g2, fade(t, turning[0] + 0.1, turning[1] - 0.25, 0.3), pts); }
+  // pickups: tag at the contact point for 1.8 s
+  for (const p of EV.picks) { const a = fade(t, p.t - 0.1, Math.min(p.t + 1.9, p.t > 37 ? 38.5 : 99), 0.15); if (a <= 0) continue; const ang = k[p.wheel + 1] + P0 + (p.dir === 'R' ? 1 : -1) * G.DELTA / 2;
+    const z = (WZ[p.wheel] + (p.wheel === 1 ? 5.8 : WZ[p.wheel - 1] - WT / 2)) / 2 + (p.wheel === 1 ? 0.7 : 0); const [x, y] = scr(...wpt(ang, G.RP, z));
+    const pr = 1 + 0.5 * Math.exp(-(t - p.t) * 6); g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.beginPath(); g2.arc(x, y, 34 * pr, 0, Math.PI * 2); g2.stroke(); g2.restore();
+    S.tag(g2, a, p.wheel === 1 && p.t < 20 ? 'PIN CATCHES WHEEL 1' : `PICKS UP WHEEL ${p.wheel}`, x, y, 60, Math.min(-200, 900 - y), 44); }
+  const as = fade(t, 25.6, 31.8); if (as > 0) { const [x, y] = scr(...wpt(45, 13, WZ[3])); S.tag(g2, as, 'WHEEL 3 STAYS PUT', x, y, 40, -150, 42, hexc(0xff7fae)); }
+  for (const [a0, a1, i] of [[21.4, 25.0, 3], [32.2, 34.9, 2]]) { const a = fade(t, a0, a1); if (a <= 0) continue; const [x, y] = scr(0.6, G.R - G.D * 0.6, WZ[i]); S.tag(g2, a, `NOTCH ${i} IN PLACE`, x, y, 90, -170, 44, '#3ddc84'); }
+  chips(g2, fade(t, 19.6, 43.0), k);
+  // latch drop + open
+  const ad = fade(t, 38.9, 40.9, 0.15); if (ad > 0) { const [x, y] = scr(0, 13.5, -2.5); S.tag(g2, ad, 'LATCH DROPS IN', x, y, 60, 190, 44); }
+  if (t > EV.drop1 - 0.05 && t < EV.drop1 + 0.7) { const kk = 1 + 0.25 * Math.exp(-(t - EV.drop1) * 12); g2.save(); g2.globalAlpha = fade(t, EV.drop1 - 0.05, EV.drop1 + 0.7, 0.1); g2.translate(S.CX, 760); g2.scale(kk, kk); S.outlined(g2, 'CLICK!', 0, 0, 140, '#ffd21f'); g2.restore(); }
+  S.caption(g2, fade(t, 40.3, 43.1), 'ALL 3 LINE UP: OPEN!', 440, 68, '#3ddc84');
+  const ap = fade(t, 43.2, 46.2, 0.3); if (ap > 0) { g2.save(); g2.globalAlpha = ap; S.outlined(g2, 'EACH SPIN PICKS', S.CX, 520, 104, '#ffffff'); S.outlined(g2, 'UP ONE WHEEL', S.CX, 636, 104, '#ffd21f'); g2.restore(); }
+  const af = fade(t, 45.9, 47.4, 0.25); if (af > 0) pill(g2, af, 'FOLLOW → A NEW MACHINE EVERY DAY', 1395, 44, 'rgba(12,14,20,0.8)', '#ffffff');
+}
+// ---------- frame harness with the loop dissolve (end pose -> the start pose) ----------
+window.motionPx = (t) => 0;
+window.renderFrame = (t, sub = 1, shutter = 0.5, fps = 30) => {
+  const { g2, W, H, renderer, composer, P } = st; g2.setTransform(1, 0, 0, 1, 0, 0); g2.globalAlpha = 1; g2.clearRect(0, 0, W, H);
+  setScene(Math.min(t, DIS0)); composer.render(); g2.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height, 0, 0, W, H);
+  if (t > DIS0) { setScene(0); composer.render(); g2.globalAlpha = S.smooth((t - DIS0) / (LOOP - DIS0)); g2.drawImage(renderer.domElement, 0, 0, renderer.domElement.width, renderer.domElement.height, 0, 0, W, H); }
+  g2.globalAlpha = 1; setScene(Math.min(t, DIS0)); S.overlayBegin(st); overlay(t); g2.fillStyle = 'rgba(255,255,255,0.004)'; g2.fillRect(0, 0, 1, 1);
+  if (P.safe) S.safeZones(g2);
+  return st.out.toDataURL('image/png');
+};
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
