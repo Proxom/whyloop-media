@@ -16,6 +16,6 @@ CLARITY GATE round 1 = PASS (fresh reviewer explained it correctly; 14yo YES). V
 Round-2 fixes DONE in code (not yet in a finished render): metal wheels (metalness 0.88 + brushed roughness), ghost body 6 %, shackle hidden in the latch close-up, wider inside camera (dist ~134),
 chips in wheel order 1-2-3 + 42 px heading, a wheel only ticks when it is still (no flashing tick), chips gone before the wide open shot, pickup tags 1.5 s and anchored on the picked-up wheel's fly,
 REAL DIAL DIRECTION: numbers now run clockwise on the face, so turning right counts DOWN (reviewer: a real 40-number lock reads downward) -> TH = [0, 1305, 405, 1035]; kin/check/audio re-run (check PASS, -15.0 LUFS, gap 19.5 dB).
-v2 render was started at 06:20 UTC into scratchpad (lost if the run ends first).
+v2 FINISHED: visual round 2 = 6 -> scheduled 15 Nov 17:00 (Metricool 428648486). Media: media/p066/lock_reel_v2.mp4 + lock_cover_v2.jpg.
 IF lock_reel.mp4 in this folder is still v1 (48.8 s, dial counts UP): NEXT RUN = render v2 (command above, ~38 min) -> encode -> HARD GATE (qc_video/qc_audio + spike scan) -> visual round 2 review (6 stills) ->
   6+ = schedule 15 Nov 17:00 (move to media/p066 + posts/p066, wait for raw URL 200). Below 6 and the slot < 2 h away: schedule the best gate-passing version (5 allowed by AGENT 6). Clarity already PASSED (re-check only if the story changes).
