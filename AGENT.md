@@ -2,6 +2,24 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 15 Nov 2026 14:23): STUDIO KIT + SHORT REELS + DATA — higher quality, lower credits, more views. Overrides every older rule it contradicts (incl. "CLARITY FIRST — LENGTH FOLLOWS THE TOPIC" of 10 Nov, the REFERENCE GATE re-score loop, and the 2-round visual review).
+
+Why: Reels stall around 1,500 views, credits per Reel are high, visual scores stay 4-5/10 because each Reel builds its 3D scene from scratch and then loops reviews.
+
+A. KIT DAY (one run, no new Reel in that run):
+   - Do it in the first run where QUEUE (as defined in the 1-a-day override) is 2 or more. If QUEUE is 0-1, make the Reel(s) first as usual and do the KIT DAY in the next run with QUEUE >= 2.
+   - Build ONE reusable studio kit in the repo (kit/): a fixed lighting rig, 6-8 good PBR-style materials (brushed steel, cast aluminium, brass, black plastic, rubber, cut-section red, glass), 4 camera presets (hero, cutaway, macro, top), one text/label style (hook title, step label, answer card), and a parts library of parametric parts: spur/bevel gear, rack, piston + rod + crank, cam + follower, spring, shaft + bearing, latch/pawl/ratchet, lever, wheel, housing shell with cutaway. Each part tested once in a still.
+   - Spend the quality effort HERE, once: tune render settings for the best look the CPU renderer can give in <= 8 min per final render (lighting, AO, soft shadows, tone mapping, 30 fps, no motion-blur sub-frames over 2x).
+   - Also in KIT DAY: pull the last 30 Reels' metrics from Metricool (views, reach, avg watch time / completion if available, likes, comments, shares, saves). Write learnings/reel-scorecard-2026-11-15.md: top 20 % vs bottom 20 % by views and by shares+saves, and what they share (topic type, hook, length, first frame, title). Use it to re-rank the next 10 topics.
+B. EVERY REEL AFTER KIT DAY:
+   - Build from the kit only (new parts only if the kit truly lacks one; then add them to the kit).
+   - Length 20-30 s (hard max 35 s). One idea. Voiceover short and tight.
+   - First 1 s: show the most striking moment of the payoff (lock opening, engine firing...) as a 0.7-1 s flash, with a big question title, then start the explanation. The last frame loops to the first.
+   - Reviews: the HARD GATE + CLARITY GATE checklist (automatic), then ONE visual review. Score 6+: schedule. Score 5: fix the top 3 issues once, no re-score, schedule. 4 or lower: the concept is wrong, pick a simpler topic. Never more than one re-render.
+   - Time cap: about 20 minutes of work per Reel. If it runs over, simplify the scene, do not rebuild it.
+   - Topic choice follows the scorecard (double down on what works, drop the bottom 20 % types). Re-run the scorecard every Monday.
+C. Daily report: add a line per Reel: length, first-second hook, visual score, run minutes, and after 72 h views/shares/saves, compared with the pre-kit average (before 16 Nov). The GM compares before/after for Erkan after 2 weeks.
+
 ## TOP OVERRIDE (Erkan, 14 Nov 2026 20:25): 1 Reel A DAY AT 17:00 ONLY + NEW QUEUE RULE — overrides every other slot, schedule and queue rule in this file
 - From now on: exactly 1 Reel a day, at 17:00 Europe/London (Metricool brand 7675089). The 01:00 slot is CLOSED (as 21:00 already is): never schedule anything new at 01:00 or 21:00. This overrides "2 a day", "01:00 and 17:00", the 01:00 style/family rotation and every other mention of 01:00 below.
 - Reels already scheduled for 01:00 stay as they are (already made, do not delete or move them). They count in QUEUE.
