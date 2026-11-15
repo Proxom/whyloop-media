@@ -1,0 +1,145 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p067 gravity gate latch "HOW DOES IT / LOCK ITSELF?" (group E, track A voice). mm; y up; gate closed in the plane z in [-36, 0], post at x > 10.
+// kin.json rows: [t, gate angle deg (opens toward +z), bar lift at the catch (mm), bar z at the catch, latch visible]
+import * as S from '/tools/render/lib/studio.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, EV = G.EV, D2R = Math.PI / 180, Y0 = 950, XK = G.XK;
+const st = S.makeStudio({ fov: 30, bg: 0x6f8496, envIntensity: 0.6, bloom: 0, near: 5, far: 12000, samples: 0 });
+const { scene, camera } = st;
+const phys = (o) => new THREE.MeshPhysicalMaterial(o), std = (o) => new THREE.MeshStandardMaterial(o);
+const fine = S.noiseTex(9, 140, 30, 256); fine.repeat.set(0.03, 0.03);
+const vwood = (seed, rep = [1, 1], tone = 1) => { const t = S.woodTex(seed, 12); t.center.set(0.5, 0.5); t.rotation = Math.PI / 2; t.repeat.set(rep[0], rep[1]);
+  return std({ map: t, roughness: 0.78, metalness: 0, color: new THREE.Color(0.86 * tone, 0.8 * tone, 0.76 * tone) }); };
+const M = {
+  galv: phys({ color: 0xb9c0c7, metalness: 1.0, roughness: 0.34, roughnessMap: fine, clearcoat: 0.15 }),
+  black: phys({ color: 0x1c1d20, metalness: 0.55, roughness: 0.42, clearcoat: 0.4, clearcoatRoughness: 0.35 }),
+  screw: phys({ color: 0x9aa0a6, metalness: 1.0, roughness: 0.3 }),
+  board: vwood(3, [0.25, 1]), rail: vwood(5, [1, 0.25], 0.85), post: vwood(8, [0.3, 1], 0.92), stop: vwood(11, [0.3, 1], 0.7),
+};
+for (const m of [M.galv, M.black, M.screw]) { m.transparent = true; m.opacity = 1; }
+S.cyclorama(scene, { floorY: 0, zFront: 3500, zBack: -900, R: 500, h: 4000, width: 30000, floor: '#33362b', wall: '#7d93a6' });
+const Lt = S.studioLights(scene, new THREE.Vector3(0, Y0, 0), 420);
+// ---------- posts ----------
+const post = new THREE.Mesh(new THREE.BoxGeometry(100, 1250, 90), M.post); post.position.set(60, 625, -45); scene.add(post);
+const cap = new THREE.Mesh(new RoundedBoxGeometry(116, 24, 106, 2, 4), M.stop); cap.position.set(60, 1262, -45); scene.add(cap);
+const stopStrip = new THREE.Mesh(new THREE.BoxGeometry(40, 420, 24), M.stop); stopStrip.position.set(-10, 820, -48); scene.add(stopStrip);
+const hpost = new THREE.Mesh(new THREE.BoxGeometry(100, 1250, 90), M.post); hpost.position.set(-960, 625, -45); scene.add(hpost);
+const hcap = cap.clone(); hcap.position.x = -960; scene.add(hcap);
+// ---------- gate (rotates about the hinge axis x=-900, z=-36) ----------
+const gate = new THREE.Group(); gate.position.set(G.HX, 0, G.HZ); scene.add(gate);
+const gadd = (m, x, y, z) => { m.position.set(x - G.HX, y, z - G.HZ); gate.add(m); return m; };
+for (let i = 0; i < 6; i++) { const w = 140, gap = 6, x0 = -894 + i * (w + gap); const h = 1080 - Math.abs(i - 2.5) * 14;
+  gadd(new THREE.Mesh(new RoundedBoxGeometry(w, h, 22, 2, 2.5), M.board), x0 + w / 2, 80 + h / 2, -11); }
+for (const y of [260, 860]) gadd(new THREE.Mesh(new THREE.BoxGeometry(880, 110, 14), M.rail), -455, y, -29);
+for (const y of [260, 860]) { const s = gadd(new THREE.Mesh(new RoundedBoxGeometry(330, 34, 5, 2, 1.5), M.black), -735, y, 2.5);
+  const k = gadd(new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 60, 20), M.black), -903, y, 2); }
+// pivot plate + pin, keep staple
+gadd(new THREE.Mesh(new THREE.CylinderGeometry(22, 22, 3, 40), M.black), -150, Y0 + 10, 1.5).rotation.x = Math.PI / 2;
+gadd(new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 14, 20), M.galv), -150, Y0 + 10, 9).rotation.x = Math.PI / 2;
+gadd(new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 2.5, 24), M.galv), -150, Y0 + 10, 14.4).rotation.x = Math.PI / 2;
+{ const P = (w, h, d, x, y, z) => gadd(new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, 0.8), M.black), x, y, z);
+  P(30, 70, 3, -40, Y0 + 10, 1.5); P(10, 5, 16, -40, Y0 - 2.5, 8); P(10, 4, 16, -40, Y0 + 35, 8); P(10, 42, 3.5, -40, Y0 + 16, 16.5); }
+for (const [x, y] of [[-150, Y0 + 26], [-150, Y0 - 6], [-40, Y0 + 40], [-40, Y0 - 20]]) gadd(new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 1.6, 16), M.screw), x, y, 3.4).rotation.x = Math.PI / 2;
+// the bar (pivot group at the pin)
+const barG = new THREE.Group(); gadd(barG, -150, Y0 + 10, 10);
+{ const sh = new THREE.Shape(); const x0 = -20, x1 = 85 - (-150), h = 10; sh.moveTo(x0 + 10, -h); sh.lineTo(x1 - 8, -h); sh.quadraticCurveTo(x1, -h, x1, -h + 8); sh.lineTo(x1, h - 8); sh.quadraticCurveTo(x1, h, x1 - 8, h); sh.lineTo(x0 + 10, h); sh.absarc(x0 + 10, 0, 10, Math.PI / 2, 3 * Math.PI / 2, false);
+  const hole = new THREE.Path(); hole.absarc(0, 0, 4.6, 0, Math.PI * 2, true); sh.holes.push(hole);
+  const bar = S.extrude(sh, -3, 3, M.galv, 0.5, 20); barG.add(bar);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 16, 16), M.galv); stem.rotation.x = Math.PI / 2; stem.position.set(60, 0, 10); barG.add(stem);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(8, 32, 16), M.black); knob.position.set(60, 0, 22); barG.add(knob); }
+// ---------- catch (keeper) on the post: profile (z, y) extruded along x ----------
+const keeper = new THREE.Group(); keeper.position.set(0, Y0, 0); scene.add(keeper);
+{ const m = S.extrude(S.shapeOf(G.KEEP), -XK - 3.5, -XK + 3.5, M.galv, 0.4, 12); m.rotation.y = -Math.PI / 2; keeper.add(m);
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(40, 75, 3, 2, 1), M.galv); plate.position.set(XK, -7.5, 1.5); keeper.add(plate);
+  for (const y of [18, -34]) for (const dx of [-12, 12]) { const s = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 1.6, 16), M.screw); s.rotation.x = Math.PI / 2; s.position.set(XK + dx, y, 3.6); keeper.add(s); } }
+S.shadowAll(scene); scene.traverse(m => { if (m.isMesh && m.geometry.type === 'BufferGeometry' && m.parent === scene && !m.castShadow) {} });
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+// ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, -10, Y0 + 95, 40, 1150, 14, 34];
+const CAM = [HOOK, [2.7, 20, Y0 + 65, 25, 940, 15, 37],
+  [2.71, -430, 640, 160, 3500, 15, 30], [5.9, -430, 640, 160, 3350, 15, 31],
+  [7.0, -40, Y0 + 40, 25, 1060, 12, 28], [9.8, -40, Y0 + 40, 25, 1020, 12, 30],
+  [10.8, 58, Y0 + 14, 46, 620, 8, 78], [14.2, 58, Y0 + 12, 36, 560, 8, 77],
+  [15.0, 60, Y0 + 8, 18, 400, 8, 76], [17.2, 60, Y0 + 8, 16, 380, 8, 77],
+  [17.8, 60, Y0 + 8, 20, 420, 8, 76], [20.4, 60, Y0 + 8, 20, 410, 8, 76],
+  [21.2, 58, Y0 + 12, 34, 600, 9, 70], [23.3, 58, Y0 + 12, 34, 580, 9, 68],
+  [25.3, ...HOOK.slice(1)], [26.4, ...HOOK.slice(1)]];
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const latchA = (t) => t < 2.7 ? 1 : (t < 6.0 ? 0 : S.smooth((t - 6.0) / 0.7));
+function setScene(t) {
+  const k = kin(t);
+  gate.rotation.y = -k[1] * D2R; barG.rotation.z = Math.atan(k[2] / G.LP);
+  const la = latchA(t); for (const m of [M.galv, M.black, M.screw]) { m.opacity = la; m.depthWrite = la > 0.98; }
+  barG.visible = keeper.visible = la > 0.01;
+  const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
+}
+// ---------- overlay ----------
+const scr = (x, y, z) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+const gateP = (x, y, z) => { const th = kin(curT)[1] * D2R; const dx = x - G.HX, dz = z - G.HZ; return [G.HX + dx * Math.cos(th) - dz * Math.sin(th), y, G.HZ + dx * Math.sin(th) + dz * Math.cos(th)]; };
+let curT = 0;
+function pill(g2, a, text, y, size = 46, bg = 'rgba(12,14,20,0.86)', fg = '#ffd21f', x = S.CX) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = bg; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function poly(g2, a, pts, col, w = 12) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; g2.lineJoin = 'round';
+  for (const [ww, c] of [[w + 8, 'rgba(0,0,0,0.7)'], [w, col]]) { g2.strokeStyle = c; g2.lineWidth = ww; g2.beginPath(); pts.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); }
+const kp = (z, y) => scr(XK + 3.5, Y0 + y, z);     // a point on the catch's near face
+function pop(g2, t, t0, text, x, y, col = '#ffd21f') { if (t < t0 - 0.05 || t > t0 + 0.8) return; const kk = 1 + 0.25 * Math.exp(-(t - t0) * 12); g2.save(); g2.globalAlpha = fade(t, t0 - 0.05, t0 + 0.8, 0.1); g2.translate(x, y); g2.scale(kk, kk); S.outlined(g2, text, 0, 0, 120, col); g2.restore(); }
+function overlay(t) {
+  curT = t; const g2 = st.g2; S.vignette(g2, 0); const k = kin(t);
+  // hook (also faded back in at the loop end so the last frame matches the first)
+  const hk = t < 3 ? 1 - S.smooth((t - 2.3) / 0.35) : S.smooth((t - 25.95) / 0.45);
+  if (hk > 0) { S.hookCard(g2, hk, 'HOW DOES IT', 'LOCK ITSELF?', 124); const [cx, cy] = t < 3 ? kp(30, 4) : (() => { return [hookPt[0], hookPt[1]]; })(); S.redCircle(g2, hk, cx, cy, 120, [-260, -40]); }
+  if (t < 0.05) { const [x, y] = kp(30, 4); hookPt[0] = x; hookPt[1] = y; }
+  const ap = fade(t, 0.15, 1.35, 0.2); if (ap > 0) { const [x, y] = scr(...gateP(-330, Y0 - 160, 0)); S.forceArrow(g2, ap, x - 170, y - 40, x + 10, y + 10); }
+  pop(g2, t, EV.land[0], 'CLICK!', S.CX, 1380);
+  // problem
+  pill(g2, fade(t, 2.75, 6.0), 'NO LATCH', 560, 54, 'rgba(12,14,20,0.86)', '#ff7a1a');
+  S.caption(g2, fade(t, 4.25, 6.0), 'IT BOUNCES BACK OPEN', 440, 72, '#ffffff');
+  S.caption(g2, fade(t, 2.75, 4.25), 'PUSH IT SHUT...', 440, 72, '#ffffff');
+  const ap2 = fade(t, 3.0, 4.1, 0.2); if (ap2 > 0) { const [x, y] = scr(...gateP(-200, 600, 0)); S.forceArrow(g2, ap2, x - 190, y - 30, x, y + 20); }
+  // parts
+  S.caption(g2, fade(t, 6.3, 10.5), 'A BAR AND A CATCH', 440, 72, '#ffffff');
+  const a1 = fade(t, 6.6, 10.4); if (a1 > 0) { S.tag(g2, a1, 'BAR', ...scr(...gateP(-95, Y0 + 20, 13)), -60, 190, 46);
+    S.tag(g2, fade(t, 7.2, 10.4), 'PIN', ...scr(...gateP(-150, Y0 + 10, 16)), -40, -170, 46);
+    S.tag(g2, fade(t, 8.0, 10.4), 'CATCH', ...kp(40, 0), 70, -190, 46); S.tag(g2, fade(t, 8.6, 10.4), 'RAMP', ...kp(44, 1), 40, 200, 44, '#ffd21f'); }
+  // steps (side view)
+  const rampPts = [kp(62, -10), kp(22.5, 13.2), kp(19.6, 14)];
+  S.caption(g2, fade(t, 10.7, 14.35), 'RAMP LIFTS THE BAR', 440, 68, '#ffffff', 1);
+  poly(g2, fade(t, 10.9, 14.6) * (0.75 + 0.25 * Math.sin(t * 6)), rampPts, '#ffd21f', 12);
+  const au = fade(t, 12.0, 14.3); if (au > 0) { const [x, y] = scr(...gateP(XK + 25, Y0 + k[2] + 10, 10)); S.forceArrow(g2, au, x + 30, y + 120, x + 30, y - 10, 22); }
+  S.caption(g2, fade(t, 14.35, 17.4), 'GRAVITY DROPS IT IN', 440, 68, '#ffffff', 2);
+  const ad = fade(t, 14.9, 15.6, 0.15); if (ad > 0) { const [x, y] = scr(...gateP(XK + 25, Y0 + k[2] + 10, 10)); S.forceArrow(g2, ad, x + 30, y - 150, x + 30, y - 30, 22); }
+  poly(g2, fade(t, 15.4, 17.3), [kp(18, 11), kp(18, -4), kp(6, -4), kp(6, 12)], '#3ddc84', 10);
+  if (fade(t, 15.5, 17.3) > 0) S.tag(g2, fade(t, 15.5, 17.3), 'NOTCH', ...kp(12, -4), 120, 170, 46, '#3ddc84');
+  pop(g2, t, EV.land[1], 'CLICK!', S.CX, 1290);
+  S.caption(g2, fade(t, 17.4, 20.5), 'PULL: THE WALL STOPS IT', 440, 64, '#ffffff', 3);
+  const apl = fade(t, 17.5, 20.3, 0.2); if (apl > 0) { const [x, y] = scr(...gateP(XK + 25, Y0 + 10, 10)); S.forceArrow(g2, apl, x + 60, y - 170, x - 170, y - 170, 24); }
+  poly(g2, fade(t, 18.25, 20.4) * (0.75 + 0.25 * Math.sin(t * 7)), [kp(18, -4), kp(18, 11), kp(18.6, 13.2)], '#ff7a1a', 14);
+  if (t > 18.3) S.tag(g2, fade(t, 18.35, 20.4), 'FLAT WALL', ...kp(18, 6), -80, 210, 46, '#ff7a1a');
+  pill(g2, fade(t, 18.6, 20.4), 'LOCKED', 1290, 60, 'rgba(12,14,20,0.86)', '#3ddc84');
+  const apy = fade(t, 20.7, 23.3, 0.3); if (apy > 0) { g2.save(); g2.globalAlpha = apy; S.outlined(g2, 'A RAMP TO GET IN', S.CX, 520, 100, '#ffffff'); S.outlined(g2, 'A WALL TO STOP IT', S.CX, 632, 100, '#ffd21f'); g2.restore();
+    poly(g2, apy, rampPts, '#ffd21f', 10); poly(g2, apy, [kp(18, -4), kp(18, 11)], '#ff7a1a', 12); }
+  // open
+  S.caption(g2, fade(t, 23.4, 25.0), 'LIFT TO OPEN', 440, 72, '#ffffff');
+  const al = fade(t, 23.4, 24.6, 0.2); if (al > 0) { const [x, y] = scr(...gateP(-90, Y0 + 10 + k[2] * 60 / G.LP, 32)); S.forceArrow(g2, al, x, y + 170, x, y + 22, 24); }
+  pill(g2, fade(t, 24.7, 26.0, 0.25), 'FOLLOW → A NEW MACHINE EVERY DAY', 1395, 44, 'rgba(12,14,20,0.8)', '#ffffff');
+}
+const hookPt = [0, 0];
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+// hook red-circle point from the first frame's camera
+setScene(0); hookPt.splice(0, 2, ...S.toScreen(camera, new THREE.Vector3(XK + 3.5, Y0 + 4, 30)));
+window.ready = true;
+</script></body></html>
