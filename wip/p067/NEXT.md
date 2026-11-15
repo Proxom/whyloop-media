@@ -7,3 +7,8 @@ Rebuild: venv(kokoro-onnx 0.6.1 numpy soundfile shapely pyspellchecker): python 
 Render: python3 -m http.server 8765 --bind 127.0.0.1 (repo root); 3 workers: node tools/render/render.js wip/p067/scene.html <out> 30 1 0 792 0.7 0 <w> 3 1080 1920 1 (AO off: AO costs +65 % per frame)
 then tools/render/encode.sh <out> wip/p067/mix.wav latch_reel.mp4 26.4 30
 Left: final render -> encode -> HARD GATE -> clarity gate + visual review -> schedule 16 Nov 17:00.
+
+STATUS (15 Nov 13:07 run, ig-sweet-lamport-1311): v1 = latch_reel.mp4 + latch_cover.jpg (render 13:27-13:42, ~15 min, 3 workers, scale 0.7, AO off).
+HARD GATE v1 PASS: 1080x1920 30 fps H.264 High yuv420p + AAC 48 kHz, 26.4 s, -15.1 LUFS / -3.0 dBTP, HP4k gap 19.7 dB, first/last luma 93 (no black), loop seam 0.26,
+frame spikes only at the planned hard cut 2.73 s and the push-in ~6.7 s; safe zones clear at 0.5 s; check.py PASS; spellcheck only hashtag/handle flags.
+Clarity + visual review running.
