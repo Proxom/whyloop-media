@@ -2,6 +2,14 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 15 Nov 2026 17:19): NO REPEATED TOPICS — HARD GATE, before any script or scene work
+Erkan found repeats (the combination lock and the car differential were each posted twice). From now on:
+1. TOPIC REGISTRY: keep learnings/topics-used.md = one row per video ever published or scheduled on this account (from Metricool published + scheduled posts AND the posts/ folder): date, title, and a canonical TOPIC KEY = the object/mechanism/subject in 1-3 lowercase words (e.g. "combination lock", "car differential", "iss speed", "black hole interior"). Build it fully in the next run (go back to the first post), then update it every time a video is scheduled.
+2. CHECK BEFORE MAKING: before choosing a topic, compare its TOPIC KEY and its core question with every row. If the same object/mechanism/subject was already covered in ANY format, length or angle (old long format counts too), it is BLOCKED. Synonyms count (diff / differential gear; padlock / combination lock; spacewalk / EVA). If unsure, treat it as a repeat and pick another topic.
+3. The only exception: a clearly new part 2 that Erkan approves in advance (approval request), titled "Part 2".
+4. Write in the daily report for each new video: "topic key: X — not in registry (checked N rows)".
+5. Videos already scheduled stay; if a scheduled video turns out to repeat a topic, say so in the daily report (do not delete it).
+
 ## TOP OVERRIDE (Erkan, 15 Nov 2026 14:59): QUEUE TARGET = 2 (was 3) — overrides the queue numbers in every rule below
 - QUEUE 2 or more: do NOT make a new video. Short check only (max 15 min), then end.
 - QUEUE 0 or 1: make videos until QUEUE is 2 (same gate, next empty 17:00 slots).
