@@ -1,0 +1,193 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p068 hanging dial spring scale "HOW DOES IT / WEIGH THIS?" (group E, track A voice). mm; front view x right, y up, z toward the viewer.
+// Pinion + needle axis at (0,0). kin.json rows: [t, crossbar drop d (mm), needle angle deg (negative = clockwise), load kg]
+import * as S from '/tools/render/lib/studio.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const THREE = S.THREE;
+const G = await (await fetch('geom.json')).json();
+const K = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, EV = G.EV, D2R = Math.PI / 180, D2 = G.D2;
+const st = S.makeStudio({ fov: 30, bg: 0xcbb9a2, envIntensity: 0.9, bloom: 0, near: 5, far: 9000, samples: 0 });
+const { scene, camera } = st;
+const phys = (o) => new THREE.MeshPhysicalMaterial(o), std = (o) => new THREE.MeshStandardMaterial(o);
+const fine = S.noiseTex(9, 150, 26, 256); fine.repeat.set(0.05, 0.05);
+const M = {
+  enamel: phys({ color: 0xb3221c, metalness: 0.0, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.12 }),
+  chrome: phys({ color: 0xe6e9ee, metalness: 1.0, roughness: 0.12 }),
+  steel: phys({ color: 0xb9bfc6, metalness: 1.0, roughness: 0.3, roughnessMap: fine }),
+  spring: phys({ color: 0xc9ced4, metalness: 1.0, roughness: 0.22 }),
+  brass: phys({ color: 0xd8a54a, metalness: 1.0, roughness: 0.25, clearcoat: 0.3 }),
+  dark: phys({ color: 0x2b2e33, metalness: 0.6, roughness: 0.45 }),
+  inside: std({ color: 0x3a3f47, roughness: 0.7, metalness: 0.2 }),
+  needle: phys({ color: 0xd8261c, roughness: 0.35, clearcoat: 0.8 }),
+  weight: phys({ color: 0xa9b0b8, metalness: 1.0, roughness: 0.2, roughnessMap: fine }),
+};
+// ---------- set: cyclorama + wooden beam with a hook ----------
+S.cyclorama(scene, { floorY: -520, zFront: 900, zBack: -420, R: 300, h: 2200, width: 4000, floor: '#8c7660', wall: '#d8c7ae' });
+const Lt = S.studioLights(scene, new THREE.Vector3(0, -40, 0), 260);
+const beamTex = S.woodTex(5, 10); beamTex.repeat.set(1, 0.3);
+const beam = new THREE.Mesh(new RoundedBoxGeometry(1400, 70, 90, 3, 6), std({ map: beamTex, roughness: 0.7, color: 0xb89b7e })); beam.position.set(-150, 205, -60); scene.add(beam);
+{ const c = new THREE.CatmullRomCurve3([[0, 170, -20], [0, 150, -2], [0, 132, 0], [8, 122, 0], [14, 130, 0]].map(p => new THREE.Vector3(...p)));
+  scene.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, 2.6, 12), M.dark)); }
+// ---------- casing: open cylinder shell + back plate + top loop + chrome bezel ----------
+const R0 = 92, ZF = 22, ZB = -24;
+{ const shell = new THREE.Mesh(new THREE.CylinderGeometry(R0, R0, ZF - ZB, 96, 1, true), M.enamel); shell.rotation.x = Math.PI / 2; shell.position.z = (ZF + ZB) / 2; scene.add(shell);
+  const shellIn = new THREE.Mesh(new THREE.CylinderGeometry(R0 - 2, R0 - 2, ZF - ZB, 96, 1, true), M.inside); shellIn.material = M.inside.clone(); shellIn.material.side = THREE.BackSide; shellIn.rotation.x = Math.PI / 2; shellIn.position.z = (ZF + ZB) / 2; scene.add(shellIn);
+  const back = new THREE.Mesh(new THREE.CircleGeometry(R0, 96), M.inside); back.position.z = -20; scene.add(back);
+  const backOut = new THREE.Mesh(new THREE.CircleGeometry(R0, 96), M.enamel); backOut.rotation.y = Math.PI; backOut.position.z = ZB; scene.add(backOut);
+  const bez = new THREE.Mesh(new THREE.TorusGeometry(R0 - 1, 4.2, 20, 120), M.chrome); bez.position.z = ZF; scene.add(bez);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(7, 9, 14, 24), M.enamel); neck.position.set(0, R0 + 5, 0); scene.add(neck);
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(12, 3, 16, 48), M.chrome); loop.position.set(0, R0 + 24, 0); loop.rotation.y = Math.PI / 2; scene.add(loop);
+  const bot = new THREE.Mesh(new THREE.CylinderGeometry(9, 7, 10, 24), M.enamel); bot.position.set(0, -R0 - 3, -6); scene.add(bot); }
+// ---------- dial: opaque ring with ticks/numbers + inner disc that fades for the cutaway ----------
+function dialCanvas() { const c = document.createElement('canvas'); c.width = c.height = 2048; const g = c.getContext('2d'); const s = 1024 / 86, C = 1024;
+  g.fillStyle = '#f6f2e8'; g.fillRect(0, 0, 2048, 2048); g.strokeStyle = '#15171b'; g.fillStyle = '#15171b';
+  for (let i = 0; i <= 50; i++) { const kg = i / 5, a = (kg / G.DIAL_MAX * G.DIAL_SPAN) * D2R; const maj = i % 5 === 0; const r0 = (maj ? 76 : 80.5) * s, r1 = 85 * s;
+    g.lineWidth = maj ? 16 : 7; g.beginPath(); g.moveTo(C + Math.sin(a) * r0, C - Math.cos(a) * r0); g.lineTo(C + Math.sin(a) * r1, C - Math.cos(a) * r1); g.stroke();
+    if (maj) { g.font = `${Math.round(11 * s)}px Anton`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(kg), C + Math.sin(a) * 67 * s, C - Math.cos(a) * 67 * s); } }
+  g.lineWidth = 6; g.beginPath(); g.arc(C, C, 85.5 * s, 0, 7); g.stroke();
+  g.font = `${Math.round(9 * s)}px Anton`; g.textAlign = 'center'; g.fillStyle = '#b3221c'; g.fillText('kg', C, C + 34 * s);
+  g.font = `${Math.round(4.6 * s)}px Anton`; g.fillStyle = '#15171b'; g.letterSpacing = '12px'; g.fillText('WHYLOOP', C, C - 30 * s);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; }
+const dialTex = dialCanvas();
+const ringM = std({ map: dialTex, roughness: 0.5 }), discM = std({ map: dialTex, roughness: 0.5, transparent: true, opacity: 1 });
+{ const rg = new THREE.RingGeometry(58, 88, 120, 1); const p = rg.attributes.position, uv = rg.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 172 + 0.5, p.getY(i) / 172 + 0.5);
+  const ring = new THREE.Mesh(rg, ringM); ring.position.z = 14; scene.add(ring);
+  const cg = new THREE.CircleGeometry(58, 96); const q = cg.attributes.position, uq = cg.attributes.uv; for (let i = 0; i < q.count; i++) uq.setXY(i, q.getX(i) / 172 + 0.5, q.getY(i) / 172 + 0.5);
+  var disc = new THREE.Mesh(cg, discM); disc.position.z = 13.9; scene.add(disc); }
+// needle (pivot at 0,0): extruded red pointer + chrome cap
+const needle = new THREE.Group(); needle.position.z = 16; scene.add(needle);
+{ const sh = new THREE.Shape(); sh.moveTo(-2.4, -14); sh.lineTo(-1.6, 60); sh.lineTo(0, 80); sh.lineTo(1.6, 60); sh.lineTo(2.4, -14); sh.lineTo(-2.4, -14);
+  needle.add(S.extrude(sh, 0, 1.4, M.needle, 0.3, 4)); M.cap = M.chrome.clone(); M.cap.transparent = true; const cap = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 4, 32), M.cap); cap.rotation.x = Math.PI / 2; cap.position.z = 2; needle.add(cap); }
+// ---------- mechanism (behind the dial) ----------
+const MZ = -5;
+const brk = new THREE.Mesh(new RoundedBoxGeometry(92, 9, 16, 2, 1.5), M.steel); brk.position.set(0, 42.5, MZ); scene.add(brk);
+for (const x of [-40, 40]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 16, 16), M.steel); p.rotation.x = Math.PI / 2; p.position.set(x, 42.5, -14); scene.add(p); }
+const cross = new THREE.Mesh(new RoundedBoxGeometry(86, 7, 14, 2, 1.5), M.steel); scene.add(cross);
+const rack = new THREE.Group(); scene.add(rack);
+{ const m = S.extrude(S.shapeOf(G.RACK0), -4, 4, M.brass, 0.25, 2); rack.add(m); const b = new THREE.Mesh(new THREE.BoxGeometry(4.75, 10, 8), M.brass); b.position.set(7.25 + 4.75 / 2, -10.5, 0); rack.add(b); rack.position.z = MZ + 1; }
+const pinion = new THREE.Group(); scene.add(pinion); pinion.position.z = MZ + 1;
+{ pinion.add(S.extrude(S.shapeOf(G.PINION), -3.5, 3.5, M.brass, 0.25, 2)); const sh = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 34, 16), M.steel); sh.rotation.x = Math.PI / 2; sh.position.z = 4; scene.add(sh); sh.position.z = MZ + 6; }
+const rod = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 1, 16), M.steel); rod.position.z = -6; scene.add(rod);
+const hookT = new THREE.Mesh(new THREE.TorusGeometry(7, 2.2, 12, 32), M.steel); hookT.position.z = -6; scene.add(hookT);
+const springs = [-34, 34].map(x => { const m = new THREE.Mesh(new THREE.BufferGeometry(), M.spring); m.position.set(x, 0, MZ); scene.add(m); return m; });
+function springGeo(top, bot) { const turns = 8.5, R = 6.2, N = 260; const pts = []; for (let i = 0; i <= N; i++) { const u = i / N; const y = top - (top - bot) * (0.06 + 0.88 * u) ; const a = u * turns * Math.PI * 2; pts.push(new THREE.Vector3(R * Math.cos(a), y, R * Math.sin(a))); }
+  pts.unshift(new THREE.Vector3(R, top, 0)); pts.push(new THREE.Vector3(R * Math.cos(turns * Math.PI * 2), bot, R * Math.sin(turns * Math.PI * 2)));
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 520, 0.95, 8); }
+// pan hung on three wires + two 2 kg weights
+const pan = new THREE.Group(); scene.add(pan);
+{ const prof = [[0, -12], [40, -12], [58, -8], [66, 0], [67.5, 1.2], [66.2, 2], [63.8, 0.6], [55.5, -6.2], [39, -9.8], [0, -9.8]].map(p => new THREE.Vector2(p[0], p[1]));
+  pan.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 96), M.chrome));
+  for (let i = 0; i < 3; i++) { const a = i * Math.PI * 2 / 3 + Math.PI / 6; const c = new THREE.LineCurve3(new THREE.Vector3(Math.cos(a) * 62, 1.5, Math.sin(a) * 62), new THREE.Vector3(0, 86, 0));
+    pan.add(new THREE.Mesh(new THREE.TubeGeometry(c, 2, 0.8, 6), M.steel)); }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 1.4, 10, 24), M.steel); ring.position.y = 88; pan.add(ring); }
+function weightTex() { const c = document.createElement('canvas'); c.width = 2048; c.height = 256; const g = c.getContext('2d'); g.fillStyle = '#a9b0b8'; g.fillRect(0, 0, 2048, 256);
+  g.font = '110px Anton'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(40,44,50,0.9)'; for (const x of [256, 1280]) g.fillText('2 kg', x, 132);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+const WH = 34, WR = 24;
+const wMat = M.weight.clone(); wMat.map = weightTex();
+const mkW = () => { const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.CylinderGeometry(WR, WR, WH, 72, 1, false), [wMat, M.weight, M.weight]); body.position.y = WH / 2; g.add(body);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(WR - 0.6, 0.9, 8, 72), M.weight); lip.rotation.x = Math.PI / 2; lip.position.y = WH; g.add(lip); g.rotation.y = 0.35; scene.add(g); return g; };
+const W1 = mkW(), W2 = mkW();
+M.needle.transparent = true;
+S.shadowAll(scene);
+for (const m of [disc]) { m.castShadow = false; }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const sm = S.smooth, PAN0 = -236, ROD_TOP = -22, ROD_BOT = -138;
+const ease = (u) => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 2.2), easeIn = (u) => Math.pow(Math.max(0, Math.min(1, u)), 2);
+// weight offsets from their rest spot (dx, dy): placed from the front right, lifted away to the right
+function wOff(t, which) {
+  const OUT = [230, 170];
+  if (which === 1) {
+    if (t < EV.drop1) { const u = t / EV.drop1; return [0, 25 * (1 - u * u)]; }
+    if (t < EV.cut) return [0, 0];
+    if (t < 6.3) return null;
+    if (t < EV.place1) { const u = ease((t - 6.3) / (EV.place1 - 6.3)); return [OUT[0] * (1 - u), OUT[1] * (1 - u) * (1 - u)]; }
+    if (t < EV.lift) return [0, 0];
+    if (t < 23.85) { const u = easeIn((t - EV.lift) / 0.65); return [OUT[0] * u, OUT[1] * Math.sqrt(u)]; }
+    if (t < 24.25) return null;
+    const u = ease((t - 24.25) / (LOOP - 24.25)); return [OUT[0] * (1 - u), 25 + (OUT[1] - 25) * (1 - u) * (1 - u)];
+  }
+  if (t < 10.9 || t > 23.9) return null;
+  if (t < EV.place2) { const u = ease((t - 10.9) / (EV.place2 - 10.9)); return [OUT[0] * (1 - u), OUT[1] * (1 - u) * (1 - u)]; }
+  if (t < EV.lift) return [0, 0];
+  const u = easeIn((t - EV.lift) / 0.65); return [OUT[0] * u, OUT[1] * Math.sqrt(u)];
+}
+// ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, 0, -58, 0, 960, 4, 16];
+const PARTS = [0, 0, 6, 0, 500, 2, 7], WIDE = [0, 0, -66, 0, 900, 3, 11], CLOSE = [0, 5, 4, 0, 235, 1, 4], MID = [0, 30, -22, 0, 300, 2, 8];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAM = [k_(0, HOOK), k_(0.99, [0, 0, -58, 0, 930, 4, 15]), k_(1.0, HOOK), k_(2.0, HOOK), k_(3.0, PARTS), k_(5.5, [0, 0, 6, 0, 485, 2, 8]), k_(6.3, WIDE), k_(10.1, [0, 0, -66, 0, 870, 3, 10]),
+  k_(10.9, CLOSE), k_(15.0, [0, 5, 4, 0, 225, 1, 5]), k_(15.8, MID), k_(19.6, [0, 30, -22, 0, 290, 2, 8]), k_(20.9, HOOK), k_(LOOP, HOOK)];
+const cutA = (t) => t < 2.0 ? 1 : (t < 19.9 ? 1 - S.smooth((t - 2.0) / 0.8) : S.smooth((t - 19.9) / 0.8));
+function setScene(t) {
+  const k = kin(t); const d = k[1];
+  needle.rotation.z = k[2] * D2R; pinion.rotation.z = k[2] * D2R;
+  rack.position.y = -d; cross.position.set(0, -18.5 - d, MZ);
+  rod.scale.y = ROD_TOP - ROD_BOT; rod.position.y = (ROD_TOP + ROD_BOT) / 2 - d; hookT.position.y = ROD_BOT - 6 - d;
+  for (const s of springs) { s.geometry.dispose(); s.geometry = springGeo(38, -15 - d); }
+  pan.position.y = PAN0 - d + 0; // pan hangs from the hook ring (ring top at PAN0 + 88)
+  const o1 = wOff(t, 1), o2 = wOff(t, 2); const base = PAN0 - 9.8 - d;
+  W1.visible = !!o1; if (o1) W1.position.set(o1[0], base + o1[1], o1[0] * 0.35);
+  W2.visible = !!o2; if (o2) W2.position.set(o2[0], base + WH + 0.2 + o2[1], o2[0] * 0.35);
+  const na = 1 - 0.7 * fade(t, 10.6, 15.2, 0.4); M.needle.opacity = na; M.needle.depthWrite = na > 0.98; M.cap.opacity = na; M.cap.depthWrite = na > 0.98;
+  const a = cutA(t); discM.opacity = a; discM.depthWrite = a > 0.98; disc.visible = a > 0.01;
+  const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
+}
+// ---------- overlay ----------
+const scr = (x, y, z) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, y, size = 46, fg = '#ffd21f', x = S.CX) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function pop(g2, t, t0, text, x, y, col = '#ffd21f', size = 110) { if (t < t0 - 0.05 || t > t0 + 0.9) return; const kk = 1 + 0.25 * Math.exp(-(t - t0) * 12); g2.save(); g2.globalAlpha = fade(t, t0 - 0.05, t0 + 0.9, 0.1); g2.translate(x, y); g2.scale(kk, kk); S.outlined(g2, text, 0, 0, size, col); g2.restore(); }
+function bracket(g2, a, x, y0, y1, col, text) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round';
+  for (const [w, c] of [[18, 'rgba(0,0,0,0.7)'], [10, col]]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); g2.moveTo(x - 30, y0); g2.lineTo(x, y0); g2.lineTo(x, y1); g2.lineTo(x - 30, y1); g2.stroke(); }
+  g2.restore(); if (text) S.tag(g2, a, text, x, (y0 + y1) / 2, 40, 0, 44, col); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = kin(t), d = k[1];
+  // hook (and faded back in at the loop end so the last frame matches the first)
+  const hk = t < 3 ? 1 - S.smooth((t - 2.25) / 0.35) : S.smooth((t - 24.55) / 0.4);
+  if (hk > 0) { S.hookCard(g2, hk, 'HOW DOES IT', 'WEIGH THIS?', 124, false); const [cx, cy] = scr(0, -14, 16); S.redCircle(g2, hk, cx, cy, 92, [-230, 170]); }
+  if (t < EV.cut) { const kg = Math.max(0, k[3] > 0 ? -k[2] / 30 : 0); pill(g2, fade(t, 0.3, 1.0, 0.1), '2 KG', 1385, 54, '#ffd21f'); }
+  // parts
+  const ap = fade(t, 2.9, 5.7); if (ap > 0) { S.tag(g2, ap, 'SPRINGS', ...scr(-34 - 6, 12 - d / 2, MZ), -70, 170, 46);
+    S.tag(g2, fade(t, 3.5, 5.7), 'RACK', ...scr(11, 20 - d, MZ + 2), 80, -120, 46);
+    S.tag(g2, fade(t, 4.1, 5.7), 'GEAR', ...scr(-4, -4, MZ + 4), -60, 200, 46, '#ffd21f'); }
+  // step 1
+  S.caption(g2, fade(t, 5.9, 10.3), 'WEIGHT STRETCHES THE SPRINGS', 440, 60, '#ffffff', 1);
+  const as = fade(t, 7.45, 10.1); if (as > 0) { for (const x of [-34, 34]) { const [px, py] = scr(x + (x < 0 ? -16 : 16), -15 - d, MZ); const [qx, qy] = scr(x + (x < 0 ? -16 : 16), 38, MZ);
+      g2.save(); g2.globalAlpha = as; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.setLineDash([12, 10]); g2.beginPath(); g2.moveTo(qx, qy); g2.lineTo(px, py); g2.stroke(); g2.restore(); }
+    const [x, y] = scr(0, -150 - d, 0); S.forceArrow(g2, fade(t, 7.3, 9.0, 0.2), x + 210, y - 120, x + 210, y + 40, 24); }
+  pill(g2, fade(t, 7.9, 10.2), '2 KG', 1385, 54);
+  // step 2 (close)
+  S.caption(g2, fade(t, 10.4, 15.1), 'THE RACK TURNS THE GEAR', 440, 66, '#ffffff', 2);
+  pill(g2, fade(t, 11.0, 12.6), '+2 KG', 1385, 54, '#ff7a1a');
+  const ar = fade(t, 11.7, 14.6, 0.2); if (ar > 0) { const [x, y] = scr(16, 12 - d, MZ); S.forceArrow(g2, ar, x + 90, y - 150, x + 90, y + 40, 24);
+    const [cx, cy] = scr(0, 0, MZ + 4); const R = Math.abs(scr(7.5, 0, MZ + 4)[0] - cx) + 26; g2.save(); g2.globalAlpha = ar; g2.lineCap = 'round';
+    for (const [w, c] of [[18, 'rgba(0,0,0,0.6)'], [10, '#ff7a1a']]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); g2.arc(cx, cy, R, -2.6, -0.5); g2.stroke(); }
+    const ea = -0.5, ex = cx + R * Math.cos(ea), ey = cy + R * Math.sin(ea); g2.fillStyle = '#ff7a1a'; g2.beginPath(); g2.moveTo(ex + 22, ey + 22); g2.lineTo(ex - 26, ey + 8); g2.lineTo(ex + 6, ey - 30); g2.closePath(); g2.fill(); g2.restore(); }
+  pill(g2, fade(t, 13.2, 15.1), '4 KG', 1385, 54);
+  // step 3 (twice the weight, twice the stretch): brackets at the crossbar positions for 0, 2 and 4 kg
+  S.caption(g2, fade(t, 15.6, 19.7), '2X WEIGHT = 2X STRETCH', 440, 70, '#ffffff', 3);
+  const ab = fade(t, 16.2, 19.6); if (ab > 0) { const X = 46, yA = scr(X, -15, MZ)[1], yB = scr(X, -15 - D2, MZ)[1], yC = scr(X, -15 - 2 * D2, MZ)[1], [x] = scr(X, -15, MZ);
+    bracket(g2, ab, x, yA, yB, '#ffd21f', null); bracket(g2, fade(t, 16.9, 19.6), x + 0, yB + 4, yC, '#ff7a1a', null);
+    S.tag(g2, ab, '2 KG', x, (yA + yB) / 2, 90, -120, 50, '#ffd21f'); S.tag(g2, fade(t, 16.9, 19.6), '+2 KG', x, (yB + yC) / 2, 90, 130, 50, '#ff7a1a'); }
+  // payoff
+  const apy = fade(t, 20.0, 23.0, 0.3); if (apy > 0) { g2.save(); g2.globalAlpha = apy; S.outlined(g2, 'SPRINGS FEEL THE WEIGHT', S.CX, 520, 80, '#ffffff'); S.outlined(g2, 'THE GEAR READS IT', S.CX, 620, 96, '#ffd21f'); g2.restore(); }
+  pill(g2, fade(t, 23.2, 24.6, 0.25), 'FOLLOW → A NEW MACHINE EVERY DAY', 1395, 44, '#ffffff');
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+dialTex.image = dialCanvas().image; dialTex.needsUpdate = true; wMat.map = weightTex(); wMat.needsUpdate = true;
+window.ready = true;
+</script></body></html>

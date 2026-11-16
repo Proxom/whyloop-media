@@ -1,0 +1,32 @@
+[
+ {
+  "i": 0,
+  "text": "How does a scale know the weight?",
+  "dur": 1.472
+ },
+ {
+  "i": 1,
+  "text": "Inside: two springs, a toothed rack, and a small gear.",
+  "dur": 2.987
+ },
+ {
+  "i": 2,
+  "text": "Hang two kilos. The weight pulls down and stretches the springs.",
+  "dur": 3.392
+ },
+ {
+  "i": 3,
+  "text": "The rack slides down with them. Its teeth turn the gear, and the gear turns the needle.",
+  "dur": 4.352
+ },
+ {
+  "i": 4,
+  "text": "Twice the weight, twice the stretch. That's why the marks are evenly spaced.",
+  "dur": 3.925
+ },
+ {
+  "i": 5,
+  "text": "The springs feel the weight. The gear just reads it.",
+  "dur": 2.56
+ }
+]
