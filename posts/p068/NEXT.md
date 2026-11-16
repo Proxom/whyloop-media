@@ -7,3 +7,7 @@ Rebuild: venv(kokoro-onnx 0.6.1 numpy soundfile shapely pyspellchecker): python 
 Render: python3 -m http.server 8765 --bind 127.0.0.1 (repo root); 3 workers: node tools/render/render.js wip/p068/scene.html <out> 30 1 0 750 1 1 <w> 3 1080 1920 1 (AO on, SMAA; 3.5 s/frame single)
 then tools/render/encode.sh <out> wip/p068/mix.wav scale_reel.mp4 25 30
 Left: final render (started 05:22 UTC) -> encode -> HARD GATE -> clarity gate + ONE visual review -> schedule 17 Nov 17:00.
+
+STATUS (16 Nov 05:07 run, end): SCHEDULED 17 Nov 2026 17:00 Europe/London, Metricool 429630503 (PENDING). Media: media/p068/scale_reel_v2.mp4 + scale_cover_v2.jpg.
+v1: HARD GATE PASS, CLARITY PASS (14yo YES), visual 5/10 -> top-3 fixes once (rule 15 Nov 14:23), no re-score. v2: HARD GATE PASS (-15.1 LUFS / -3.0 dBTP, gap 19.5 dB, loop seam 0.23, only spike = planned push-in 12.2 s), check.py PASS.
+Reviewer points for the KIT (not this Reel): HDRI-like reflections, depth of field, contact shadows, rim light vs flat beige wall, interior depth.

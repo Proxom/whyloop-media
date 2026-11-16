@@ -61,7 +61,8 @@ Update this file every time a video is scheduled.
 | 2026-11-15 01:05 | p065 | Mousetrap: what holds it back | mousetrap | snap trap |
 | 2026-11-15 17:13 | p066 | Combination lock 3 spins (clarity) | combination lock | REPEAT of p042 (1M+ list #5) |
 | 2026-11-16 17:00 | p067 | How a gate locks itself | gate latch | gravity latch, self-locking gate latch (scheduled 16 Nov 05:07 run) |
+| 2026-11-17 17:00 | p068 | How a scale knows the weight | spring scale | dial scale, spring balance, kitchen/bathroom scale, Hooke's law scale (scheduled 16 Nov 05:07 run) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
-BLOCKED from the 1M+ list: #7 pin tumbler lock (= p010, 29 Oct). Next free list items: #8 spring scale, #9 car clutch.
+BLOCKED from the 1M+ list: #7 pin tumbler lock (= p010, 29 Oct). #8 spring scale = p068 (17 Nov). Next free list item: #9 car clutch; after that, the scorecard list (learnings/reel-scorecard-2026-11-16.md).
