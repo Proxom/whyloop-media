@@ -21,12 +21,12 @@ const phys = (o) => new THREE.MeshPhysicalMaterial(o), std = (o) => new THREE.Me
 const fine = S.noiseTex(9, 150, 26, 256); fine.repeat.set(0.05, 0.05);
 const M = {
   enamel: phys({ color: 0xb3221c, metalness: 0.0, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.12 }),
-  chrome: phys({ color: 0xe6e9ee, metalness: 1.0, roughness: 0.12 }),
+  chrome: phys({ color: 0xe6e9ee, metalness: 1.0, roughness: 0.08, envMapIntensity: 1.6 }),
   steel: phys({ color: 0xb9bfc6, metalness: 1.0, roughness: 0.3, roughnessMap: fine }),
-  spring: phys({ color: 0xc9ced4, metalness: 1.0, roughness: 0.22 }),
-  brass: phys({ color: 0xd8a54a, metalness: 1.0, roughness: 0.25, clearcoat: 0.3 }),
+  spring: phys({ color: 0xc9ced4, metalness: 1.0, roughness: 0.16, envMapIntensity: 1.5 }),
+  brass: phys({ color: 0xd8a54a, metalness: 1.0, roughness: 0.3, roughnessMap: fine, clearcoat: 0.3, envMapIntensity: 1.4 }),
   dark: phys({ color: 0x2b2e33, metalness: 0.6, roughness: 0.45 }),
-  inside: std({ color: 0x3a3f47, roughness: 0.7, metalness: 0.2 }),
+  inside: phys({ color: 0x23272d, roughness: 0.42, metalness: 0.7, roughnessMap: fine, clearcoat: 0.2 }),
   needle: phys({ color: 0xd8261c, roughness: 0.35, clearcoat: 0.8 }),
   weight: phys({ color: 0xa9b0b8, metalness: 1.0, roughness: 0.2, roughnessMap: fine }),
 };
@@ -65,8 +65,8 @@ const ringM = std({ map: dialTex, roughness: 0.5 }), discM = std({ map: dialTex,
   var disc = new THREE.Mesh(cg, discM); disc.position.z = 13.9; scene.add(disc); }
 // needle (pivot at 0,0): extruded red pointer + chrome cap
 const needle = new THREE.Group(); needle.position.z = 16; scene.add(needle);
-{ const sh = new THREE.Shape(); sh.moveTo(-2.4, -14); sh.lineTo(-1.6, 60); sh.lineTo(0, 80); sh.lineTo(1.6, 60); sh.lineTo(2.4, -14); sh.lineTo(-2.4, -14);
-  needle.add(S.extrude(sh, 0, 1.4, M.needle, 0.3, 4)); M.cap = M.chrome.clone(); M.cap.transparent = true; const cap = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 4, 32), M.cap); cap.rotation.x = Math.PI / 2; cap.position.z = 2; needle.add(cap); }
+{ const sh = new THREE.Shape(); sh.moveTo(-1.8, -7); sh.lineTo(-1.3, 60); sh.lineTo(0, 80); sh.lineTo(1.3, 60); sh.lineTo(1.8, -7); sh.lineTo(-1.8, -7);
+  needle.add(S.extrude(sh, 0, 1.4, M.needle, 0.3, 4)); M.cap = M.chrome.clone(); M.cap.transparent = true; const cap = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 4, 32), M.cap); cap.rotation.x = Math.PI / 2; cap.position.z = 2; needle.add(cap); }
 // ---------- mechanism (behind the dial) ----------
 const MZ = -5;
 const brk = new THREE.Mesh(new RoundedBoxGeometry(92, 9, 16, 2, 1.5), M.steel); brk.position.set(0, 42.5, MZ); scene.add(brk);
@@ -86,11 +86,11 @@ function springGeo(top, bot) { const turns = 8.5, R = 6.2, N = 260; const pts = 
 const pan = new THREE.Group(); scene.add(pan);
 { const prof = [[0, -12], [40, -12], [58, -8], [66, 0], [67.5, 1.2], [66.2, 2], [63.8, 0.6], [55.5, -6.2], [39, -9.8], [0, -9.8]].map(p => new THREE.Vector2(p[0], p[1]));
   pan.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 96), M.chrome));
-  for (let i = 0; i < 3; i++) { const a = i * Math.PI * 2 / 3 + Math.PI / 6; const c = new THREE.LineCurve3(new THREE.Vector3(Math.cos(a) * 62, 1.5, Math.sin(a) * 62), new THREE.Vector3(0, 86, 0));
+  for (let i = 0; i < 3; i++) { const a = i * Math.PI * 2 / 3 + Math.PI / 6; const c = new THREE.LineCurve3(new THREE.Vector3(Math.cos(a) * 62, 1.5, Math.sin(a) * 62), new THREE.Vector3(0, 148, 0));
     pan.add(new THREE.Mesh(new THREE.TubeGeometry(c, 2, 0.8, 6), M.steel)); }
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 1.4, 10, 24), M.steel); ring.position.y = 88; pan.add(ring); }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 1.4, 10, 24), M.steel); ring.position.y = 150; pan.add(ring); }
 function weightTex() { const c = document.createElement('canvas'); c.width = 2048; c.height = 256; const g = c.getContext('2d'); g.fillStyle = '#a9b0b8'; g.fillRect(0, 0, 2048, 256);
-  g.font = '110px Anton'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(40,44,50,0.9)'; for (const x of [256, 1280]) g.fillText('2 kg', x, 132);
+  g.font = '110px Anton'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(40,44,50,0.9)'; for (const x of [256, 768, 1280, 1792]) g.fillText('2 kg', x, 132);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 const WH = 34, WR = 24;
 const wMat = M.weight.clone(); wMat.map = weightTex();
@@ -104,20 +104,20 @@ for (const m of [disc]) { m.castShadow = false; }
 const DT = 1 / G.FPS_K;
 const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
 function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(K.length - 2, Math.floor(t / DT)), u = (t - K[i][0]) / DT; const a = K[i], b = K[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
-const sm = S.smooth, PAN0 = -236, ROD_TOP = -22, ROD_BOT = -138;
+const sm = S.smooth, PAN0 = -270, ROD_TOP = -22, ROD_BOT = -112;
 const ease = (u) => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 2.2), easeIn = (u) => Math.pow(Math.max(0, Math.min(1, u)), 2);
 // weight offsets from their rest spot (dx, dy): placed from the front right, lifted away to the right
 function wOff(t, which) {
   const OUT = [230, 170];
   if (which === 1) {
-    if (t < EV.drop1) { const u = t / EV.drop1; return [0, 25 * (1 - u * u)]; }
+    if (t < EV.drop1) { const u = t / EV.drop1; return [0, 40 * (1 - u * u)]; }
     if (t < EV.cut) return [0, 0];
     if (t < 6.3) return null;
     if (t < EV.place1) { const u = ease((t - 6.3) / (EV.place1 - 6.3)); return [OUT[0] * (1 - u), OUT[1] * (1 - u) * (1 - u)]; }
     if (t < EV.lift) return [0, 0];
     if (t < 23.85) { const u = easeIn((t - EV.lift) / 0.65); return [OUT[0] * u, OUT[1] * Math.sqrt(u)]; }
     if (t < 24.25) return null;
-    const u = ease((t - 24.25) / (LOOP - 24.25)); return [OUT[0] * (1 - u), 25 + (OUT[1] - 25) * (1 - u) * (1 - u)];
+    const u = ease((t - 24.25) / (LOOP - 24.25)); return [OUT[0] * (1 - u), 40 + (OUT[1] - 40) * (1 - u) * (1 - u)];
   }
   if (t < 10.9 || t > 23.9) return null;
   if (t < EV.place2) { const u = ease((t - 10.9) / (EV.place2 - 10.9)); return [OUT[0] * (1 - u), OUT[1] * (1 - u) * (1 - u)]; }
@@ -126,10 +126,10 @@ function wOff(t, which) {
 }
 // ---------- camera: [t, tx, ty, tz, dist, elev, azim] ----------
 const HOOK = [0, 0, -58, 0, 960, 4, 16];
-const PARTS = [0, 0, 6, 0, 500, 2, 7], WIDE = [0, 0, -66, 0, 900, 3, 11], CLOSE = [0, 5, 4, 0, 235, 1, 4], MID = [0, 30, -22, 0, 300, 2, 8];
+const PARTS = [0, 0, 6, 0, 500, 2, 7], WIDE = [0, 0, -66, 0, 900, 3, 11], CLOSE = [0, 8, 10, 0, 340, 1, 4], MID = [0, 22, 30, 0, 440, 2, 8];
 const k_ = (t, a) => [t, ...a.slice(1)];
-const CAM = [k_(0, HOOK), k_(0.99, [0, 0, -58, 0, 930, 4, 15]), k_(1.0, HOOK), k_(2.0, HOOK), k_(3.0, PARTS), k_(5.5, [0, 0, 6, 0, 485, 2, 8]), k_(6.3, WIDE), k_(10.1, [0, 0, -66, 0, 870, 3, 10]),
-  k_(10.9, CLOSE), k_(15.0, [0, 5, 4, 0, 225, 1, 5]), k_(15.8, MID), k_(19.6, [0, 30, -22, 0, 290, 2, 8]), k_(20.9, HOOK), k_(LOOP, HOOK)];
+const CAM = [k_(0, HOOK), k_(0.99, [0, 0, -58, 0, 930, 4, 15]), k_(1.0, HOOK), k_(2.0, HOOK), k_(3.0, PARTS), k_(5.5, [0, 0, 6, 0, 485, 2, 8]), k_(6.3, WIDE), k_(11.65, [0, 0, -66, 0, 860, 3, 10]),
+  k_(12.45, CLOSE), k_(15.0, [0, 8, 10, 0, 325, 1, 5]), k_(15.8, MID), k_(19.6, [0, 22, 30, 0, 425, 2, 8]), k_(20.9, HOOK), k_(LOOP, HOOK)];
 const cutA = (t) => t < 2.0 ? 1 : (t < 19.9 ? 1 - S.smooth((t - 2.0) / 0.8) : S.smooth((t - 19.9) / 0.8));
 function setScene(t) {
   const k = kin(t); const d = k[1];
@@ -137,11 +137,11 @@ function setScene(t) {
   rack.position.y = -d; cross.position.set(0, -18.5 - d, MZ);
   rod.scale.y = ROD_TOP - ROD_BOT; rod.position.y = (ROD_TOP + ROD_BOT) / 2 - d; hookT.position.y = ROD_BOT - 6 - d;
   for (const s of springs) { s.geometry.dispose(); s.geometry = springGeo(38, -15 - d); }
-  pan.position.y = PAN0 - d + 0; // pan hangs from the hook ring (ring top at PAN0 + 88)
+  pan.position.y = PAN0 - d; // pan hangs from the hook ring (ring at PAN0 + 150)
   const o1 = wOff(t, 1), o2 = wOff(t, 2); const base = PAN0 - 9.8 - d;
   W1.visible = !!o1; if (o1) W1.position.set(o1[0], base + o1[1], o1[0] * 0.35);
   W2.visible = !!o2; if (o2) W2.position.set(o2[0], base + WH + 0.2 + o2[1], o2[0] * 0.35);
-  const na = 1 - 0.7 * fade(t, 10.6, 15.2, 0.4); M.needle.opacity = na; M.needle.depthWrite = na > 0.98; M.cap.opacity = na; M.cap.depthWrite = na > 0.98;
+  const na = 1; M.needle.opacity = na; M.needle.depthWrite = na > 0.98; M.cap.opacity = na; M.cap.depthWrite = na > 0.98;
   const a = cutA(t); discM.opacity = a; discM.depthWrite = a > 0.98; disc.visible = a > 0.01;
   const c = S.orbitCam(CAM, t); camera.position.copy(c.pos); camera.lookAt(c.target); camera.updateMatrixWorld();
 }
@@ -154,6 +154,7 @@ function bracket(g2, a, x, y0, y1, col, text) { if (a <= 0) return; g2.save(); g
   g2.restore(); if (text) S.tag(g2, a, text, x, (y0 + y1) / 2, 40, 0, 44, col); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = kin(t), d = k[1];
+  { const w = Math.max(0, 1 - Math.abs(t - EV.cut) / 0.12); if (w > 0) { g2.save(); g2.globalAlpha = 0.85 * w; g2.fillStyle = '#ffffff'; g2.fillRect(0, 0, 1080, 1920); g2.restore(); } }
   // hook (and faded back in at the loop end so the last frame matches the first)
   const hk = t < 3 ? 1 - S.smooth((t - 2.25) / 0.35) : S.smooth((t - 24.55) / 0.4);
   if (hk > 0) { S.hookCard(g2, hk, 'HOW DOES IT', 'WEIGH THIS?', 124, false); const [cx, cy] = scr(0, -14, 16); S.redCircle(g2, hk, cx, cy, 92, [-230, 170]); }
@@ -166,7 +167,8 @@ function overlay(t) {
   S.caption(g2, fade(t, 5.9, 10.3), 'WEIGHT STRETCHES THE SPRINGS', 440, 60, '#ffffff', 1);
   const as = fade(t, 7.45, 10.1); if (as > 0) { for (const x of [-34, 34]) { const [px, py] = scr(x + (x < 0 ? -16 : 16), -15 - d, MZ); const [qx, qy] = scr(x + (x < 0 ? -16 : 16), 38, MZ);
       g2.save(); g2.globalAlpha = as; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.setLineDash([12, 10]); g2.beginPath(); g2.moveTo(qx, qy); g2.lineTo(px, py); g2.stroke(); g2.restore(); }
-    const [x, y] = scr(0, -150 - d, 0); S.forceArrow(g2, fade(t, 7.3, 9.0, 0.2), x + 210, y - 120, x + 210, y + 40, 24); }
+    const [x, y] = scr(0, -190 - d, 0); S.forceArrow(g2, fade(t, 7.3, 9.0, 0.2), x + 210, y - 120, x + 210, y + 40, 24);
+    S.tag(g2, as, 'SPRINGS STRETCH', ...scr(34 + 16, -2 - d / 2, MZ), 40, 250, 44); }
   pill(g2, fade(t, 7.9, 10.2), '2 KG', 1385, 54);
   // step 2 (close)
   S.caption(g2, fade(t, 10.4, 15.1), 'THE RACK TURNS THE GEAR', 440, 66, '#ffffff', 2);
@@ -181,6 +183,9 @@ function overlay(t) {
   const ab = fade(t, 16.2, 19.6); if (ab > 0) { const X = 46, yA = scr(X, -15, MZ)[1], yB = scr(X, -15 - D2, MZ)[1], yC = scr(X, -15 - 2 * D2, MZ)[1], [x] = scr(X, -15, MZ);
     bracket(g2, ab, x, yA, yB, '#ffd21f', null); bracket(g2, fade(t, 16.9, 19.6), x + 0, yB + 4, yC, '#ff7a1a', null);
     S.tag(g2, ab, '2 KG', x, (yA + yB) / 2, 90, -120, 50, '#ffd21f'); S.tag(g2, fade(t, 16.9, 19.6), '+2 KG', x, (yB + yC) / 2, 90, 130, 50, '#ff7a1a'); }
+  const aa = fade(t, 16.2, 19.6); if (aa > 0) { const arc = (k0, k1, col, al) => { if (al <= 0) return; const P = []; for (let i = 0; i <= 24; i++) { const ang = (k0 + (k1 - k0) * i / 24) / G.DIAL_MAX * G.DIAL_SPAN * D2R; P.push(scr(Math.sin(ang) * 79, Math.cos(ang) * 79, 14.5)); }
+      g2.save(); g2.globalAlpha = al; g2.lineCap = 'round'; for (const [w, c] of [[22, 'rgba(0,0,0,0.55)'], [13, col]]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); };
+    arc(0.08, 1.92, '#ffd21f', aa); arc(2.08, 3.92, '#ff7a1a', fade(t, 16.9, 19.6)); }
   // payoff
   const apy = fade(t, 20.0, 23.0, 0.3); if (apy > 0) { g2.save(); g2.globalAlpha = apy; S.outlined(g2, 'SPRINGS FEEL THE WEIGHT', S.CX, 520, 80, '#ffffff'); S.outlined(g2, 'THE GEAR READS IT', S.CX, 620, 96, '#ffd21f'); g2.restore(); }
   pill(g2, fade(t, 23.2, 24.6, 0.25), 'FOLLOW → A NEW MACHINE EVERY DAY', 1395, 44, '#ffffff');
