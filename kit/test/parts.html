@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// KIT test bench: ?part=<name> shows one library part on the standard set with the standard rig, camera preset and text style.
+// t (seconds) animates the part through one cycle, so stills at different t check the pose() helpers.
+// ?part=all renders a gear-train + housing "hero" composite used for the render-time benchmark.
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const Q = new URLSearchParams(location.search); const PART = Q.get('part') || 'all'; const DOF = Q.get('dof') === '1';
+const st = K.makeKit({ dof: DOF ? { focus: 400, aperture: 0.6 } : null });
+const { scene } = st; const M = K.materials(); window.__st = st;
+const FLOOR = -60;
+K.backdrop(scene, { floorY: FLOOR });
+K.lightRig(scene, new THREE.Vector3(0, 0, 0), 90);
+let size = 90, ctr = [0, 0, 0], tick = () => {}, label = '';
+const add = (o) => { scene.add(o); return o; };
+const P = {
+  spur() { const a = add(K.spurGear(M.machined, { z: 24, m: 2.5, w: 10, bore: 8, holes: 5 })); const b = add(K.spurGear(M.brass, { z: 12, m: 2.5, w: 10, bore: 6 }));
+    const c = (24 + 12) * 2.5 / 2; b.position.x = c; a.position.x = -0; ctr = [c / 2 - 4, 0, 0]; size = 85; label = 'SPUR GEARS';
+    tick = (t) => { const th = t * 0.6; a.rotation.z = th; b.rotation.z = K.meshAngle(th, 24, 12); }; },
+  bevel() { const a = add(K.bevelGear(M.brass, { z: 20, m: 2.5, w: 9, cone: 45, bore: 6 })); const b = add(K.bevelGear(M.steel, { z: 20, m: 2.5, w: 9, cone: 45, bore: 6 }));
+    const rp = 25; a.rotation.x = -Math.PI / 2; a.position.y = -rp; b.rotation.y = Math.PI / 2; b.position.x = -rp; ctr = [-8, -8, 0]; size = 75; label = 'BEVEL GEARS';
+    tick = (t) => { a.rotation.z = t * 0.6; b.rotation.z = -t * 0.6 + Math.PI / 20; }; },
+  rack() { const r = add(K.rack(M.steel, { m: 2.5, L: 160, w: 10 })); const g = add(K.spurGear(M.brass, { z: 14, m: 2.5, w: 10, bore: 6 })); const rp = 14 * 2.5 / 2; g.position.y = rp;
+    ctr = [0, 5, 0]; size = 80; label = 'RACK + PINION';
+    tick = (t) => { const th = Math.sin(t * 0.8) * 1.2; g.rotation.z = -th + Math.PI / 14; r.position.x = -th * rp; }; },
+  piston() { const p = add(K.pistonCrank(M, { r: 20, l: 70, bore: 44 })); ctr = [0, 40, 0]; size = 95; label = 'PISTON + CRANK';
+    const cyl = add(K.housing(M, { R: 25, t: 2.5, H: 70, skin: M.alu })); cyl.position.y = 40; cyl.setCut(150);
+    tick = (t) => p.pose(t * 2.0 + 0.6); },
+  cam() { const c = add(K.camFollower(M, { base: 18, lift: 12 })); ctr = [0, 18, 0]; size = 70; label = 'CAM + FOLLOWER'; tick = (t) => c.pose(-t * 1.5); },
+  spring() { const s = add(K.spring(M.steel, { R: 12, wire: 1.6, turns: 9, len: 90 })); s.position.y = -45; const cap = add(new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 5, 48), M.alu)); ctr = [0, 0, 0]; size = 70; label = 'SPRING';
+    tick = (t) => { const L = 70 + 20 * Math.cos(t * 1.5); s.setLength(L); cap.position.y = -45 + L + 2.5; }; },
+  bearing() { const sh = add(K.shaft(M.steel, { d: 10, L: 120 })); const b = add(K.ballBearing(M, { d: 10, D: 30, B: 9, balls: 9 })); ctr = [0, 0, 0]; size = 55; label = 'SHAFT + BEARING';
+    b.rotation.y = 0.5; sh.rotation.y = 0.5; tick = (t) => { b.setSpin(t * 1.2); sh.rotation.z = t * 1.2; }; },
+  ratchet() { const r = add(K.ratchet(M, { z: 12, Ro: 30, depth: 6 })); ctr = [0, 15, 0]; size = 75; label = 'RATCHET + PAWL'; tick = (t) => r.pose(t * 0.7); },
+  lever() { const l = add(K.lever(M, { L: 100 })); l.position.x = -50; ctr = [0, 0, 0]; size = 115; label = 'LEVER'; tick = (t) => { l.rotation.z = 0.35 * Math.sin(t * 1.4); }; },
+  wheel() { const w = add(K.wheel(M, { R: 60, W: 26 })); w.rotation.y = 0.45; ctr = [0, 0, 0]; size = 125; label = 'WHEEL'; tick = (t) => { w.children.forEach(c => {}); w.rotation.z = t * 0.8; }; },
+  housing() { const h = add(K.housing(M, { R: 50, t: 4, H: 80, skin: M.paint(0xc8231b) })); h.position.y = -40; const g = add(K.spurGear(M.brass, { z: 20, m: 3, w: 10, bore: 8 })); g.rotation.x = -Math.PI / 2; g.position.y = -20;
+    ctr = [0, 0, 0]; size = 85; label = 'HOUSING CUTAWAY'; tick = (t) => { h.setCut(Math.min(140, t * 70)); g.rotation.z = t; }; },
+  all() { const h = add(K.housing(M, { R: 70, t: 4, H: 70, skin: M.alu })); h.position.y = -55; h.setCut(120);
+    const a = add(K.spurGear(M.machined, { z: 30, m: 2.5, w: 10, bore: 10, holes: 6 })); const b = add(K.spurGear(M.brass, { z: 15, m: 2.5, w: 10, bore: 8 }));
+    for (const g of [a, b]) g.rotation.x = -Math.PI / 2; a.position.set(-15, -25, 0); b.position.set(-15 + 45 * 2.5 / 2, -25, 0);
+    const s1 = add(K.shaft(M.chrome, { d: 10, L: 90 })); s1.rotation.x = -Math.PI / 2; s1.position.set(-15, -5, 0);
+    ctr = [5, -25, 0]; size = 125; label = 'STUDIO KIT';
+    tick = (t) => { a.rotation.z = t * 0.6; b.rotation.z = K.meshAngle(t * 0.6, 30, 15); }; },
+};
+(P[PART] || P.all)();
+S.shadowAll(scene);
+const preset = Q.get('cam') || 'hero';
+function setScene(t) { tick(t); K.shoot(st, [K.at(0, K.CAM[preset](ctr, size)), K.at(100, K.CAM[preset](ctr, size))], t); }
+function overlay(t) { const g2 = st.g2; S.vignette(g2, 0);
+  if (Q.get('text') === '1') { K.TXT.hook(g2, 1, 'HOW DOES IT', 'CLICK?'); K.TXT.step(g2, 0, 1, ''); const [x, y] = S.toScreen(st.camera, new THREE.Vector3(...ctr)); K.TXT.circle(g2, 1, x, y, 90); K.TXT.follow(g2, 1); }
+  else { K.TXT.step(g2, 1, null, label); K.TXT.tag(g2, 1, 'PART', ...S.toScreen(st.camera, new THREE.Vector3(...ctr)), 140, 260); } }
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton'); window.ready = true;
+</script></body></html>

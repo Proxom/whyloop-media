@@ -1,0 +1,15 @@
+const { chromium } = require('playwright');
+(async () => { const [page] = process.argv.slice(2);
+  const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const p = await b.newPage({ viewport: { width: 1080, height: 1920 } }); p.setDefaultTimeout(180000);
+  await p.goto(`http://127.0.0.1:8765/${page}&w=1080&h=1920&aa=1`); await p.waitForFunction('window.ready === true');
+  await p.evaluate(() => window.renderFrame(1, 1, 0.5, 30));
+  const r = await p.evaluate(() => { const st = window.__st, gl = st.renderer.getContext(); const T = {}; const px = new Uint8Array(4); const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const tm = (k, f) => { sync(); const t0 = performance.now(); for (let i = 0; i < 4; i++) { f(); sync(); } T[k] = ((performance.now() - t0) / 4) | 0; };
+    tm('composer', () => st.composer.render());
+    tm('plainRender', () => st.renderer.render(st.scene, st.camera));
+    tm('composerAgain', () => st.composer.render()); st.renderer.shadowMap.enabled = false; st.scene.traverse(o => { if (o.material) { [].concat(o.material).forEach(m => m.needsUpdate = true); } }); st.renderer.render(st.scene, st.camera); gl.finish();
+    tm('noShadow', () => st.renderer.render(st.scene, st.camera));
+    st.scene.traverse(o => { if (o.isMesh && o.material && o.material.type === 'MeshStandardMaterial') o.visible = false; }); tm('noShadowNoBackdrop', () => st.renderer.render(st.scene, st.camera)); st.renderer.setSize(810, 1440, false); tm('noShadowNoBackdrop075', () => st.renderer.render(st.scene, st.camera)); st.composer.render(); sync(); tm('drawImage+readback', () => { st.g2.drawImage(st.renderer.domElement, 0, 0); st.g2.getImageData(0, 0, 1, 1); });
+    tm('png', () => st.out.toDataURL('image/png'));
+    return T; });
+  console.log(JSON.stringify(r)); await b.close(); })();
