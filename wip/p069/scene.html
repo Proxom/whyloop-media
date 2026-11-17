@@ -22,12 +22,12 @@ const phys = (o) => new THREE.MeshPhysicalMaterial(o);
 const grain = K.grainTex(21, 30); grain.repeat.set(0.03, 0.03);
 M.facing = phys({ color: 0x9a7350, metalness: 0, roughness: 0.9, bumpMap: grain, bumpScale: 0.8, roughnessMap: grain });
 M.diaph = phys({ color: 0x5d6a78, metalness: 0.9, roughness: 0.32, envMapIntensity: 1.2 });
-M.cover = phys({ color: 0x2c3036, metalness: 0.7, roughness: 0.38, clearcoat: 0.4, transparent: true, opacity: 1 });
-M.block = phys({ color: 0x8d939b, metalness: 0.85, roughness: 0.6, roughnessMap: grain, bumpMap: grain, bumpScale: 0.5 });
+M.cover = phys({ color: 0xaeb4bc, metalness: 1.0, roughness: 0.3, envMapIntensity: 1.25, transparent: true, opacity: 1 });   // stamped steel clutch cover
+M.block = phys({ color: 0x9aa0a8, metalness: 1.0, roughness: 0.48, envMapIntensity: 1.1 });   // smooth cast aluminium
 M.mark = phys({ color: 0xffc21f, metalness: 0.1, roughness: 0.4, emissive: 0x4a3000, emissiveIntensity: 0.6 });
 M.mark2 = phys({ color: 0xff6a1a, metalness: 0.1, roughness: 0.4, emissive: 0x4a1800, emissiveIntensity: 0.6 });
 const FLOOR = -178;
-K.backdrop(scene, { floorY: FLOOR, R: 420, zBack: -700 });
+K.backdrop(scene, { floorY: FLOOR, R: 420, zBack: -700, wall: '#1d2026', floor: '#24272d', pool: false });
 K.lightRig(scene, new THREE.Vector3(60, 0, 0), 300);
 // ---------- helpers: lathe along the clutch axis (profile [r, x]) ----------
 const ds = (m) => { const c = m.clone(); c.side = THREE.DoubleSide; return c; };
@@ -105,14 +105,14 @@ const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth
 const covA = (t) => (t < EV.cut ? 0 : 1 - S.smooth((t - 4.9) / 0.8));
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const HOOK = [0, 75, 55, 0, 1150, 16, 40];
-const WIDE = [0, 95, 50, 0, 2000, 14, 40];
+const WIDE = [0, 95, 45, 0, 1780, 14, 46];
 const PARTS = [0, 25, 55, 0, 860, 14, 50];
 const RIM = [0, 9, 124, 0, 300, 1, 0];
 const MID = [0, 40, 62, 0, 640, 12, 40];
 const k_ = (t, a) => [t, ...a.slice(1)];
-const CAMK = [k_(0, HOOK), k_(0.99, [0, 75, 55, 0, 1100, 16, 42]), k_(1.0, WIDE), k_(4.6, [0, 95, 50, 0, 1900, 14, 43]), k_(5.6, PARTS), k_(8.3, [0, 25, 55, 0, 810, 14, 54]),
-  k_(9.0, RIM), k_(10.9, [0, 9, 124, 0, 285, 1, 2]), k_(12.0, WIDE), k_(14.7, [0, 95, 50, 0, 1900, 14, 43]), k_(15.4, MID), k_(16.9, [0, 40, 62, 0, 600, 12, 43]),
-  k_(17.6, RIM), k_(18.9, [0, 9, 124, 0, 285, 1, 2]), k_(19.9, WIDE), k_(22.0, [0, 95, 50, 0, 1920, 14, 42]), k_(24.6, HOOK), k_(LOOP, HOOK)];
+const CAMK = [k_(0, HOOK), k_(0.99, [0, 75, 55, 0, 1100, 16, 42]), k_(1.0, WIDE), k_(4.6, [0, 95, 45, 0, 1700, 14, 48]), k_(5.6, PARTS), k_(8.3, [0, 25, 55, 0, 810, 14, 54]),
+  k_(9.0, RIM), k_(10.9, [0, 9, 124, 0, 285, 1, 2]), k_(12.0, WIDE), k_(14.7, [0, 95, 45, 0, 1700, 14, 48]), k_(15.4, MID), k_(16.9, [0, 40, 62, 0, 600, 12, 43]),
+  k_(17.6, RIM), k_(18.9, [0, 9, 124, 0, 285, 1, 2]), k_(19.9, WIDE), k_(22.0, [0, 95, 45, 0, 1720, 14, 48]), k_(24.6, HOOK), k_(LOOP, HOOK)];
 let KK = null;
 function setScene(t) {
   const k = kin(t); KK = k;
@@ -163,18 +163,22 @@ function overlay(t) {
   S.tag(g2, fade(t, 4.9, 8.4), 'FLYWHEEL', ...scr(ax(-15, 133, 0.9)), -40, -200, 46, '#ffffff');
   S.tag(g2, fade(t, 5.1, 8.4), 'CLUTCH DISC', ...scr(ax(k[3] + 4, 100, 1.75)), 150, 230, 46, '#ffd21f');
   S.tag(g2, fade(t, 6.0, 8.4), 'PRESSURE PLATE', ...scr(ax(k[2] + 8, 114, 0.55)), 120, -190, 46, '#ffd21f');
-  S.tag(g2, fade(t, 7.0, 8.4), 'SPRING', ...scr(ax(G.XF + 8, 55, 1.6)), 160, 150, 46, '#ffd21f');
+  S.tag(g2, fade(t, 7.0, 8.4), 'DIAPHRAGM SPRING', ...scr(ax(G.XF + 8, 55, 1.6)), 120, 150, 46, '#ffd21f');
   // step 1: pedal up
   K.TXT.step(g2, fade(t, 8.5, 14.9), 1, 'PEDAL UP: SPRING SQUEEZES');
   const aq = fade(t, 9.4, 11.9, 0.2); if (aq > 0) { const [x1, y1] = scr(ax(k[2] + G.PLATE_T + 2, 100, 0)); S.forceArrow(g2, aq, x1 + 190, y1, x1 + 25, y1, 26);
-    S.tag(g2, aq, w > 0.5 ? 'LOCKED TOGETHER' : 'SQUEEZED', ...scr(ax(k[3] + 4, 118, 0)), 60, -200, 50, '#ffd21f'); }
+    S.tag(g2, aq, w > 0.5 ? 'LOCKED TOGETHER' : 'SQUEEZED', ...scr(ax(k[3] + 4.5, 106, 0)), 60, -200, 50, '#ffd21f'); }
   pill(g2, fade(t, 12.3, 14.8), 'FRICTION = DRIVE', S.CX, 1250, 54, '#ffd21f');
   // step 2: pedal down
-  K.TXT.step(g2, fade(t, 15.1, 22.0), 2, 'PEDAL DOWN: A GAP OPENS');
+  K.TXT.step(g2, fade(t, 15.35, 22.0), 2, 'PEDAL DOWN: A GAP OPENS');
   const ab = fade(t, 15.3, 17.3, 0.2); if (ab > 0) { const [bx, by] = scr(ax(k[5] + G.BEAR_L, 46, 1.2)); S.forceArrow(g2, ab, bx + 190, by - 60, bx + 30, by - 10, 24); S.tag(g2, ab, 'BEARING PUSHES', bx, by, 80, 170, 46, '#ffd21f'); }
   const ag = fade(t, 17.9, 19.8, 0.2); if (ag > 0) { const [x0, y0] = scr(ax(0, 125, 0)), [x1, y1] = scr(ax(k[2], 125, 0)); const ym = Math.min(y0, y1) - 30;
     g2.save(); g2.globalAlpha = ag; g2.lineCap = 'round'; for (const [lw, c] of [[16, 'rgba(0,0,0,0.65)'], [8, '#ffd21f']]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); g2.moveTo(x0, ym + 26); g2.lineTo(x0, ym); g2.lineTo(x1, ym); g2.lineTo(x1, ym + 26); g2.stroke(); } g2.restore();
     S.tag(g2, ag, 'GAP: DISC IS FREE', (x0 + x1) / 2, ym, 60, -150, 50, '#ffd21f'); }
+  // spring lever action: the plate pulls back (away from the flywheel) while the bearing pushes in
+  const apb = fade(t, 15.9, 17.5, 0.2); if (apb > 0) { const [px, py] = scr(ax(k[2] + G.PLATE_T, 112, 0.25)); S.forceArrow(g2, apb, px - 10, py - 40, px + 120, py - 40, 22); S.tag(g2, apb, 'PLATE PULLS BACK', px + 60, py - 40, 40, -150, 46, '#ff7a1a'); }
+  // orientation in the rim close-ups
+  const aor = Math.max(fade(t, 9.1, 11.4), fade(t, 17.7, 19.4)); pill(g2, aor, '← ENGINE', 210, 560, 46, '#ffffff'); pill(g2, aor, 'WHEELS →', 790, 560, 46, '#ffffff');
   // pedal state icon
   pedalIcon(g2, fade(t, 1.3, 22.0, 0.3), ped);
   // payoff + follow
