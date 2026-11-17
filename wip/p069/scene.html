@@ -1,0 +1,188 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p069 car clutch "HOW DOES A / CLUTCH WORK?" (group V, track A voice). Built from kit/kit.js.
+// mm; clutch axis = world +x (engine at -x, wheels at +x), y up, z toward the camera at azimuth 0. Flywheel friction face at x = 0.
+// kin.json rows: [t, pedal, plate_x, disc_x, slope, bearing_x, fork deg, engine deg, disc deg, disc rev/s]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, EV = G.EV, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x16181c, envIntensity: 1.0 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const grain = K.grainTex(21, 30); grain.repeat.set(0.03, 0.03);
+M.facing = phys({ color: 0x9a7350, metalness: 0, roughness: 0.9, bumpMap: grain, bumpScale: 0.8, roughnessMap: grain });
+M.diaph = phys({ color: 0x5d6a78, metalness: 0.9, roughness: 0.32, envMapIntensity: 1.2 });
+M.cover = phys({ color: 0x2c3036, metalness: 0.7, roughness: 0.38, clearcoat: 0.4, transparent: true, opacity: 1 });
+M.block = phys({ color: 0x8d939b, metalness: 0.85, roughness: 0.6, roughnessMap: grain, bumpMap: grain, bumpScale: 0.5 });
+M.mark = phys({ color: 0xffc21f, metalness: 0.1, roughness: 0.4, emissive: 0x4a3000, emissiveIntensity: 0.6 });
+M.mark2 = phys({ color: 0xff6a1a, metalness: 0.1, roughness: 0.4, emissive: 0x4a1800, emissiveIntensity: 0.6 });
+const FLOOR = -178;
+K.backdrop(scene, { floorY: FLOOR, R: 420, zBack: -700 });
+K.lightRig(scene, new THREE.Vector3(60, 0, 0), 300);
+// ---------- helpers: lathe along the clutch axis (profile [r, x]) ----------
+const ds = (m) => { const c = m.clone(); c.side = THREE.DoubleSide; return c; };
+const lath = (prof, mat, seg = 128) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat.side === THREE.DoubleSide ? mat : ds(mat));
+const ring = (r0, r1, x0, x1, mat, seg = 128) => lath([[r0, x0], [r1, x0], [r1, x1], [r0, x1], [r0, x0]], mat, seg);
+// axis frame: local y = world +x (rotation z = -90 deg maps local +y to world +x)
+const AX = new THREE.Group(); AX.rotation.z = -Math.PI / 2; scene.add(AX);
+const ENG = new THREE.Group(); AX.add(ENG);        // spins with the engine
+const OUT = new THREE.Group(); AX.add(OUT);        // disc + shaft + wheel
+// ---------- engine side ----------
+{ const b = new THREE.Mesh(new K.RBox(200, 290, 250, 4, 10), M.block); b.position.set(-145, -15, 0); scene.add(b);
+  for (let i = 0; i < 4; i++) { const f = new THREE.Mesh(new K.RBox(200, 6, 254, 2, 2), M.block); f.position.set(-145, -120 + i * 70, 0); scene.add(f); }
+  const flange = ring(0, 46, -45, -30, M.steel); AX.add(flange); }
+// flywheel: disc with recess, starter ring gear, bolt heads, a yellow paint mark on the rim
+const FW = new THREE.Group(); ENG.add(FW);
+FW.add(lath([[0, -12], [30, -12], [30, 0], [128, 0], [133, -4], [133, -26], [128, -30], [0, -30]], M.machined));
+{ const rg = K.spurGear(M.steel, { z: 132, m: 2, w: 14, chamfer: 0.5 }); rg.rotation.x = Math.PI / 2; rg.position.y = -17; FW.add(rg);
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; const bh = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 6, 6), M.chrome); bh.position.set(Math.cos(a) * 20, 2.5, Math.sin(a) * 20); FW.add(bh); }
+  const mk = new THREE.Mesh(new THREE.BoxGeometry(10, 22, 6), M.mark); mk.position.set(0, -15, 135.5); FW.add(mk); }
+// clutch cover (bolted to the flywheel, spins with it): shell + lip; fades out to show the inside
+const COV = new THREE.Group(); ENG.add(COV);
+COV.add(lath([[140, 0.2], [140, 3], [127, 3], [127, 44], [92, 44], [92, 47], [130, 47], [130, 6], [140, 6]].map(p => p), M.cover));
+for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + 0.5; const bh = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 5, 6), M.cover); bh.position.set(Math.cos(a) * 135, 8, Math.sin(a) * 135); COV.add(bh); }
+// fulcrum rings (held by the cover) on both sides of the diaphragm at r = 85
+for (const d of [-1, 1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(G.F_PIV, G.TORUS_TUBE, 12, 128), M.steel); t.rotation.x = Math.PI / 2; t.position.y = G.XF + d * G.TORUS_D; ENG.add(t); }
+// pressure plate (spins with the engine, slides along x): ring + round ridge on its back
+const PL = new THREE.Group(); ENG.add(PL);
+PL.add(lath([[G.PLATE_RI, 0], [G.PLATE_RO - 1, 0], [G.PLATE_RO, 1], [G.PLATE_RO, G.PLATE_T - 1], [G.PLATE_RO - 1, G.PLATE_T], [G.PLATE_RI, G.PLATE_T], [G.PLATE_RI, 0]], M.alu));
+{ const rd = new THREE.Mesh(new THREE.TorusGeometry(G.RIDGE_R, G.RIDGE_TUBE, 12, 128), M.machined); rd.rotation.x = Math.PI / 2; rd.position.y = G.PLATE_T; PL.add(rd);
+  for (let i = 0; i < 3; i++) { const a = i * 2 * Math.PI / 3; const lug = new THREE.Mesh(new K.RBox(14, 10, 16, 2, 2), M.alu); lug.position.set(Math.cos(a) * 119, 8, Math.sin(a) * 119); lug.rotation.y = -a; PL.add(lug); } }
+// diaphragm spring: outer cone ring (r 80..106) rebuilt per frame + 18 fingers (r 32..80), all on the slope s about the fulcrum (r 85, x XF)
+const DIA = new THREE.Group(); ENG.add(DIA);
+const dRing = new THREE.Mesh(new THREE.BufferGeometry(), ds(M.diaph)); DIA.add(dRing);
+const fingers = [];
+for (let i = 0; i < 18; i++) { const sp = new THREE.Group(); sp.rotation.y = i * 2 * Math.PI / 18; DIA.add(sp);
+  const pv = new THREE.Group(); pv.position.set(G.F_PIV, G.XF, 0); sp.add(pv);
+  const L = 80 - G.F_RI; const f = new THREE.Mesh(new K.RBox(L + 4, G.FING_T, 9.5, 2, 1.0), M.diaph); f.position.x = -(G.F_PIV - G.F_RI) + L / 2 - 2; pv.add(f); fingers.push(pv); }
+function setDiaphragm(s) {
+  const c = Math.sqrt(1 + s * s) * G.FING_T / 2, mid = (r) => G.XF + (r - G.F_PIV) * s;
+  dRing.geometry.dispose(); dRing.geometry = new THREE.LatheGeometry([[78, mid(78) - c], [G.F_RO, mid(G.F_RO) - c], [G.F_RO, mid(G.F_RO) + c], [78, mid(78) + c], [78, mid(78) - c]].map(p => new THREE.Vector2(p[0], p[1])), 128);
+  const a = Math.atan(s); for (const pv of fingers) pv.rotation.z = a;
+}
+// ---------- output side: clutch disc (splined hub) + shaft + wheel ----------
+const DSC = new THREE.Group(); OUT.add(DSC);
+{ const ft = 3.5, ct = G.DISC_T - 2 * ft;
+  DSC.add(ring(G.DISC_RI, G.DISC_R, 0, ft, M.facing)); DSC.add(ring(G.DISC_RI, G.DISC_R, ft + ct, G.DISC_T, M.facing));
+  DSC.add(ring(G.HUB_R, G.DISC_R - 4, ft, ft + ct, M.steel));
+  DSC.add(lath([[G.SHAFT_R, G.HUB_X[0]], [G.HUB_R, G.HUB_X[0]], [G.HUB_R, G.HUB_X[1]], [G.SHAFT_R, G.HUB_X[1]]], M.brass));
+  for (let i = 0; i < 4; i++) { const wg = new THREE.Group(); wg.rotation.y = i * Math.PI / 2 + Math.PI / 4; DSC.add(wg); const sp = K.spring(M.chrome, { R: 5, wire: 1.3, turns: 5, len: 22 }); sp.rotation.z = Math.PI / 2; sp.position.set(11, G.DISC_T / 2, 42); wg.add(sp); }
+  for (let i = 0; i < 3; i++) { const a = i * 2 * Math.PI / 3; const mk = new THREE.Mesh(new THREE.BoxGeometry(8, G.DISC_T + 0.4, 5), M.mark2); mk.position.set(Math.cos(a) * (G.DISC_R - 1.5), G.DISC_T / 2, Math.sin(a) * (G.DISC_R - 1.5)); mk.rotation.y = -a; DSC.add(mk); } }
+OUT.add(lath([[0, -10], [G.SHAFT_R - 1, -10], [G.SHAFT_R, -9], [G.SHAFT_R, 352], [0, 352]], M.steel));
+const WHEEL = K.wheel(M, { R: 100, W: 36, spokes: 5 }); WHEEL.rotation.x = -Math.PI / 2; WHEEL.position.y = 340; OUT.add(WHEEL);
+// ---------- release bearing (slides on the guide tube), fork, slave cylinder ----------
+AX.add(ring(G.TUBE_R[0], G.TUBE_R[1], G.TUBE_X0, 150, M.alu));
+const BR = new THREE.Group(); AX.add(BR);
+BR.add(ring(G.BEAR_R0, G.BEAR_R1, 0, G.BEAR_L - 3, M.chrome)); BR.add(ring(G.BEAR_R0, 48, G.BEAR_L - 3, G.BEAR_L, M.steel));
+BR.add(ring(G.BEAR_R0 + 2, G.BEAR_R1 - 2, -0.3, 0.4, M.plastic));
+const FK = new THREE.Group(); FK.position.set(G.FORK_PIV[0], G.FORK_PIV[1], 0); scene.add(FK);
+{ const fm = M.paint(0x3a3f47); const stem = new THREE.Mesh(new K.RBox(12, G.FORK_L - 64 + 45, 14, 2, 2), fm); stem.position.y = (G.FORK_L - 64 - 45) / 2; FK.add(stem);
+  const bar = new THREE.Mesh(new K.RBox(12, 12, 100, 2, 2), fm); bar.position.y = G.FORK_L - 64; FK.add(bar);
+  for (const z of [-44, 44]) { const p = new THREE.Mesh(new K.RBox(6, 66, 10, 2, 2), fm); p.position.set(0, G.FORK_L - 33, z); FK.add(p); }
+  const piv = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 16), M.chrome); FK.add(piv); }
+const SLAVE = new THREE.Group(); scene.add(SLAVE);
+{ const c = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 60, 32), M.alu); c.rotation.z = Math.PI / 2; c.position.set(70, -163, 0); SLAVE.add(c); }
+const ROD = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 1, 16), M.chrome); ROD.rotation.z = Math.PI / 2; scene.add(ROD);
+const pivPost = new THREE.Mesh(new THREE.CylinderGeometry(6, 8, G.FORK_PIV[1] - FLOOR, 16), M.alu); pivPost.position.set(G.FORK_PIV[0], (G.FORK_PIV[1] + FLOOR) / 2, -22); scene.add(pivPost);
+S.shadowAll(scene);
+for (const o of COV.children) o.castShadow = false;
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (b[0] - a[0] > DT * 1.5 || (a[0] < EV.cut && b[0] >= EV.cut)) return a.slice();
+  return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const covA = (t) => (t < EV.cut ? 0 : 1 - S.smooth((t - 4.9) / 0.8));
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, 75, 55, 0, 1150, 16, 40];
+const WIDE = [0, 95, 50, 0, 2000, 14, 40];
+const PARTS = [0, 25, 55, 0, 860, 14, 50];
+const RIM = [0, 9, 124, 0, 300, 1, 0];
+const MID = [0, 40, 62, 0, 640, 12, 40];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(0.99, [0, 75, 55, 0, 1100, 16, 42]), k_(1.0, WIDE), k_(4.6, [0, 95, 50, 0, 1900, 14, 43]), k_(5.6, PARTS), k_(8.3, [0, 25, 55, 0, 810, 14, 54]),
+  k_(9.0, RIM), k_(10.9, [0, 9, 124, 0, 285, 1, 2]), k_(12.0, WIDE), k_(14.7, [0, 95, 50, 0, 1900, 14, 43]), k_(15.4, MID), k_(16.9, [0, 40, 62, 0, 600, 12, 43]),
+  k_(17.6, RIM), k_(18.9, [0, 9, 124, 0, 285, 1, 2]), k_(19.9, WIDE), k_(22.0, [0, 95, 50, 0, 1920, 14, 42]), k_(24.6, HOOK), k_(LOOP, HOOK)];
+let KK = null;
+function setScene(t) {
+  const k = kin(t); KK = k;
+  ENG.rotation.y = k[7] * D2R; OUT.rotation.y = k[8] * D2R;
+  PL.position.y = k[2]; DSC.position.y = k[3]; setDiaphragm(k[4]); BR.position.y = k[5];
+  const th = k[6] * D2R; FK.rotation.z = -th;
+  const lo = new THREE.Vector3(0, -45, 0).applyAxisAngle(new THREE.Vector3(0, 0, 1), -th).add(FK.position);
+  ROD.position.set((lo.x - 6 + 100) / 2, lo.y, 0); ROD.scale.y = lo.x - 6 - 100;
+  const a = covA(t); M.cover.opacity = a; M.cover.depthWrite = a > 0.98; COV.visible = a > 0.01;
+  K.glow(DSC, glowA(t, 'disc')); K.glow(PL, glowA(t, 'plate')); K.glow(DIA, glowA(t, 'spring')); K.glow(BR, glowA(t, 'bear'));
+  K.shoot(st, CAMK, t);
+}
+function glowA(t, w) {
+  if (w === 'disc') return Math.max(fade(t, 5.0, 6.2, 0.2) * 0.9, 0);
+  if (w === 'plate') return fade(t, 6.0, 7.2, 0.2) * 0.9;
+  if (w === 'spring') return Math.max(fade(t, 7.0, 8.4, 0.2), fade(t, 8.6, 9.9, 0.2) * 0.7) * 0.9;
+  if (w === 'bear') return fade(t, 15.2, 16.6, 0.2) * 0.9;
+  return 0;
+}
+// ---------- overlay ----------
+const ax = (x, r, phi) => new THREE.Vector3(x, r * Math.cos(phi), r * Math.sin(phi));   // point on the clutch axis frame (world)
+const scr = (v) => S.toScreen(camera, v);
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+// curved spin arrow around the axis at x0, radius r (drawn on the visible upper-front quarter)
+function spinArrow(g2, a, x0, r, col, ph0 = 0.25, ph1 = 1.55) { if (a <= 0) return; const P = []; for (let i = 0; i <= 28; i++) P.push(scr(ax(x0, r, ph0 + (ph1 - ph0) * i / 28)));
+  g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; for (const [w, c] of [[20, 'rgba(0,0,0,0.6)'], [11, col]]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); }
+  const e = P[P.length - 1], d = P[P.length - 4]; const ang = Math.atan2(e[1] - d[1], e[0] - d[0]); g2.fillStyle = col; g2.translate(e[0], e[1]); g2.rotate(ang); g2.beginPath(); g2.moveTo(26, 0); g2.lineTo(-14, -20); g2.lineTo(-14, 20); g2.closePath(); g2.fill(); g2.restore(); }
+// pedal icon (lower left, inside the safe area): pad on an arm hinged at the top; p = 0 up, 1 down
+function pedalIcon(g2, a, p) { if (a <= 0) return; const hx = 150, hy = 1150, L = 175, ang = (-8 + 30 * p) * D2R; g2.save(); g2.globalAlpha = a;
+  g2.fillStyle = 'rgba(12,14,20,0.78)'; S.rrect(g2, 75, 1110, 225, 320, 22); g2.fill(); g2.strokeStyle = p > 0.5 ? '#ff7a1a' : '#ffd21f'; g2.lineWidth = 4; g2.stroke();
+  const ex = hx + Math.sin(ang) * L, ey = hy + Math.cos(ang) * L; g2.lineCap = 'round'; g2.strokeStyle = '#c9ced6'; g2.lineWidth = 14; g2.beginPath(); g2.moveTo(hx, hy); g2.lineTo(ex, ey); g2.stroke();
+  g2.fillStyle = '#ddd'; g2.beginPath(); g2.arc(hx, hy, 11, 0, 7); g2.fill();
+  g2.save(); g2.translate(ex, ey); g2.rotate(-ang - 0.25); g2.fillStyle = '#2a2d33'; S.rrect(g2, -12, -40, 30, 80, 8); g2.fill(); g2.strokeStyle = '#9aa2ad'; g2.lineWidth = 3; g2.stroke(); g2.restore();
+  g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = p > 0.5 ? '#ff7a1a' : '#ffd21f'; g2.fillText(p > 0.5 ? 'DOWN' : 'UP', 187, 1395); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ped = k[1], w = k[9];
+  { const fl = Math.max(0, 1 - Math.abs(t - EV.cut) / 0.12); K.TXT.flash(g2, 0.85 * fl); }
+  // hook (0-1 s and faded back in at the loop end)
+  const hk = t < 2.2 ? 1 - S.smooth((t - 1.6) / 0.35) : S.smooth((t - 24.75) / 0.4);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A', 'CLUTCH WORK?'); const [cx, cy] = scr(ax(5, 112, 0.35)); K.TXT.circle(g2, hk, cx, cy, 88, [-230, 190]); }
+  // state tags: engine always spins, wheels stop / turn
+  const aS = Math.max(fade(t, 1.4, 4.7), fade(t, 12.2, 14.8), fade(t, 19.9, 22.1));
+  if (aS > 0) { spinArrow(g2, aS, -15, 165, '#ffd21f'); S.tag(g2, aS, 'ENGINE: ALWAYS SPINS', ...scr(new THREE.Vector3(-150, 130, 125)), 40, -170, 46, '#ffd21f');
+    const turning = w > 0.12; spinArrow(g2, aS * (turning ? 1 : 0), 340, 120, '#ff7a1a', 0.25, 1.45);
+    S.tag(g2, aS, turning ? 'WHEELS: TURNING' : 'WHEELS: STOPPED', ...scr(new THREE.Vector3(340, -100, 30)), -60, 190, 46, turning ? '#ff7a1a' : '#ffffff'); }
+  // parts (cover fades 4.9-5.7)
+  S.tag(g2, fade(t, 4.9, 8.4), 'FLYWHEEL', ...scr(ax(-15, 133, 0.9)), -40, -200, 46, '#ffffff');
+  S.tag(g2, fade(t, 5.1, 8.4), 'CLUTCH DISC', ...scr(ax(k[3] + 4, 100, 1.75)), 150, 230, 46, '#ffd21f');
+  S.tag(g2, fade(t, 6.0, 8.4), 'PRESSURE PLATE', ...scr(ax(k[2] + 8, 114, 0.55)), 120, -190, 46, '#ffd21f');
+  S.tag(g2, fade(t, 7.0, 8.4), 'SPRING', ...scr(ax(G.XF + 8, 55, 1.6)), 160, 150, 46, '#ffd21f');
+  // step 1: pedal up
+  K.TXT.step(g2, fade(t, 8.5, 14.9), 1, 'PEDAL UP: SPRING SQUEEZES');
+  const aq = fade(t, 9.4, 11.9, 0.2); if (aq > 0) { const [x1, y1] = scr(ax(k[2] + G.PLATE_T + 2, 100, 0)); S.forceArrow(g2, aq, x1 + 190, y1, x1 + 25, y1, 26);
+    S.tag(g2, aq, w > 0.5 ? 'LOCKED TOGETHER' : 'SQUEEZED', ...scr(ax(k[3] + 4, 118, 0)), 60, -200, 50, '#ffd21f'); }
+  pill(g2, fade(t, 12.3, 14.8), 'FRICTION = DRIVE', S.CX, 1250, 54, '#ffd21f');
+  // step 2: pedal down
+  K.TXT.step(g2, fade(t, 15.1, 22.0), 2, 'PEDAL DOWN: A GAP OPENS');
+  const ab = fade(t, 15.3, 17.3, 0.2); if (ab > 0) { const [bx, by] = scr(ax(k[5] + G.BEAR_L, 46, 1.2)); S.forceArrow(g2, ab, bx + 190, by - 60, bx + 30, by - 10, 24); S.tag(g2, ab, 'BEARING PUSHES', bx, by, 80, 170, 46, '#ffd21f'); }
+  const ag = fade(t, 17.9, 19.8, 0.2); if (ag > 0) { const [x0, y0] = scr(ax(0, 125, 0)), [x1, y1] = scr(ax(k[2], 125, 0)); const ym = Math.min(y0, y1) - 30;
+    g2.save(); g2.globalAlpha = ag; g2.lineCap = 'round'; for (const [lw, c] of [[16, 'rgba(0,0,0,0.65)'], [8, '#ffd21f']]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); g2.moveTo(x0, ym + 26); g2.lineTo(x0, ym); g2.lineTo(x1, ym); g2.lineTo(x1, ym + 26); g2.stroke(); } g2.restore();
+    S.tag(g2, ag, 'GAP: DISC IS FREE', (x0 + x1) / 2, ym, 60, -150, 50, '#ffd21f'); }
+  // pedal state icon
+  pedalIcon(g2, fade(t, 1.3, 22.0, 0.3), ped);
+  // payoff + follow
+  K.TXT.answer(g2, fade(t, 22.05, 24.65, 0.3), 'SQUEEZE = DRIVE', 'GAP = STOP');
+  K.TXT.follow(g2, fade(t, 23.55, 24.95, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
