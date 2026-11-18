@@ -138,7 +138,7 @@ function overlay(t) {
   { const fl = Math.max(0, 1 - Math.abs(t - EV.cut) / 0.12); K.TXT.flash(g2, 0.85 * fl); }
   // hook (0-1 s and back at the loop end)
   const hk = t < 2.0 ? 1 - S.smooth((t - 1.35) / 0.35) : S.smooth((t - 24.95) / 0.4);
-  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A PEN', 'CLICK?', 112); const [cx, cy] = scr(pw(0, 0, -126)); K.TXT.circle(g2, hk * (t < 2 ? 1 : 1), cx, cy, 82, [-240, 170]); }
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A PEN', 'CLICK?', 112); const [cx, cy] = scr(pw(0, 0, -126)); K.TXT.circle(g2, hk, cx, cy, 82, [-230, -40]); }
   // outside: state of the tip, click at the button
   const aW = fade(t, 1.25, 4.75);
   if (aW > 0) { S.tag(g2, aW, tipOut ? 'TIP: OUT' : 'TIP: IN', ...scr(pw(0, 0, -125.5)), 130, -40, 52, tipOut ? '#ffd21f' : '#ffffff');
@@ -163,7 +163,7 @@ function overlay(t) {
     const a1 = fade(t, ts - 0.1, ts + 1.05, 0.15); if (a1 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 22, y - 1.1); arrowCurve(g2, a1, AP); pill(g2, a1, 'IT TURNS', AP[8][0], AP[8][1] + 95, 50, '#ffd21f'); }
     const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, 'SLIDES UP THE SLOPE', AP[8][0], AP[8][1] + 95, 46, '#ffd21f'); } }
   // ledge / slot pinned on the ridges
-  const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.3, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; S.tag(g2, aL, 'SHORT LEDGE', ...scr(pw(4.0, wl - 3, G.Y0 + H + 0.1)), -60, 170, 50, '#ffd21f'); }
+  const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.3, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; S.tag(g2, aL, 'SHORT LEDGE', ...scr(pw(4.0, wl - 3, G.Y0 + H + 0.1)), -150, -230, 50, '#ffd21f'); }
   const aS = Math.max(fade(t, 19.2, 21.05), fade(t, 21.3, 24.1)); if (aS > 0) { const sl = (t > 21) ? 90 - G.C - G.W_LUG / 2 : fu - G.W_LUG / 2; S.tag(g2, aS, 'LONG SLOT', ...scr(pw(4.0, sl, G.GT - 1.5)), 140, t > 21 ? 260 : -170, 50, '#ffd21f'); }
   // tip state (inside view)
   const aT = fade(t, 8.45, 21.05, 0.3); if (aT > 0) pill(g2, aT, tipOut ? 'TIP: OUT' : 'TIP: IN', S.CX, 1360, 54, tipOut ? '#ffd21f' : '#ffffff');
