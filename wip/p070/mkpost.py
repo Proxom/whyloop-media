@@ -8,7 +8,7 @@ Push the button: the plunger shoves the cam down below the ridges, and the slant
 
 Let go: the spring pushes the cam back up, it hits the slanted end of a ridge and turns a bit more, onto a short ledge. The ledge holds it, so the tip stays out.
 
-Push again: the cam turns on once more, this time into a long slot. Nothing holds it there, so the spring pulls the tip back in.
+Push again: the cam turns on once more, this time into a long, deep slot. Nothing holds it there, so the spring lifts the cam and the ink all the way up, and the tip goes back in.
 
 So every click turns the cam one step, and the steps take turns: ledge (out), slot (in), ledge, slot...
 
@@ -21,11 +21,11 @@ Pen Vibe, Engineers Explain How Click Pens Work (pushing drives the plunger and 
 UMA Technology, How Retractable Pens Work (stops inside the barrel act like small shelves that hold the cam in the extended position; the next click pushes it past the shelf and rotates it into a taller return channel, and the spring pulls the cartridge back): https://umatechnology.org/how-retractable-pens-work"""
 alt = ("3D animation of a blue click pen, with a voiceover. Under the question How does a pen click? a red circle marks the pen tip as it pops out. "
        "The whole pen: the button is pressed, click, the tip goes in. The barrel fades away and the parts are named: the ink refill and its spring near the tip, "
-       "the button, the grey ridges inside the barrel and an orange cam on top of the refill. 1, push: the button's teeth push the cam down below the ridges and the slopes turn it. "
+       "the button and its spring, the grey ridges inside the barrel and the cam on top of the refill with orange teeth. 1, push: the button's teeth push the cam down below the ridges and the slanted teeth turn it. "
        "2, let go: the cam slides up the slanted end of a ridge onto a short ledge, and the tip stays out. 3, push again: it turns on once more. "
-       "4, it slides into a long slot and the spring pulls the tip back in. The payoff reads Every click turns the cam. Ledge: out. Slot: in. A follow line appears and the video loops.")
-on = ['INSIDE IT', 'HOW DOES A PEN', 'CLICK?', 'TIP: OUT', 'TIP: IN', 'BUTTON', 'CLICK!', 'SPRING', 'INK', 'CAM (IT TURNS)', 'RIDGES', 'PUSH: THE SLOPES TURN IT', 'PUSH',
-      'IT TURNS', 'LET GO: IT HITS A LEDGE', 'SLIDES UP THE SLOPE', 'SHORT LEDGE', 'PUSH AGAIN: IT TURNS ON', 'A LONG SLOT: TIP GOES IN', 'LONG SLOT',
+       "4, it slides into a deep slot, the spring lifts the cam and the ink, and the tip goes back in. A small pen badge in the corner shows the tip out or in the whole time. The payoff reads Every click turns the cam. Ledge: out. Slot: in. A follow line appears and the video loops.")
+on = ['INSIDE IT', 'HOW DOES A PEN', 'CLICK?', 'TIP: OUT', 'TIP: IN', 'BUTTON', 'CLICK!', 'SPRING: PUSHES INK UP', 'INK', 'BUTTON SPRING', 'CAM (IT TURNS)', 'RIDGES', 'PUSH: THE TEETH TURN IT', 'BUTTON TEETH PUSH',
+      'IT TURNS', 'LET GO: IT STOPS ON A LEDGE', 'SLIDES ONTO A LEDGE', 'SLIDES INTO A SLOT', 'SHORT LEDGE', 'PUSH AGAIN: IT TURNS ON', 'DEEP SLOT: CAM + INK GO UP', 'SPRING LIFTS THE INK', 'LONG SLOT',
       'EVERY CLICK TURNS THE CAM', 'LEDGE: OUT · SLOT: IN', 'FOLLOW → A NEW MACHINE EVERY DAY']
 P = dict(id='p070', track='A', group='E', slot='2026-11-19T17:00 Europe/London', topicKey='click pen',
   outlier='scorecard list #3 (hand-held object + click); our own model, script, words and sound',
