@@ -52,5 +52,21 @@
  "sources": [
   "https://en.wikipedia.org/wiki/Ballcock",
   "https://en.wikipedia.org/wiki/Lever"
- ]
+ ],
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p072/toilet_reel_v2.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p072/toilet_cover_v2.jpg"
+ ],
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30fps H.264 High yuv420p, AAC 48k, 23.8 s, no black first/last frame",
+  "audio": "PASS -15.1 LUFS, -3.1 dBTP, HP4k gap 20.0 dB (water noise band-limited 120-1200 Hz)",
+  "mechanism": "PASS kin.py: washer never past the seat (gap >= 0), ball inside the tank, buoyancy level drives the arm (a = asin(h/L)), seal at 19.22 s",
+  "facts": "PASS Wikipedia Ballcock + Lever (read via Firecrawl this run)",
+  "text": "PASS pyspellchecker (only handle/hashtag flags), hook 96 px, labels >= 44 px, safe zones checked",
+  "look": "PASS 6 stills + safe-zone frame checked",
+  "clarity": "PASS (fresh reviewer): explanation correct; 14yo YES",
+  "visualScore": "5/10 (v1) -> top 3 fixes applied once in v2 (ball stays on the water after the flush + stream off the pivot lug + seam, labels clear of the badge + PIVOT/RUBBER WASHER/FULL line + OFF in the payoff, framing), no re-score"
+ },
+ "visualScore": 5
 }
