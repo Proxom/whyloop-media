@@ -1,0 +1,42 @@
+[
+ {
+  "i": 0,
+  "text": "How does a pen click?",
+  "dur": 1.152
+ },
+ {
+  "i": 1,
+  "text": "Click, it's out. Click, it's in. The same push every time.",
+  "dur": 3.136
+ },
+ {
+  "i": 2,
+  "text": "Inside, a spring pushes the ink up. A little cam sits on top.",
+  "dur": 3.349
+ },
+ {
+  "i": 3,
+  "text": "Push: the cam drops below the ridges, and the slanted teeth turn it.",
+  "dur": 3.733
+ },
+ {
+  "i": 4,
+  "text": "Let go: it slides onto a short ledge. The tip stays out.",
+  "dur": 3.243
+ },
+ {
+  "i": 5,
+  "text": "Push again: it turns once more, into a long slot.",
+  "dur": 2.859
+ },
+ {
+  "i": 6,
+  "text": "Now the spring pulls the tip back in.",
+  "dur": 1.856
+ },
+ {
+  "i": 7,
+  "text": "Every click turns the cam. Ledge: out. Slot: in.",
+  "dur": 2.965
+ }
+]

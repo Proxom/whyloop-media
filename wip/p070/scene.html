@@ -1,0 +1,178 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p070 click pen "HOW DOES A PEN / CLICK?" (group E, track A voice). Built from kit/kit.js.
+// Pen in mm inside group PEN (scale 10 -> world units = 0.1 mm), axis = +y (button up, tip down). Angle phi around the axis: x = r sin(phi), z = r cos(phi) (phi 0 faces +z).
+// kin.json rows (60 Hz): [t, plunger P, lug right edge u (deg) = cam angle, lug corner height y, state] -- see kin.py.
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, EV = G.EV, D2R = Math.PI / 180, T = G.T, H = G.H, SL = G.S;
+const SC = 10;
+const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 4, far: 30000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+M.barrel = phys({ color: 0x1f56c4, metalness: 0, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 1, side: THREE.DoubleSide });
+M.clip = phys({ color: 0xeef1f5, metalness: 1, roughness: 0.08, envMapIntensity: 1.4, transparent: true, opacity: 1 });
+M.ridge = phys({ color: 0x8a95a6, metalness: 0, roughness: 0.5, clearcoat: 0.2, clearcoatRoughness: 0.4, side: THREE.DoubleSide });
+M.wallIn = phys({ color: 0x6d737c, metalness: 0.2, roughness: 0.7, transparent: true, opacity: 1 });
+M.plunger = phys({ color: 0xe9e6df, metalness: 0, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
+M.cam = phys({ color: 0xffa114, metalness: 0, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.2, side: THREE.DoubleSide });
+M.refill = phys({ color: 0xd9dde3, metalness: 0, roughness: 0.3, clearcoat: 0.6, side: THREE.DoubleSide });
+M.ink = phys({ color: 0x1b2a6b, metalness: 0, roughness: 0.35, side: THREE.DoubleSide });
+K.backdrop(scene, { floorY: -2200, R: 2500, zBack: -5000, h: 14000, width: 30000, wall: '#1d2026', floor: '#22252b', pool: false, catcher: 10 });
+K.lightRig(scene, new THREE.Vector3(0, 0, 0), 320);
+// soft fill for the lower pen (outside the shadow camera)
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.9); f.position.set(-1500, 1200, 2500); f.target.position.set(0, -600, 0); scene.add(f, f.target); }
+const PEN = new THREE.Group(); PEN.scale.setScalar(SC); scene.add(PEN);
+// ---------- helpers ----------
+const lath = (prof, mat, seg = 96) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
+const ring = (r0, r1, y0, y1, mat, seg = 96) => lath([[r0, y0], [r1, y0], [r1, y1], [r0, y1], [r0, y0]], mat, seg);
+// wrap a polygon drawn in the unrolled plane (u = angle deg, y mm) onto a cylinder shell r0..r1
+function wrapPoly(pts, r0, r1, mat) {
+  const D = []; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; const n = Math.max(1, Math.ceil(Math.abs(b[0] - a[0]) / 1.5));
+    for (let k = 0; k < n; k++) D.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+  let C = D.map(p => new THREE.Vector2(p[0], p[1])); if (THREE.ShapeUtils.isClockWise(C)) { C = C.reverse(); D.reverse(); }
+  let tris = THREE.ShapeUtils.triangulateShape(C, []).map(f => f.map(i => [C[i].x, C[i].y]));
+  for (let pass = 0; pass < 6; pass++) { const out = []; let any = false;
+    for (const t of tris) { const us = t.map(p => p[0]); if (Math.max(...us) - Math.min(...us) > 2.5) { any = true; const m = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+      const [a, b, c] = t, ab = m(a, b), bc = m(b, c), ca = m(c, a); out.push([a, ab, ca], [ab, b, bc], [ca, bc, c], [ab, bc, ca]); } else out.push(t); }
+    tris = out; if (!any) break; }
+  const pos = [], nor = []; const P = (u, y, r) => [r * Math.sin(u * D2R), y, r * Math.cos(u * D2R)]; const N = (u, s) => [s * Math.sin(u * D2R), 0, s * Math.cos(u * D2R)];
+  for (const t of tris) { for (const p of t) { pos.push(...P(p[0], p[1], r1)); nor.push(...N(p[0], 1)); } for (const p of [t[0], t[2], t[1]]) { pos.push(...P(p[0], p[1], r0)); nor.push(...N(p[0], -1)); } }
+  for (let i = 0; i < D.length; i++) { const a = D[i], b = D[(i + 1) % D.length]; const A0 = P(a[0], a[1], r0), A1 = P(a[0], a[1], r1), B0 = P(b[0], b[1], r0), B1 = P(b[0], b[1], r1);
+    const e = new THREE.Vector3(B1[0] - A1[0], B1[1] - A1[1], B1[2] - A1[2]), rr = new THREE.Vector3(A1[0] - A0[0], A1[1] - A0[1], A1[2] - A0[2]); const n = new THREE.Vector3().crossVectors(e, rr).normalize();
+    for (const q of [A0, A1, B1, A0, B1, B0]) { pos.push(...q); nor.push(n.x, n.y, n.z); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  return new THREE.Mesh(g, mat);
+}
+// ---------- barrel (fixed): body + nose cone + top cap, clip; ridges sleeve inside ----------
+const BAR = new THREE.Group(); PEN.add(BAR);
+BAR.add(lath([[1.25, -125], [1.9, -124.6], [4.3, -113], [5.0, -104], [5.0, 15.5], [4.85, 16.1], [4.5, 16.2], [3.25, 16.2], [3.25, 15.2], [4.0, 15.2], [4.0, -104], [3.4, -112], [1.2, -122], [1.0, -125], [1.25, -125]], M.barrel, 128));
+{ const cl = new THREE.Group(); BAR.add(cl); cl.rotation.y = 90 * D2R;
+  const bar = new THREE.Mesh(new K.RBox(2.2, 34, 0.9, 2, 0.35), M.clip); bar.position.set(0, -2, 5.9); cl.add(bar);
+  const top = new THREE.Mesh(new K.RBox(2.2, 3.2, 1.6, 2, 0.4), M.clip); top.position.set(0, 14.2, 5.35); cl.add(top);
+  const tipb = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 12), M.clip); tipb.scale.set(1, 1.3, 0.6); tipb.position.set(0, -18.6, 5.6); cl.add(tipb); }
+// ridges: the barrel's inner ribs (r 3.2..4.0). Bottom edge: 8 cells of 45 deg, even = short ledge, odd = long slot (GT) next to the wall.
+{ const e = []; for (let i = -4; i < 4; i++) { const a = i * T;
+    if (((i % 2) + 2) % 2 === 0) { e.push([a, G.Y0], [a + T, G.Y0 + H]); }
+    else { const ug = a + T - G.W_LUG - G.C; e.push([a, G.Y0], [ug, G.Y0 + SL * (ug - a)], [ug, G.GT], [a + T, G.GT]); } }
+  e.push([180, G.Y0]); const poly = [...e, [180, G.TOP], [-180, G.TOP]];
+  BAR.add(wrapPoly(poly, 3.2, 3.995, M.ridge)); }
+BAR.add(ring(3.2, 4.0, G.TOP - 0.01, 15.2, M.wallIn));    // inside wall above the ridges (hidden by the barrel until it fades)
+// ---------- plunger / button (slides, never turns) ----------
+const PLG = new THREE.Group(); PEN.add(PLG);
+{ const e = []; for (let j = -5; j < 4; j++) { const b = T / 2 + j * T; e.push([b, 0], [b + T, H]); }
+  // clip to [-180, 180]
+  const pts = []; const f = (u) => SL * ((((u - T / 2) % T) + T) % T);
+  pts.push([-180, f(-180)]); for (let j = -4; j < 4; j++) { const b = T / 2 + j * T; if (b > -180 && b < 180) { pts.push([b, H], [b, 0]); } } pts.push([180, f(180)]); pts.push([180, 2.0], [-180, 2.0]);
+  // (vertical faces are written as (b,H)->(b,0): the edge rises to H just left of b, then drops)
+  PLG.add(wrapPoly(pts, 2.4, 3.2, M.plunger)); }
+PLG.add(lath([[2.4, 1.99], [3.2, 1.99], [3.2, 17.0], [3.0, 17.7], [2.3, 18.0], [0, 18.08], [0, 15.0], [2.4, 15.0], [2.4, 1.99]], M.plunger, 96));
+PLG.add(ring(3.2, 3.88, 11.0, 11.6, M.plunger));
+const BSPR = K.spring(M.chrome, { R: 3.55, wire: 0.2, turns: 6, len: 5 }); BSPR.position.y = G.TOP; PEN.add(BSPR);
+// ---------- cam (rotor): 4 lugs, core, stem. Local: lug 0 top-right corner at (u 0, y 0) ----------
+const CAM = new THREE.Group(); PEN.add(CAM);
+for (let k = 0; k < 4; k++) { const u0 = k * 90; CAM.add(wrapPoly([[u0, 0], [u0 - G.W_LUG, -SL * G.W_LUG], [u0 - G.W_LUG, -G.LH], [u0, -G.LH]], 2.3, 3.95, M.cam)); }
+CAM.add(lath([[0, -2.6], [2.3, -2.6], [2.3, -0.75], [1.8, -0.7], [1.8, 2.2], [1.5, 2.45], [0, 2.45]], M.cam, 64));
+// ---------- refill (moves up/down with the cam, never turns): tube, collar, brass tip + ball; spring near the nose ----------
+const REF = new THREE.Group(); PEN.add(REF);
+REF.add(lath([[0, -2.6], [1.5, -2.6], [1.5, -119], [0, -119]], M.refill, 48));
+REF.add(lath([[0, -3.2], [1.15, -3.2], [1.15, -100], [0, -100]], M.ink, 32));
+REF.add(ring(1.5, 2.6, -107, -106, M.refill, 48));
+REF.add(lath([[0, -118.9], [1.4, -118.9], [1.4, -119.6], [0.5, -126.9], [0, -126.9]], M.brass, 48));
+{ const ball = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 16), M.chrome); ball.position.y = -127.2; REF.add(ball); }
+const RSPR = K.spring(M.chrome, { R: 2.3, wire: 0.28, turns: 9, len: 8 }); RSPR.position.y = -113; PEN.add(RSPR);
+S.shadowAll(scene);
+BAR.children[0].castShadow = false;
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j === 4 ? v : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const barA = (t) => Math.max(1 - S.smooth((t - 4.9) / 0.9), S.smooth((t - 24.2) / 0.8));
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] in world units (pen axis = world y) ----------
+const HOOK = [0, 0, -1185, 0, 640, 9, 32];
+const WIDE = [0, 0, -560, 0, 4700, 7, 26];
+const MID = [0, 0, 10, 0, 1150, 7, 14];
+const MAC1 = [0, 0, 30, 0, 440, 6, 13];
+const MAC2 = [0, 0, 30, 0, 440, 6, 57];
+const PAY = [0, 0, 30, 0, 640, 6, 52];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(0.99, [0, 0, -1190, 0, 600, 9, 34]), k_(1.0, WIDE), k_(4.7, [0, 0, -560, 0, 4500, 7, 30]), k_(6.3, [0, 0, -520, 0, 4300, 7, 26]),
+  k_(7.3, MID), k_(8.35, MAC1), k_(14.75, [0, 0, 30, 0, 430, 6, 14]), k_(15.8, MAC2), k_(20.95, [0, 0, 30, 0, 430, 6, 58]), k_(21.6, PAY), k_(24.0, [0, 0, 30, 0, 620, 6, 50]), k_(LOOP, HOOK)];
+let KK = null;
+function setScene(t) {
+  const k = kin(t); KK = k; const P = k[1], u = k[2], y = k[3];
+  PLG.position.y = P - G.PREST + G.PREST;   // plunger local y 0 = tooth tips
+  PLG.position.y = P;
+  CAM.position.y = y; CAM.rotation.y = u * D2R; REF.position.y = y;
+  BSPR.setLength(P + 11.0 - G.TOP); RSPR.setLength(y - 107 + 113);
+  const a = barA(t); M.barrel.opacity = a; M.barrel.depthWrite = a > 0.98; BAR.children[0].visible = a > 0.01; M.clip.opacity = a; M.clip.depthWrite = a > 0.98; BAR.children[1].visible = a > 0.01;
+  M.wallIn.opacity = a; M.wallIn.depthWrite = a > 0.98; BAR.children[3].visible = a > 0.01;
+  K.glow(PLG, Math.max(fade(t, 8.7, 10.5, 0.2), fade(t, 16.0, 17.2, 0.2)) * 0.8);
+  K.glow(CAM, Math.max(fade(t, 6.7, 8.3, 0.2) * 0.6, fade(t, 10.4, 11.6, 0.2) * 0.5, fade(t, 12.7, 13.9, 0.2) * 0.5));
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const pw = (r, phi, ymm) => new THREE.Vector3(r * Math.sin(phi * D2R) * SC, ymm * SC, r * Math.cos(phi * D2R) * SC);
+const scr = (v) => S.toScreen(camera, v);
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function arrowCurve(g2, a, P, col = '#ffd21f') { if (a <= 0 || P.length < 2) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round';
+  for (const [w, c] of [[20, 'rgba(0,0,0,0.6)'], [11, col]]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); }
+  const e = P[P.length - 1], d = P[P.length - 3] || P[0]; const ang = Math.atan2(e[1] - d[1], e[0] - d[0]); g2.fillStyle = col; g2.translate(e[0], e[1]); g2.rotate(ang); g2.beginPath(); g2.moveTo(26, 0); g2.lineTo(-14, -20); g2.lineTo(-14, 20); g2.closePath(); g2.fill(); g2.restore(); }
+const arcPts = (r, p0, p1, y, n = 16) => { const P = []; for (let i = 0; i <= n; i++) P.push(scr(pw(r, p0 + (p1 - p0) * i / n, y))); return P; };
+// the lug nearest the camera (its right edge angle)
+function frontLug(u, az) { let best = u, bd = 1e9; for (let k = -4; k < 8; k++) { const v = u + 90 * k; const d = Math.abs(v - 9 - az); if (d < bd) { bd = d; best = v; } } return best; }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const P = k[1], u = k[2], y = k[3], stt = k[4];
+  const tipOut = y < (G.Y_OUT + G.Y_IN) / 2;
+  { const fl = Math.max(0, 1 - Math.abs(t - EV.cut) / 0.12); K.TXT.flash(g2, 0.85 * fl); }
+  // hook (0-1 s and back at the loop end)
+  const hk = t < 2.0 ? 1 - S.smooth((t - 1.35) / 0.35) : S.smooth((t - 24.95) / 0.4);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A PEN', 'CLICK?', 112); const [cx, cy] = scr(pw(0, 0, -126)); K.TXT.circle(g2, hk * (t < 2 ? 1 : 1), cx, cy, 82, [-240, 170]); }
+  // outside: state of the tip, click at the button
+  const aW = fade(t, 1.25, 4.75);
+  if (aW > 0) { S.tag(g2, aW, tipOut ? 'TIP: OUT' : 'TIP: IN', ...scr(pw(0, 0, -125.5)), 130, -40, 52, tipOut ? '#ffd21f' : '#ffffff');
+    S.tag(g2, aW, 'BUTTON', ...scr(pw(0, 0, P + 18)), -150, 60, 46, '#ffffff');
+    const ac = fade(t, 2.45, 3.3, 0.12); if (ac > 0) pill(g2, ac, 'CLICK!', 760, 640, 64, '#ffd21f'); }
+  // parts
+  S.tag(g2, fade(t, 5.3, 7.0), 'SPRING', ...scr(pw(2.6, 30, -110)), 150, -60, 50, '#ffd21f');
+  S.tag(g2, fade(t, 5.3, 7.0), 'INK', ...scr(pw(1.5, 30, -60)), 150, 40, 46, '#ffffff');
+  const aP = fade(t, 7.0, 8.45, 0.25);
+  if (aP > 0) { const fu = frontLug(u, 13); S.tag(g2, aP, 'CAM (IT TURNS)', ...scr(pw(3.95, fu - 9, y - 1.4)), 120, 170, 50, '#ffa114');
+    S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, 35, 5.5)), 110, -150, 46, '#7fb0ff'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON', ...scr(pw(3.2, -30, P + 6)), -110, -170, 46, '#ffffff'); }
+  // steps
+  K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: THE SLOPES TURN IT');
+  K.TXT.step(g2, fade(t, 12.35, 15.75), 2, 'LET GO: IT HITS A LEDGE');
+  K.TXT.step(g2, fade(t, 15.9, 18.9), 3, 'PUSH AGAIN: IT TURNS ON');
+  K.TXT.step(g2, fade(t, 18.95, 21.05), 4, 'A LONG SLOT: TIP GOES IN');
+  const az = t < 15.3 ? 13 : 57; const fu = frontLug(u, az);
+  // press arrows (button pushes down)
+  for (const [a0, a1] of [[8.6, 10.5], [16.0, 17.3]]) { const ap = fade(t, a0, a1, 0.2); if (ap > 0) { const [x, yy] = scr(pw(3.2, az - 32, P + 2.5)); S.forceArrow(g2, ap, x, yy - 150, x, yy - 10, 26); pill(g2, ap, 'PUSH', x, yy - 200, 50, '#ffffff'); } }
+  // turn arrows during the snap (press) and the slide (release)
+  for (const c of EV.clicks.slice(2)) { const ts = c[1], tq = c[3];
+    const a1 = fade(t, ts - 0.1, ts + 1.05, 0.15); if (a1 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 22, y - 1.1); arrowCurve(g2, a1, AP); pill(g2, a1, 'IT TURNS', AP[8][0], AP[8][1] + 95, 50, '#ffd21f'); }
+    const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, 'SLIDES UP THE SLOPE', AP[8][0], AP[8][1] + 95, 46, '#ffd21f'); } }
+  // ledge / slot pinned on the ridges
+  const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.3, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; S.tag(g2, aL, 'SHORT LEDGE', ...scr(pw(4.0, wl - 3, G.Y0 + H + 0.1)), -60, 170, 50, '#ffd21f'); }
+  const aS = Math.max(fade(t, 19.2, 21.05), fade(t, 21.3, 24.1)); if (aS > 0) { const sl = (t > 21) ? 90 - G.C - G.W_LUG / 2 : fu - G.W_LUG / 2; S.tag(g2, aS, 'LONG SLOT', ...scr(pw(4.0, sl, G.GT - 1.5)), 140, t > 21 ? 260 : -170, 50, '#ffd21f'); }
+  // tip state (inside view)
+  const aT = fade(t, 8.45, 21.05, 0.3); if (aT > 0) pill(g2, aT, tipOut ? 'TIP: OUT' : 'TIP: IN', S.CX, 1360, 54, tipOut ? '#ffd21f' : '#ffffff');
+  // payoff + follow
+  K.TXT.answer(g2, fade(t, 21.15, 24.6, 0.3), 'EVERY CLICK TURNS THE CAM', 'LEDGE: OUT · SLOT: IN');
+  K.TXT.follow(g2, fade(t, 23.75, 25.15, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
