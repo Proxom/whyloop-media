@@ -50,5 +50,21 @@
  "sources": [
   "https://patents.google.com/patent/US8459281",
   "https://patents.google.com/patent/US6810895"
- ]
+ ],
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p071/umbrella_reel_v2.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p071/umbrella_cover_v2.jpg"
+ ],
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30fps H.264 High yuv420p, AAC 48k, 24.9 s, no black first/last frame",
+  "audio": "PASS -15.1 LUFS, -3.1 dBTP, HP4k gap 19.9 dB (beds low-passed, no high SFX)",
+  "mechanism": "PASS kin.py: runner bore vs catch min gap 0.05 mm over every 1/60 s row; runner rests on the flat top; rib angle from the stretcher geometry (6 -> 72 deg)",
+  "facts": "PASS US 8,459,281 + US 6,810,895 (patent text read via Firecrawl this run)",
+  "text": "PASS pyspellchecker (only handle/hashtag flags), hook 104 px, labels >= 46 px, safe zones checked on the 0.5 s frame",
+  "look": "PASS 6 stills + safe-zone frame checked (no glitches, no cut text)",
+  "clarity": "PASS (fresh reviewer, 2 fps frames + transcript): explanation correct; 14yo YES",
+  "visualScore": "5/10 (v1) -> top 3 fixes applied once in v2 (close-up closing beat + flash cut, red section faces, bigger hook), no re-score (rule B)"
+ },
+ "visualScore": 5
 }
