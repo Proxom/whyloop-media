@@ -134,13 +134,40 @@ function arrowCurve(g2, a, P, col = '#ffd21f') { if (a <= 0 || P.length < 2) ret
 const arcPts = (r, p0, p1, y, n = 16) => { const P = []; for (let i = 0; i <= n; i++) P.push(scr(pw(r, p0 + (p1 - p0) * i / n, y))); return P; };
 // the lug nearest the camera (its right edge angle)
 function frontLug(u, az) { let best = u, bd = 1e9; for (let k = -4; k < 8; k++) { const v = u + 90 * k; const d = Math.abs(v - 9 - az); if (d < bd) { bd = d; best = v; } } return best; }
+// outline the bottom edge of the ridge cell that holds angle phi (ledge: sloped step; slot: the recess)
+function cellEdge(i) { const a = i * T; if (((i % 2) + 2) % 2 === 0) return [[a, G.Y0], [a + T, G.Y0 + H]];
+  const ug = a + T - G.W_LUG - G.C; return [[ug, G.Y0 + SL * (ug - a)], [ug, G.GT], [a + T, G.GT], [a + T, G.Y0 + H * 0]]; }
+function cellOutline(g2, a, phi, col) { if (a <= 0) return; const i = Math.floor(phi / T); const E = cellEdge(i); const P = [];
+  for (let k = 0; k < E.length - 1; k++) for (let j = 0; j <= 8; j++) { const f = j / 8; P.push(scr(pw(4.0, E[k][0] + (E[k + 1][0] - E[k][0]) * f, E[k][1] + (E[k + 1][1] - E[k][1]) * f))); }
+  g2.save(); g2.globalAlpha = a; g2.lineJoin = 'round'; g2.lineCap = 'round';
+  for (const [w, c] of [[17, 'rgba(0,0,0,0.65)'], [9, col]]) { g2.strokeStyle = c; g2.lineWidth = w; g2.beginPath(); P.forEach((p, k) => k ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); }
+  g2.restore(); }
+// flat strip: the ridge ring cut open and laid flat (u 0..225 deg), cam lug from kin, cells labelled SHORT LEDGE / LONG SLOT
+function flatStrip(g2, a, u, y) { if (a <= 0) return; g2.save(); g2.globalAlpha = a;
+  const X0 = 110, X1 = 900, U0 = 45, U1 = 225, B = 744, s = 20; const X = (v) => X0 + (v - U0) / (U1 - U0) * (X1 - X0), Y = (m) => B - (m + 2.5) * s;
+  g2.fillStyle = 'rgba(12,14,20,0.86)'; S.rrect(g2, X0 - 24, 474, X1 - X0 + 48, B - 474 + 20, 22); g2.fill();
+  g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('THE RIDGES, LAID FLAT', (X0 + X1) / 2, 506);
+  g2.save(); g2.beginPath(); g2.rect(X0, 532, X1 - X0, B - 532 + 4); g2.clip();
+  const e = []; for (let i = 0; i < 5; i++) e.push(...cellEdge(i).slice(i % 2 ? 0 : 0)); 
+  g2.fillStyle = '#8a95a6'; g2.beginPath(); g2.moveTo(X(U0), Y(G.TOP + 1)); for (let i = 0; i < 5; i++) { const a0 = i * T; g2.lineTo(X(a0), Y(G.Y0)); for (const p of cellEdge(i)) g2.lineTo(X(p[0]), Y(p[1])); } g2.lineTo(X(U1), Y(G.TOP + 1)); g2.closePath(); g2.fill();
+  for (let i = 0; i < 5; i++) { const E = [[i * T, G.Y0], ...cellEdge(i)]; const led = i % 2 === 0; g2.strokeStyle = led ? '#ffd21f' : '#3fd0ff'; g2.lineWidth = 8; g2.beginPath(); E.forEach((p, k) => k ? g2.lineTo(X(p[0]), Y(p[1])) : g2.moveTo(X(p[0]), Y(p[1]))); g2.stroke(); }
+  // cam lug (orange) at its true place
+  const lug = [[u, y], [u - G.W_LUG, y - SL * G.W_LUG], [u - G.W_LUG, y - G.LH], [u, y - G.LH]];
+  for (const off of [0, -90, 90]) { g2.fillStyle = '#ffa114'; g2.strokeStyle = '#1a1206'; g2.lineWidth = 3; g2.beginPath(); lug.forEach((p, k) => k ? g2.lineTo(X(p[0] + off), Y(p[1])) : g2.moveTo(X(p[0] + off), Y(p[1]))); g2.closePath(); g2.fill(); g2.stroke(); }
+  g2.restore();
+  g2.font = '44px Anton'; g2.lineWidth = 7; g2.strokeStyle = 'rgba(0,0,0,0.8)';
+  for (let i = 0; i < 5; i++) { const led = i % 2 === 0; const cx = X(i * T + (i % 2 ? 12 : T / 2)), cy = Y(G.TOP - 2.6); if (cx < X0 + 40 || cx > X1 - 40) continue; const tx = led ? 'LEDGE' : 'SLOT'; g2.strokeText(tx, cx, cy); g2.fillStyle = led ? '#ffd21f' : '#3fd0ff'; g2.fillText(tx, cx, cy); }
+  g2.restore(); }
 // fixed pen badge (lower left, safe area): a pen drawn tip-down, its tip sticks out by ext (0 in, 1 out); label TIP: OUT / TIP: IN
-function penBadge(g2, a, ext, out) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 742, y0 = 1110, w = 186, h = 318;
+function penBadge(g2, a, ext, out, hi = 0) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 742, y0 = 1110, w = 186, h = 318;
   g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = out ? '#ffd21f' : '#ffffff'; g2.lineWidth = 4; g2.stroke();
   const cx = x0 + w / 2, top = y0 + 24, nose = y0 + 200; ext = Math.max(0, Math.min(1.3, ext));
   g2.fillStyle = '#e9e6df'; S.rrect(g2, cx - 11, top - 4 + (1 - Math.min(1, ext)) * 0 + (ext > 0.5 ? 10 : 0), 22, 26, 6); g2.fill();          // button (pressed down when the tip is out)
   g2.fillStyle = '#2a63d6'; S.rrect(g2, cx - 22, top + 18, 44, nose - top - 70, 10); g2.fill();
   g2.beginPath(); g2.moveTo(cx - 22, nose - 54); g2.lineTo(cx + 22, nose - 54); g2.lineTo(cx + 7, nose); g2.lineTo(cx - 7, nose); g2.closePath(); g2.fill();
+  { const yb = nose - 58, L = 34 + 26 * (1 - Math.min(1, ext)), n = 7; g2.strokeStyle = hi > 0.5 ? '#ffd21f' : '#c9d3e3'; g2.lineWidth = 5; g2.beginPath();
+    for (let j = 0; j <= 2 * n; j++) { const yy = yb - L * j / (2 * n), xx = cx + (j === 0 || j === 2 * n ? 0 : (j % 2 ? 15 : -15)); j ? g2.lineTo(xx, yy) : g2.moveTo(xx, yy); } g2.stroke();
+    g2.fillStyle = '#d9dde3'; g2.fillRect(cx - 17, yb - L - 7, 34, 7); g2.fillStyle = '#1b2a6b'; g2.fillRect(cx - 7, top + 26, 14, Math.max(4, yb - L - 7 - top - 26)); }
   const tipL = 34 * ext; g2.fillStyle = '#e7b85a'; g2.beginPath(); g2.moveTo(cx - 6, nose - 2); g2.lineTo(cx + 6, nose - 2); g2.lineTo(cx + 2.5, nose + tipL); g2.lineTo(cx - 2.5, nose + tipL); g2.closePath(); if (tipL > 1) g2.fill();
   if (tipL > 1) { g2.fillStyle = '#eef1f5'; g2.beginPath(); g2.arc(cx, nose + tipL, 4.5, 0, 7); g2.fill(); }
   g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = out ? '#ffd21f' : '#ffffff'; g2.fillText(out ? 'TIP: OUT' : 'TIP: IN', cx, y0 + h - 40); g2.restore(); }
@@ -161,29 +188,29 @@ function overlay(t) {
   S.tag(g2, fade(t, 5.3, 6.45), 'INK', ...scr(pw(1.5, 30, -50)), 150, -60, 46, '#ffffff');
   const aP = fade(t, 7.0, 8.45, 0.25);
   if (aP > 0) { const fu = frontLug(u, 13); S.tag(g2, aP, 'CAM (IT TURNS)', ...scr(pw(3.95, fu - 9, y - 1.4)), -130, 200, 50, '#ffa114');
-    S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, 32, 1.6)), 120, -140, 46, '#c9d3e3'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON', ...scr(pw(3.2, -30, P + 13)), -110, -150, 46, '#ffffff');
-    S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON SPRING', ...scr(pw(3.77, 30, 12)), 110, -150, 46, '#ffffff'); }
+    S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, 32, 1.6)), 120, -140, 46, '#c9d3e3'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON TEETH', ...scr(pw(3.2, -30, P + 0.6)), -110, -150, 46, '#3fd0ff'); }
   // steps
   const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
   stepPlate(Math.max(fade(t, 8.45, 12.3), fade(t, 12.35, 15.75), fade(t, 15.8, 18.7), fade(t, 18.75, 21.7)));
-  K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: THE TEETH TURN IT');
+  K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: BUTTON TEETH TURN IT');
   K.TXT.step(g2, fade(t, 12.35, 15.75), 2, 'LET GO: IT STOPS ON A LEDGE');
   K.TXT.step(g2, fade(t, 15.8, 18.7), 3, 'PUSH AGAIN: IT TURNS ON');
-  K.TXT.step(g2, fade(t, 18.75, 21.7), 4, 'DEEP SLOT: CAM + INK GO UP');
+  K.TXT.step(g2, fade(t, 18.75, 21.7), 4, 'LONG SLOT: CAM + INK GO UP');
   const az = t < 15.3 ? 13 : 57; const fu = frontLug(u, az);
   // press arrows (button pushes down)
-  for (const [a0, a1] of [[8.6, 10.5], [16.0, 17.3]]) { const ap = fade(t, a0, a1, 0.2); if (ap > 0) { const fu0 = frontLug(u, az); const [x, yy] = scr(pw(3.6, fu0 - 12, P + 0.9)); S.forceArrow(g2, ap, x - 120, yy - 150, x - 10, yy - 12, 26); pill(g2, ap, 'BUTTON TEETH PUSH', x - 130, yy - 205, 48, '#3fd0ff'); } }
+  for (const [a0, a1] of [[8.6, 10.5], [16.0, 17.3]]) { const ap = fade(t, a0, a1, 0.2); if (ap > 0) { const fu0 = frontLug(u, az); const [x, yy] = scr(pw(3.6, fu0 - 12, P + 0.9)); S.forceArrow(g2, ap, x - 120, yy - 150, x - 10, yy - 12, 26); pill(g2, ap, 'BUTTON TEETH', x - 130, yy - 205, 48, '#3fd0ff'); } }
   // turn arrows during the snap (press) and the slide (release)
   for (const c of EV.clicks.slice(2)) { const ts = c[1], tq = c[3];
     const a1 = fade(t, ts - 0.1, ts + 1.05, 0.15); if (a1 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 22, y - 1.1); arrowCurve(g2, a1, AP); pill(g2, a1, 'IT TURNS', AP[8][0], AP[8][1] + 95, 50, '#ffd21f'); }
-    const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, tq < 15 ? 'SLIDES ONTO A LEDGE' : 'SLIDES INTO A SLOT', AP[8][0], AP[8][1] + 95, 46, '#ffd21f'); } }
+    const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, tq < 15 ? 'SLIDES ONTO A LEDGE' : 'SLIDES INTO A SLOT', AP[8][0] - 150, AP[8][1] + 95, 46, '#ffd21f'); } }
   { const g4 = EV.clicks[3]; const r0 = G.EV.ledge ? 0 : 0; const ar = fade(t, 18.85, 21.6, 0.25); if (ar > 0) { const [x0, y0] = scr(pw(4.3, fu - 9, y - G.LH - 2.2)), [x1, y1] = scr(pw(4.3, fu - 9, y - G.LH - 0.2));
     S.forceArrow(g2, ar, x0, y0 + 160, x0, y1 - 10, 30); pill(g2, ar, 'SPRING LIFTS THE INK', x0, y0 + 215, 48, '#ffd21f'); } }
   // ledge / slot pinned on the ridges
-  const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.8, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; S.tag(g2, aL, 'SHORT LEDGE', ...scr(pw(4.0, wl - 2, G.Y0 + H + 0.7)), -150, -230, 50, '#ffd21f'); }
-  const aS = Math.max(fade(t, 19.2, 20.4), fade(t, 21.8, 24.1)); if (aS > 0) { const sl = (t > 21) ? 90 - G.C - G.W_LUG / 2 : fu - G.W_LUG / 2; S.tag(g2, aS, 'LONG SLOT', ...scr(pw(4.0, sl, G.GT - 1.5)), 140, t > 21 ? 260 : -170, 50, '#ffd21f'); }
+  const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.8, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; cellOutline(g2, aL, wl - 2, '#ffd21f'); const [lx, ly] = scr(pw(4.0, wl - 22, G.Y0 + 0.6)); pill(g2, aL, 'SHORT LEDGE', lx - 150, ly - 230, 50, '#ffd21f'); }
+  const aS = Math.max(fade(t, 19.2, 20.4), fade(t, 21.8, 24.1)); if (aS > 0) { const sl = (t > 21) ? 90 - G.C - G.W_LUG / 2 : fu - G.W_LUG / 2; cellOutline(g2, aS, sl, '#3fd0ff'); const [sx, sy] = scr(pw(4.0, sl, G.GT - 1.5)); pill(g2, aS, 'LONG SLOT', sx + 140, sy + 260, 50, '#3fd0ff'); }
   // tip state (inside view)
-  penBadge(g2, fade(t, 1.3, 21.7, 0.3), (G.Y_IN - y) / (G.Y_IN - G.Y_OUT), tipOut);
+  penBadge(g2, fade(t, 1.3, 21.7, 0.3), (G.Y_IN - y) / (G.Y_IN - G.Y_OUT), tipOut, fade(t, 18.8, 21.6, 0.2));
+  flatStrip(g2, fade(t, 12.45, 21.7, 0.3), u, y);
   // payoff + follow
   K.TXT.answer(g2, fade(t, 21.75, 24.7, 0.3), 'EVERY CLICK TURNS THE CAM', 'LEDGE: OUT · SLOT: IN');
   K.TXT.follow(g2, fade(t, 23.75, 25.15, 0.25));

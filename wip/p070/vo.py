@@ -6,10 +6,10 @@ LINES = [
  "How does a pen click?",
  "Click, it's out. Click, it's in. The same push every time.",
  "Inside, a spring pushes the ink up. A little cam sits on top.",
- "Push: the cam drops below the ridges, and the slanted teeth turn it.",
+ "Push: the button's teeth shove the cam down and turn it.",
  "Let go: it slides onto a short ledge. The tip stays out.",
  "Push again: it turns once more, into a long slot.",
- "The slot is deep, so the spring lifts the ink. Tip in.",
+ "The slot is long, so the spring lifts the ink. Tip in.",
  "Every click turns the cam. Ledge: out. Slot: in.",
 ]
 k = Kokoro(f'{TTS}/kokoro.onnx', f'{TTS}/voices.bin')
