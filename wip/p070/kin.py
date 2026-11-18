@@ -72,7 +72,7 @@ for i in range(int(LOOP * FPS) + 1):
     t = i / FPS; P = plunger(t); u, y, st = lug(t); y -= 0.0005   # 0.5 um clearance: contacts touch, never overlap
     rows.append([round(t, 4), round(P, 6), round(u, 6), round(y, 6), {'IN': 0, 'OUT': 1, 'PRESS': 2, 'SLIDE': 3, 'RISE': 4}[st]])
 json.dump(rows, open('kin.json', 'w'))
-EV = dict(vo=[0.15, 1.45, 4.8, 8.4, 12.35, 15.9, 18.95, 21.1], clicks=[[g['tp'], g['ts'], g['tr'], g['tq']] for g in segs],
+EV = dict(vo=[0.15, 1.45, 4.8, 8.4, 12.35, 15.8, 18.72, 21.75], clicks=[[g['tp'], g['ts'], g['tr'], g['tq']] for g in segs],
           snaps=[g['ts'] for g in segs], ledge=[g['tq'] + g['sl'] for g in segs], cut=1.0)
 G = dict(T=T, H=H, C=C, W_LUG=W_LUG, LH=LH, S=S, Y0=Y0, PREST=PREST, PBOT=PBOT, GT=GT, TOP=TOP, Y_OUT=Y_OUT, Y_IN=Y_IN, LOOP=LOOP, FPS_K=FPS, EV=EV)
 json.dump(G, open('geom.json', 'w'), indent=1)
