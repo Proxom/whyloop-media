@@ -76,10 +76,10 @@ const padC = (sx, phi) => [sx * (G.PX - (G.OFF - 3) * Math.cos(phi) + G.S_PAD * 
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const HOOK = [0, 0, -5, 0, 620, 12, 34];
 const WIDE = [0, 40, 60, 0, 2300, 10, 32];
-const FRONT = [0, 0, -5, 0, 520, 8, 0];
+const FRONT = [0, 0, 10, 0, 640, 8, 0];
 const k_ = (t, a) => [t, ...a.slice(1)];
 const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 0, -5, 0, 590, 12, 36]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.6, [0, 40, 50, 0, 2150, 10, 28]),
-  k_(T.vo2 + 0.6, [0, 0, 0, 0, 560, 6, 8]), k_(T.vo3 - 0.1, FRONT), k_(T.vo5 + 3.2, [0, 0, 0, 0, 500, 4, 2]), k_(T.vo5 + 4.2, [0, 0, -20, 0, 700, 12, 30]), k_(T.vo6 + 0.3, [0, 0, -15, 0, 720, 12, 32]),
+  k_(T.vo2 + 0.6, [0, 0, 10, 0, 680, 6, 8]), k_(T.vo3 - 0.1, FRONT), k_(T.vo5 + 3.2, [0, 0, 10, 0, 620, 6, 2]), k_(T.vo5 + 4.2, [0, 0, -20, 0, 700, 12, 30]), k_(T.vo6 + 0.3, [0, 0, -15, 0, 720, 12, 32]),
   k_(LOOP - 0.5, [0, 0, -8, 0, 650, 12, 34]), k_(LOOP, HOOK)];
 let KK = null;
 function setScene(t) {
@@ -104,6 +104,7 @@ const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
 function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
   y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
   S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function line(g2, a, P, col, w = 10) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; for (const [lw, c] of [[w + 8, 'rgba(0,0,0,0.6)'], [w, col]]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); }
 function badge(g2, a, sp) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 742, y0 = 1190, w = 186, h = 230; const stop = sp < 0.05;
   g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = stop ? '#ffd21f' : '#3fd0ff'; g2.lineWidth = 4; g2.stroke();
   const cx = x0 + w / 2; g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('WHEEL:', cx, y0 + 52);
@@ -113,32 +114,44 @@ function overlay(t) {
   { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.8 * fx); }
   const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
   const [xr, yr] = top(1, phi), [xl, yl] = top(-1, phi);
-  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES ONE CABLE', 'SQUEEZE BOTH SIDES?', 92); const [cx, cy] = scr(0, -5); K.TXT.circle(g2, hk, cx, cy, 120, [-200, 230]); }
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES ONE CABLE', 'SQUEEZE BOTH SIDES?', 92); const [cx, cy] = scr(G.RIM_X + 4, -10); K.TXT.circle(g2, hk, cx, cy, 95, [-200, 230]); }
   // wide: lever + cable
   { const a = fade(t, T.vo1 + 0.15, T.vo2 - 0.3, 0.2); if (a > 0) { S.tag(g2, a, 'BRAKE LEVER', ...scr(260, 434, 100), 40, -150, 48, '#ffd21f'); S.tag(g2, a, 'CABLE', ...scr(-40, 300, 50), -150, -60, 46, '#ffffff');
       S.tag(g2, a, 'BRAKE', ...scr(0, 30), -160, 120, 48, '#ffd21f'); } }
   // parts (front close-up)
   { const a = fade(t, T.vo2 + 0.6, T.vo3 + 0.2, 0.25); if (a > 0) { S.tag(g2, a, 'ARM', ...scr(-G.PX - 8, G.PY + 90), -130, -60, 50, '#ffd21f'); S.tag(g2, a, 'ARM', ...scr(G.PX + 8, G.PY + 90), 130, -60, 50, '#ffd21f');
-      S.tag(g2, a, 'PAD', ...scr(-G.RIM_X - 8, -12), -150, 150, 48, '#ffffff'); S.tag(g2, a, 'PAD', ...scr(G.RIM_X + 8, -12), 150, -170, 48, '#ffffff'); S.tag(g2, a, 'RIM', ...scr(0, -40), 120, 260, 48, '#c9d3e3'); } }
+      S.tag(g2, a, 'PAD', ...scr(-G.RIM_X - 8, -12), -150, 150, 48, '#ffffff'); S.tag(g2, a, 'PAD', ...scr(G.RIM_X + 8, -12), 150, -170, 48, '#ffffff'); S.tag(g2, a, 'RIM', ...scr(0, -40), 120, 260, 48, '#c9d3e3'); S.tag(g2, a, 'TIRE (CUT OPEN)', ...scr(0, 16), 150, -230, 46, '#c9d3e3'); } }
   // steps
   const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
   const s1 = fade(t, T.vo3, T.vo4 - 0.05), s2 = fade(t, T.vo4, T.vo5 - 0.05), s3 = fade(t, T.vo5, T.vo6 - 0.1);
   stepPlate(Math.max(s1, s2, s3));
-  K.TXT.step(g2, s1, 1, 'CABLE PULLS, TUBE PUSHES BACK', 60);
+  K.TXT.step(g2, s1, 1, 'CABLE PULLS, CASING PUSHES', 60);
   K.TXT.step(g2, s2, 2, 'BOTH PADS HIT THE RIM', 64);
   K.TXT.step(g2, s3, 3, 'LONG ARMS: HARD SQUEEZE', 64);
   // step 1: two opposite arrows at the arm tops
   { const a = fade(t, T.vo3 + 0.3, T.vo4 + 0.2, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr), [lx, ly] = scr(xl, yl);
-      S.forceArrow(g2, Math.min(a, fade(t, T.vo3 + 0.3, T.vo4 + 0.2)), rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'CABLE PULLS', rx + 120, ry - 140, 50, '#ffd21f');
-      const ab = fade(t, T.vo3 + 2.2, T.vo4 + 0.2, 0.25); S.forceArrow(g2, ab, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, ab, 'TUBE PUSHES', lx - 110, ly + 160, 50, '#ffa114'); } }
+      S.forceArrow(g2, Math.min(a, fade(t, T.vo3 + 0.3, T.vo4 + 0.2)), rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'INNER CABLE PULLS', rx + 40, ry + 110, 48, '#ffffff');
+      const ab = fade(t, T.vo3 + 2.2, T.vo4 + 0.2, 0.25); S.forceArrow(g2, ab, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, ab, 'CASING PUSHES', lx - 60, ly + 175, 48, '#ffa114'); } }
+  { const an = fade(t, T.vo3 + 0.1, T.vo3 + 3.0, 0.25); if (an > 0) { S.tag(g2, an, 'OUTER CASING', ...scr(xl - 24, yl + 30), -150, -40, 48, '#ffa114'); S.tag(g2, an, 'INNER CABLE', ...scr((xl + xr) / 2, yr), 40, -170, 48, '#ffffff'); }
+    const at = fade(t, T.vo3, T.vo4 + 0.3, 0.25); if (at > 0) { g2.save(); g2.globalAlpha = at; g2.fillStyle = '#ffd21f'; for (const dd of [8, 20, 32, 44, 56]) { const x = xr - dd; if (x < xl + 5) continue; const [tx, ty] = scr(x, yr); g2.fillRect(tx - 3, ty - 14, 6, 28); } g2.restore();
+      const ag = fade(t, T.vo3 + 2.9, T.vo4 + 0.3, 0.25); const yb = yr + 22; const [bx0, by0] = scr(xl + 4, yb), [bx1, by1] = scr(xr, yb); line(g2, ag, [[bx0, by0], [bx1, by1]], '#ffd21f', 6);
+      for (const [x, d] of [[bx0, 1], [bx1, -1]]) { g2.save(); g2.globalAlpha = ag; g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.moveTo(x, by0); g2.lineTo(x + d * 22, by0 - 13); g2.lineTo(x + d * 22, by0 + 13); g2.closePath(); g2.fill(); g2.restore(); }
+      pill(g2, ag, `GAP: ${(xr - xl - 4).toFixed(0)} MM`, (bx0 + bx1) / 2, by0 - 62, 46, '#ffd21f'); } }
   // step 2: squeeze marks at the pads
   { const a = fade(t, T.vo4 + 0.3, T.vo5 + 0.1, 0.2); if (a > 0) { const [px, py] = scr(G.RIM_X + 6, -10), [qx, qy] = scr(-G.RIM_X - 6, -10); S.forceArrow(g2, a, px + 150, py + 90, px + 14, py + 10, 22); S.forceArrow(g2, a, qx - 150, qy + 90, qx - 14, qy + 10, 22);
       pill(g2, a, 'SQUEEZE!', (px + qx) / 2, py + 220, 54, '#ffd21f'); } }
   // step 3: travel readouts (live) + friction
-  { const a = fade(t, T.vo5 + 0.9, T.vo5 + 3.4, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr); pill(g2, a, `CABLE: ${pull.toFixed(0)} MM`, rx + 60, ry - 150, 52, '#ffd21f');
-      const pad = Math.max(0, G.GAP * u); const [px, py] = scr(G.RIM_X + 10, -15); pill(g2, a, `EACH PAD: ${pad.toFixed(0)} MM`, px - 120, py + 230, 52, '#3fd0ff'); } }
-  { const a = fade(t, T.vo5 + 3.6, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS IT', px - 150, py + 300, 52, '#ffa114'); } }
-  badge(g2, fade(t, T.vo1 + 0.3, LOOP - 1.5, 0.3), sp);
+  { const a = fade(t, T.vo5 + 0.9, T.vo5 + 3.4, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr); pill(g2, a, `CABLE: ${pull.toFixed(0)} MM`, rx - 170, ry + 80, 50, '#ffd21f');
+      const pad = Math.max(0, G.GAP * u); const [px, py] = scr(G.RIM_X + 10, -15); pill(g2, a, `EACH PAD: ${pad.toFixed(0)} MM`, px - 120, py + 150, 50, '#3fd0ff'); } }
+  { const a = fade(t, T.vo5 + 0.2, T.vo5 + 3.4, 0.25); if (a > 0) { for (const sx of [-1, 1]) { const [qx, qy] = scr(sx * G.PX, G.PY, 6); g2.save(); g2.globalAlpha = a; g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(qx, qy, 13, 0, 7); g2.fill(); g2.restore(); }
+      const [px0, py0] = scr(G.PX, G.PY, 6); pill(g2, a, 'PIVOT', px0 + 130, py0 - 60, 46, '#ffffff');
+      const off = (d) => { const nx = Math.cos(phi), ny = -Math.sin(phi); return [G.PX + nx * d, G.PY + ny * d]; };
+      const P0 = off(16), Pt = [P0[0] + G.S_TOP * Math.sin(phi), P0[1] + G.S_TOP * Math.cos(phi)], Pp = [P0[0] + G.S_PAD * Math.sin(phi), P0[1] + G.S_PAD * Math.cos(phi)];
+      const Q0 = off(30), Qp = [Q0[0] + G.S_PAD * Math.sin(phi), Q0[1] + G.S_PAD * Math.cos(phi)];
+      line(g2, a, [scr(P0[0], P0[1], 6), scr(Pt[0], Pt[1], 6)], '#ffd21f', 8); line(g2, a, [scr(Q0[0], Q0[1], 6), scr(Qp[0], Qp[1], 6)], '#3fd0ff', 8);
+      const am = fade(t, T.vo5 + 1.4, T.vo5 + 3.4, 0.25); pill(g2, am, 'SQUEEZE ≈ 2× THE PULL', 495, 590, 52, '#ffa114'); } }
+  { const a = fade(t, T.vo5 + 3.6, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS THE WHEEL', 495, Math.min(py + 190, 1110), 52, '#ffa114'); } }
+  badge(g2, Math.max(fade(t, T.vo1 + 0.3, T.vo2 + 0.2, 0.3), fade(t, T.vo5 + 3.6, LOOP - 1.5, 0.3)), sp);
   K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.3, 0.3), 'ONE PULL, TWO ARMS', 'BOTH SIDES SQUEEZED', 560);
   K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
 }

@@ -7,3 +7,14 @@ scene.html (front close-up cuts the wheel's front half at z 45 so the pads/rim s
 post.json (spellchecked: only whyloop/hq/howitworks/mm flagged = handle/hashtag/unit).
 Facts: Wikipedia Bicycle brake + Wikipedia Lever (Firecrawl scrape this run).
 Render: NODE_PATH=/opt/node22/lib/node_modules node tools/render/render.js wip/p073/scene.html <out> 30 1 0 777 0.75 0 0 1 1080 1920 1; encode.sh <out> wip/p073/mix.wav brake_reel.mp4 25.9 30
+
+STATUS (18 Nov 22:06 run, end ~23:30 UTC): NOT SCHEDULED - CLARITY GATE failed twice (v1 + v2). 20 Nov 17:00 is EMPTY -> next run: either finish p073 v3 (fixes below, new render ~9 min alone) or make a simpler topic.
+- v1 (brake_reel.mp4): HARD GATE PASS; visual 5/10; clarity 14yo NO ("tube" confused with the fork tubes, arms barely move, lever not shown, SPIN/STOP flips).
+- v2 (brake_reel_v2.mp4, current files): VO line 3 "Its outer casing pushes back...", GAP 4 -> 6 mm (pull 21.8 mm), OUTER CASING / INNER CABLE tags, ticks sliding into the casing, GAP bracket, PIVOT dots + long/short lines,
+  "SQUEEZE ≈ 2× THE PULL", badge only in wide/3-4 shots, TIRE (CUT OPEN) tag, hook circle on the pad. HARD GATE PASS (26.2 s, -15.1 LUFS, -3.0 dBTP, gap 21.0 dB). Clarity retest: explanation correct, 14yo NO.
+TODO for v3 (reviewer 2):
+ 1. WHY the casing pushes: a short cutaway of the wire inside its casing (casing end resting on the left arm, wire end on the right arm) + equal-and-opposite arrows; VO: "The wire pulls one way, so its casing shoves back the other way."
+ 2. Leverage step must NOT reopen the brake: show the travel readouts during the first squeeze (step 1/2) or say "Watch it again"; one name for the travel ("CABLE PULLED: 22 MM" everywhere, drop the separate GAP readout or start it at 0);
+    explain the yellow/blue lines with LONG / SHORT pills or remove them; say "small pad move, big force" instead of "2×" (or show force bars).
+ 3. Opening: label the circled part PAD in the hook; show the lever moving (bigger blade, a hand outline) and drop the SPIN->STOP->SPIN flip (badge off until the friction beat);
+    fewer labels at 6-8 s (no TIRE tag; tilt the camera 20-25 deg so the cut tyre reads as a tyre); fix clipped OUTER CASING tag; step header "4 FRICTION STOPS THE WHEEL" at the friction beat.

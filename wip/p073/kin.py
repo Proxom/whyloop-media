@@ -3,7 +3,7 @@
 # Pad face (toward the rim) x = PX + S_PAD sin phi - OFF; contact when it reaches the rim side x = RIM_X. Cable top at S_TOP.
 # Linear pull: the cable moves (relative to its housing) by the change of the distance between the two arm tops.
 import json, math
-PX, PY, S_PAD, S_TOP, OFF, RIM_X, GAP = 40.0, -70.0, 60.0, 115.0, 22.0, 10.0, 4.0
+PX, PY, S_PAD, S_TOP, OFF, RIM_X, GAP = 40.0, -70.0, 60.0, 115.0, 22.0, 10.0, 6.0
 PAD_H = 10.0
 def face(phi):      # innermost x of the pad face (both corners, local (-OFF, S_PAD +- PAD_H/2) rotated by -phi)
     return min(PX - OFF * math.cos(phi) + (S_PAD + d) * math.sin(phi) for d in (-PAD_H / 2, PAD_H / 2))
