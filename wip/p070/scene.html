@@ -133,6 +133,16 @@ function arrowCurve(g2, a, P, col = '#ffd21f') { if (a <= 0 || P.length < 2) ret
 const arcPts = (r, p0, p1, y, n = 16) => { const P = []; for (let i = 0; i <= n; i++) P.push(scr(pw(r, p0 + (p1 - p0) * i / n, y))); return P; };
 // the lug nearest the camera (its right edge angle)
 function frontLug(u, az) { let best = u, bd = 1e9; for (let k = -4; k < 8; k++) { const v = u + 90 * k; const d = Math.abs(v - 9 - az); if (d < bd) { bd = d; best = v; } } return best; }
+// fixed pen badge (lower left, safe area): a pen drawn tip-down, its tip sticks out by ext (0 in, 1 out); label TIP: OUT / TIP: IN
+function penBadge(g2, a, ext, out) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 72, y0 = 1060, w = 230, h = 368;
+  g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = out ? '#ffd21f' : '#ffffff'; g2.lineWidth = 4; g2.stroke();
+  const cx = x0 + w / 2, top = y0 + 26, nose = y0 + 236; ext = Math.max(0, Math.min(1.3, ext));
+  g2.fillStyle = '#e9e6df'; S.rrect(g2, cx - 11, top - 4 + (1 - Math.min(1, ext)) * 0 + (ext > 0.5 ? 10 : 0), 22, 26, 6); g2.fill();          // button (pressed down when the tip is out)
+  g2.fillStyle = '#2a63d6'; S.rrect(g2, cx - 22, top + 18, 44, nose - top - 70, 10); g2.fill();
+  g2.beginPath(); g2.moveTo(cx - 22, nose - 54); g2.lineTo(cx + 22, nose - 54); g2.lineTo(cx + 7, nose); g2.lineTo(cx - 7, nose); g2.closePath(); g2.fill();
+  const tipL = 34 * ext; g2.fillStyle = '#e7b85a'; g2.beginPath(); g2.moveTo(cx - 6, nose - 2); g2.lineTo(cx + 6, nose - 2); g2.lineTo(cx + 2.5, nose + tipL); g2.lineTo(cx - 2.5, nose + tipL); g2.closePath(); if (tipL > 1) g2.fill();
+  if (tipL > 1) { g2.fillStyle = '#eef1f5'; g2.beginPath(); g2.arc(cx, nose + tipL, 4.5, 0, 7); g2.fill(); }
+  g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = out ? '#ffd21f' : '#ffffff'; g2.fillText(out ? 'TIP: OUT' : 'TIP: IN', cx, y0 + h - 44); g2.restore(); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const P = k[1], u = k[2], y = k[3], stt = k[4];
   const tipOut = y < (G.Y_OUT + G.Y_IN) / 2;
@@ -146,30 +156,31 @@ function overlay(t) {
     S.tag(g2, aW, 'BUTTON', ...scr(pw(0, 0, P + 18)), -150, 60, 46, '#ffffff');
     const ac = fade(t, 2.45, 3.3, 0.12); if (ac > 0) pill(g2, ac, 'CLICK!', 760, 640, 64, '#ffd21f'); }
   // parts
-  S.tag(g2, fade(t, 5.3, 7.0), 'SPRING', ...scr(pw(2.6, 30, -110)), 150, -60, 50, '#ffd21f');
-  S.tag(g2, fade(t, 5.3, 7.0), 'INK', ...scr(pw(1.5, 30, -60)), 150, 40, 46, '#ffffff');
+  S.tag(g2, fade(t, 5.3, 6.45), 'SPRING: PUSHES INK UP', ...scr(pw(2.6, 30, -110)), 140, -110, 50, '#ffd21f');
+  S.tag(g2, fade(t, 5.3, 6.45), 'INK', ...scr(pw(1.5, 30, -50)), 150, -60, 46, '#ffffff');
   const aP = fade(t, 7.0, 8.45, 0.25);
   if (aP > 0) { const fu = frontLug(u, 13); S.tag(g2, aP, 'CAM (IT TURNS)', ...scr(pw(3.95, fu - 9, y - 1.4)), 120, 170, 50, '#ffa114');
-    S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, 35, 5.5)), 110, -150, 46, '#7fb0ff'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON', ...scr(pw(3.2, -30, P + 6)), -110, -170, 46, '#ffffff'); }
+    S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, -25, 5.5)), -110, 60, 46, '#c9d3e3'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON', ...scr(pw(3.2, -30, P + 13)), -110, -150, 46, '#ffffff');
+    S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON SPRING', ...scr(pw(3.77, 30, 12)), 110, -150, 46, '#ffffff'); }
   // steps
   const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
   stepPlate(Math.max(fade(t, 8.45, 12.3), fade(t, 12.35, 15.75), fade(t, 15.9, 18.9), fade(t, 18.95, 21.05)));
-  K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: THE SLOPES TURN IT');
+  K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: THE TEETH TURN IT');
   K.TXT.step(g2, fade(t, 12.35, 15.75), 2, 'LET GO: IT HITS A LEDGE');
   K.TXT.step(g2, fade(t, 15.9, 18.9), 3, 'PUSH AGAIN: IT TURNS ON');
-  K.TXT.step(g2, fade(t, 18.95, 21.05), 4, 'A LONG SLOT: TIP GOES IN');
+  K.TXT.step(g2, fade(t, 18.95, 21.05), 4, 'IN THE SLOT: TIP GOES IN');
   const az = t < 15.3 ? 13 : 57; const fu = frontLug(u, az);
   // press arrows (button pushes down)
   for (const [a0, a1] of [[8.6, 10.5], [16.0, 17.3]]) { const ap = fade(t, a0, a1, 0.2); if (ap > 0) { const [x, yy] = scr(pw(3.2, az - 32, P + 2.5)); S.forceArrow(g2, ap, x, yy - 150, x, yy - 10, 26); pill(g2, ap, 'PUSH', x, yy - 200, 50, '#ffffff'); } }
   // turn arrows during the snap (press) and the slide (release)
   for (const c of EV.clicks.slice(2)) { const ts = c[1], tq = c[3];
     const a1 = fade(t, ts - 0.1, ts + 1.05, 0.15); if (a1 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 22, y - 1.1); arrowCurve(g2, a1, AP); pill(g2, a1, 'IT TURNS', AP[8][0], AP[8][1] + 95, 50, '#ffd21f'); }
-    const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, 'SLIDES UP THE SLOPE', AP[8][0], AP[8][1] + 95, 46, '#ffd21f'); } }
+    const a2 = fade(t, tq - 0.1, tq + 1.0, 0.15); if (a2 > 0) { const AP = arcPts(4.6, fu - 9 - 8, fu - 9 + 20, y - 1.1); arrowCurve(g2, a2, AP); pill(g2, a2, tq < 15 ? 'SLIDES ONTO A LEDGE' : 'SLIDES INTO A SLOT', AP[8][0], AP[8][1] + 95, 46, '#ffd21f'); } }
   // ledge / slot pinned on the ridges
   const aL = Math.max(fade(t, 13.7, 15.75), fade(t, 21.3, 24.1)); if (aL > 0) { const W0 = Math.round((fu) / 90) * 90 - 45 + (t > 21 ? 0 : 0); const wl = (t > 21) ? 45 : fu; S.tag(g2, aL, 'SHORT LEDGE', ...scr(pw(4.0, wl - 3, G.Y0 + H + 0.1)), -150, -230, 50, '#ffd21f'); }
   const aS = Math.max(fade(t, 19.2, 21.05), fade(t, 21.3, 24.1)); if (aS > 0) { const sl = (t > 21) ? 90 - G.C - G.W_LUG / 2 : fu - G.W_LUG / 2; S.tag(g2, aS, 'LONG SLOT', ...scr(pw(4.0, sl, G.GT - 1.5)), 140, t > 21 ? 260 : -170, 50, '#ffd21f'); }
   // tip state (inside view)
-  const aT = fade(t, 8.45, 21.05, 0.3); if (aT > 0) pill(g2, aT, tipOut ? 'TIP: OUT' : 'TIP: IN', S.CX, 1360, 54, tipOut ? '#ffd21f' : '#ffffff');
+  penBadge(g2, fade(t, 1.3, 21.05, 0.3), (G.Y_IN - y) / (G.Y_IN - G.Y_OUT), tipOut);
   // payoff + follow
   K.TXT.answer(g2, fade(t, 21.15, 24.6, 0.3), 'EVERY CLICK TURNS THE CAM', 'LEDGE: OUT · SLOT: IN');
   K.TXT.follow(g2, fade(t, 23.75, 25.15, 0.25));

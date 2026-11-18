@@ -17,7 +17,7 @@ sm = lambda u: (lambda v: v * v * (3 - 2 * v))(max(0.0, min(1.0, u)))
 CL = [(0.05, 0.24, 0.07, 0.34, 0.22, 0.07, 0.10),     # A: hook, IN -> OUT
       (2.45, 0.24, 0.07, 2.75, 0.22, 0.07, 0.14),     # B: wide, OUT -> IN
       (8.55, 2.20, 0.75, 12.35, 0.95, 0.90, 0.40),    # C: step 1 (slow), IN -> OUT
-      (15.95, 1.35, 0.55, 17.75, 0.80, 0.75, 1.10)]   # D: step 2 (slow), OUT -> IN
+      (15.95, 1.35, 0.55, 17.75, 0.80, 0.75, 1.60)]   # D: step 2 (slow), OUT -> IN
 def plunger(t):
     for (tp, pd, sd, tr, rd, sl, ri) in CL:
         if tp <= t < tr: return PREST + (PBOT - PREST) * sm((t - tp) / pd)

@@ -9,7 +9,7 @@ LINES = [
  "Push: the cam drops below the ridges, and the slanted teeth turn it.",
  "Let go: it slides onto a short ledge. The tip stays out.",
  "Push again: it turns once more, into a long slot.",
- "Now the spring pulls the tip back in.",
+ "Now the spring pushes the tip back in.",
  "Every click turns the cam. Ledge: out. Slot: in.",
 ]
 k = Kokoro(f'{TTS}/kokoro.onnx', f'{TTS}/voices.bin')
