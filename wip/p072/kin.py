@@ -5,7 +5,7 @@
 import json, math
 L, R_S, W_OFF = 230.0, 24.0, 14.0
 A_C, A_MIN = math.radians(-15.0), math.radians(-32.0)
-H_LOW, R_BALL, GMIN = -225.0, 48.0, 0.5
+H_LOW, R_BALL, GMIN = -160.0, 48.0, 0.5
 TANK = dict(x0=-330.0, x1=140.0, y0=-260.0, y1=60.0, z=90.0)
 FPS = 60
 H_CLOSE = L * math.sin(A_C)

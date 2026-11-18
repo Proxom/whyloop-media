@@ -75,12 +75,12 @@ const PIS = new THREE.Group(); scene.add(PIS);
 { for (const z of [-9, 9]) { const b = new THREE.Mesh(new K.RBox(14, 22, 3, 2, 1), M.brass); b.position.set(-2, 6, z); scene.add(b); }
   const pin = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 24, 24), M.chrome); pin.rotation.x = Math.PI / 2; scene.add(pin); }
 // ---------- float arm (rigid): long rod to the ball + short arm up into the piston ----------
-const ARM = new THREE.Group(); scene.add(ARM);
+const ARM = new THREE.Group(); scene.add(ARM); let BALL = null;
 const rodL = G.L - G.R_BALL + 4;
 { const rod = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, rodL, 20), M.brass); rod.rotation.z = Math.PI / 2; rod.position.x = -rodL / 2; ARM.add(rod);
-  const ball = new THREE.Group(); ball.position.x = -G.L; ARM.add(ball);
+  const ball = new THREE.Group(); ball.position.x = -G.L; ARM.add(ball); BALL = ball;
   const sph = new THREE.Mesh(new THREE.SphereGeometry(G.R_BALL, 64, 40), M.copper); ball.add(sph);
-  const seam = new THREE.Mesh(new THREE.TorusGeometry(G.R_BALL + 0.3, 1.6, 10, 72), M.copper); seam.rotation.y = Math.PI / 2; ball.add(seam);
+  const seam = new THREE.Mesh(new THREE.TorusGeometry(G.R_BALL + 0.3, 1.6, 10, 72), M.copper); seam.rotation.x = Math.PI / 2; ball.add(seam);
   const boss = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 14, 24), M.brass); boss.rotation.z = Math.PI / 2; boss.position.x = G.R_BALL + 2; ball.add(boss);
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 12, 24), M.brass); hub.rotation.x = Math.PI / 2; ARM.add(hub); }
 const SHORT = new THREE.Group(); ARM.add(SHORT); SHORT.rotation.z = G.A_C * D2R;   // short arm points straight up when the valve is shut
@@ -97,13 +97,13 @@ const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth
 const cutA = (t) => t < T.hookEnd ? 1 : Math.max(S.smooth((t - (T.vo1 + 0.4)) / 1.0), S.smooth((t - (LOOP - 0.5)) / 0.4));
 const cutV = (t) => t < T.hookEnd ? 1 : Math.min(S.smooth((t - (T.vo3 + 0.3)) / 0.8), 1);
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
-const MID = [0, -110, -60, 0, 1500, 6, 10];
-const WIDE = [0, -95, -230, 0, 2900, 9, 26];
+const MID = [0, -110, -90, 0, 1500, 6, 10];
+const WIDE = [0, -95, -260, 0, 2700, 9, 26];
 const VALV = [0, 6, 18, 0, 380, 4, 6];
 const k_ = (t, a) => [t, ...a.slice(1)];
-const CAMK = [k_(0, [0, -105, -40, 0, 1250, 6, 8]), k_(T.hookEnd - 0.01, [0, -105, -40, 0, 1190, 6, 9]), k_(T.hookEnd, WIDE), k_(T.vo1 + 0.6, [0, -95, -220, 0, 2700, 8, 22]),
+const CAMK = [k_(0, [0, -110, 10, 0, 1500, 6, 8]), k_(T.hookEnd - 0.01, [0, -110, 10, 0, 1440, 6, 9]), k_(T.hookEnd, WIDE), k_(T.vo1 + 0.6, [0, -95, -220, 0, 2700, 8, 22]),
   k_(T.vo2, MID), k_(T.vo3 - 0.1, [0, -100, -50, 0, 1350, 5, 8]), k_(T.vo3 + 1.0, VALV), k_(T.vo4 - 0.3, [0, 6, 18, 0, 360, 3, 10]), k_(T.vo4 + 0.5, MID), k_(T.vo5 + 0.2, [0, -110, -55, 0, 1450, 5, 12]),
-  k_(T.vo5 + 3.4, [0, -100, -40, 0, 1300, 4, 8]), k_(T.vo5 + 4.6, VALV), k_(T.vo6 - 0.2, [0, 6, 18, 0, 360, 4, 10]), k_(T.vo6 + 0.6, [0, -105, -40, 0, 1350, 6, 10]), k_(LOOP - 0.5, [0, -105, -40, 0, 1280, 6, 9]), k_(LOOP, [0, -105, -40, 0, 1250, 6, 8])];
+  k_(T.vo5 + 3.4, [0, -100, -40, 0, 1300, 4, 8]), k_(T.vo5 + 4.6, VALV), k_(T.vo6 - 0.2, [0, 6, 18, 0, 360, 4, 10]), k_(T.vo6 + 0.6, [0, -105, -40, 0, 1350, 6, 10]), k_(LOOP - 0.5, [0, -110, 0, 0, 1530, 6, 9]), k_(LOOP, [0, -110, 10, 0, 1500, 6, 8])];
 let KK = null;
 function setScene(t) {
   const k = kin(t); KK = k; const h = k[1], a = k[2] * D2R, g = k[3], fl = k[4];
@@ -115,14 +115,14 @@ function setScene(t) {
   CAP.scale.set(TK.x1 - TK.x0 - 0.5, ht, 1); CAP.position.set((TK.x0 + TK.x1) / 2, TK.y0 + ht / 2, 0.1);
   TOP.position.set((TK.x0 + TK.x1) / 2, hh, 0);
   // stream: from the port under the body down to the surface
-  const r = 0.6 + 5.0 * fl; const y0 = VY - 12, y1 = hh; STR.visible = fl > 0.01; STR.scale.set(r, y0 - y1, r * 0.8); STR.position.set(6, (y0 + y1) / 2, 0);
-  SPL.visible = fl > 0.05; const sr = 6 + 22 * fl * (1 + 0.15 * Math.sin(t * 23)); SPL.scale.set(sr, sr, 1); SPL.position.set(6, hh + 0.5, 0);
+  const r = 0.6 + 5.0 * fl; const y0 = VY - 12, y1 = hh; STR.visible = fl > 0.01; STR.scale.set(r, y0 - y1, r * 0.8); STR.position.set(10.5, (y0 + y1) / 2, 0);
+  SPL.visible = fl > 0.05; const sr = 6 + 22 * fl * (1 + 0.15 * Math.sin(t * 23)); SPL.scale.set(sr, sr, 1); SPL.position.set(10.5, hh + 0.5, 0);
   // cutaway
   const c = cutA(t); CUT.constant = c > 0.001 ? 120 * (1 - c) - 0.01 : 1e5; FRONT.visible = c < 0.999; SEC.visible = c > 0.98;
   LID.visible = c < 0.02 || false; LID.position.y = TK.y1 + 9 + 400 * c;
   const cv = cutV(t); CUTV.constant = cv > 0.001 ? 20 * (1 - cv) - 0.01 : 1e5;
   LEVER.rotation.z = -0.5 * Math.min(S.smooth((t - (T.vo1 + 0.1)) / 0.25), 1 - S.smooth((t - (T.vo1 + 1.2)) / 0.4)) * (t > T.hookEnd ? 1 : 0);
-  K.glow(ARM, Math.max(fade(t, T.vo2 + 0.2, T.vo2 + 2.4, 0.25) * 0.55, fade(t, T.vo5 + 0.3, T.vo5 + 3.4, 0.25) * 0.5));
+  { const ga = Math.max(fade(t, T.vo2 + 0.2, T.vo2 + 2.4, 0.25) * 0.55, fade(t, T.vo5 + 0.3, T.vo5 + 3.4, 0.25) * 0.5); for (const c of ARM.children) if (c !== BALL) K.glow(c, ga); }  // the ball keeps its copper colour
   K.glow(PIS, fade(t, T.vo5 + 3.6, T.vo6, 0.25) * 0.6);
   K.shoot(st, CAMK, t);
 }
@@ -144,7 +144,7 @@ function overlay(t) {
   if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A TOILET', "KNOW IT'S FULL?", 96); const [cx, cy] = scr(C[0], C[1]); K.TXT.circle(g2, hk, cx, cy, 95, [-160, 220]); }
   // flush
   { const a1 = fade(t, T.vo1 + 0.05, T.vo1 + 1.6, 0.2); if (a1 > 0) { const [x, y] = scr(TK.x0 + 50, TK.y1 - 40, TK.z + W); pill(g2, a1, 'FLUSH', x + 40, y - 120, 56, '#ffd21f'); } }
-  { const a2 = fade(t, T.vo1 + 1.5, T.vo2 + 0.3, 0.25); if (a2 > 0) { const [x, y] = scr(-60, (TK.y0 + h) / 2 + 40); S.forceArrow(g2, a2, x, y - 110, x, y + 110, 30); pill(g2, a2, 'WATER DROPS', x, y + 175, 50, '#3fd0ff'); } }
+  { const a2 = fade(t, T.vo1 + 1.5, T.vo2 + 0.3, 0.25); if (a2 > 0) { const [x, y] = scr(-110, (TK.y0 + h) / 2 + 40); S.forceArrow(g2, a2, x, y - 110, x, y + 110, 30); pill(g2, a2, 'WATER DROPS', x - 60, y + 175, 50, '#3fd0ff'); } }
   // parts
   const aP = fade(t, T.vo2 + 0.1, T.vo3 + 0.2, 0.25);
   if (aP > 0) { S.tag(g2, aP, 'FLOAT BALL', ...scr(C[0], C[1] + G.R_BALL * 0.6), -60, -170, 52, '#ffd21f'); S.tag(g2, aP, 'LONG ARM', ...scr(C[0] * 0.45, C[1] * 0.45), 60, 150, 48, '#ffd21f');
@@ -168,7 +168,10 @@ function overlay(t) {
       pill(g2, a3, 'SHORT ARM', P2[0] + 150, P2[1] - 120, 46, '#3fd0ff'); } }
   { const a4 = fade(t, T.vo5 + 4.0, T.vo6 + 0.2, 0.25); if (a4 > 0) { const [x, y] = scr(-6, VY); S.forceArrow(g2, a4, x - 150, y, x + 10, y, 40); pill(g2, a4, 'STRONG PUSH', x - 60, y - 150, 54, '#ffa114');
       const [wx, wy] = scr(G.W_OFF, VY - 9); pill(g2, Math.min(a4, fade(t, G.closed_at - 0.1, T.vo6 + 0.2, 0.2)), 'HOLE SEALED', wx + 40, wy + 170, 52, '#ffd21f'); } }
-  badge(g2, fade(t, T.vo1 + 1.2, T.vo6 - 0.1, 0.3), fl > 0.01, g);
+  { const aw = fade(t, T.vo3 + 1.3, T.vo4 - 0.1, 0.25); if (aw > 0) S.tag(g2, aw, 'RUBBER WASHER', ...scr(G.R_S * Math.sin(a - G.A_C * D2R) + 13, VY + 6), -60, -230, 46, '#ffffff'); }
+  { const ap = fade(t, T.vo5 + 0.3, T.vo5 + 3.5, 0.25); if (ap > 0) S.tag(g2, ap, 'PIVOT', ...scr(0, 0, 8), 150, 150, 48, '#ffffff'); }
+  { const af = fade(t, T.vo4 + 0.2, LOOP - 1.3, 0.3); if (af > 0) { const P0 = scr(TK.x0 + 6, G.H_CLOSE, -TK.z + 1), P1 = scr(TK.x1 - 6, G.H_CLOSE, -TK.z + 1); g2.save(); g2.setLineDash([22, 14]); line(g2, af * 0.9, [P0, P1], '#ffd21f', 5); g2.restore(); pill(g2, af, 'FULL', P0[0] + 70, P0[1] - 50, 44, '#ffd21f'); } }
+  badge(g2, fade(t, T.vo1 + 1.2, LOOP - 1.5, 0.3), fl > 0.01, g);
   K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.3, 0.3), 'THE FLOATING BALL', 'TURNS THE WATER OFF', 560);
   K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
 }
