@@ -20,16 +20,17 @@ const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 4, far: 3
 const { scene, camera } = st;
 const M = K.materials();
 const phys = (o) => new THREE.MeshPhysicalMaterial(o);
-M.barrel = phys({ color: 0x1f56c4, metalness: 0, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.12, transparent: true, opacity: 1, side: THREE.DoubleSide });
+M.barrel = phys({ color: 0x1f56c4, metalness: 0, roughness: 0.28, clearcoat: 0.3, clearcoatRoughness: 0.12, transparent: true, opacity: 1, side: THREE.DoubleSide });
 M.clip = phys({ color: 0xeef1f5, metalness: 1, roughness: 0.08, envMapIntensity: 1.4, transparent: true, opacity: 1 });
-M.ridge = phys({ color: 0x8a95a6, metalness: 0, roughness: 0.5, clearcoat: 0.2, clearcoatRoughness: 0.4, side: THREE.DoubleSide });
+M.ridge = phys({ color: 0x8a95a6, metalness: 0, roughness: 0.62, clearcoat: 0.0, side: THREE.DoubleSide });
 M.wallIn = phys({ color: 0x6d737c, metalness: 0.2, roughness: 0.7, transparent: true, opacity: 1 });
 M.plunger = phys({ color: 0xe9e6df, metalness: 0, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
-M.cam = phys({ color: 0xffa114, metalness: 0, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.2, side: THREE.DoubleSide });
+M.cam = phys({ color: 0xffa114, metalness: 0, roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
 M.refill = phys({ color: 0xd9dde3, metalness: 0, roughness: 0.3, clearcoat: 0.6, side: THREE.DoubleSide });
 M.ink = phys({ color: 0x1b2a6b, metalness: 0, roughness: 0.35, side: THREE.DoubleSide });
 K.backdrop(scene, { floorY: -2200, R: 2500, zBack: -5000, h: 14000, width: 30000, wall: '#1d2026', floor: '#22252b', pool: false, catcher: 10 });
-K.lightRig(scene, new THREE.Vector3(0, 0, 0), 320);
+const RIG = K.lightRig(scene, new THREE.Vector3(0, 0, 0), 320);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.6;   // reviewer: speckle (shadow acne) on the grey ridges
 // soft fill for the lower pen (outside the shadow camera)
 { const f = new THREE.DirectionalLight(0xfff1e0, 0.9); f.position.set(-1500, 1200, 2500); f.target.position.set(0, -600, 0); scene.add(f, f.target); }
 const PEN = new THREE.Group(); PEN.scale.setScalar(SC); scene.add(PEN);
@@ -99,14 +100,14 @@ function kin(t) { t = Math.max(0, Math.min(LOOP, t)); const i = Math.min(KN.leng
 const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
 const barA = (t) => Math.max(1 - S.smooth((t - 4.9) / 0.9), S.smooth((t - 24.2) / 0.8));
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] in world units (pen axis = world y) ----------
-const HOOK = [0, 0, -1185, 0, 640, 9, 32];
+const HOOK = [0, 0, -1165, 0, 760, 9, 32];
 const WIDE = [0, 0, -560, 0, 4700, 7, 26];
 const MID = [0, 0, 10, 0, 1150, 7, 14];
 const MAC1 = [0, 0, 30, 0, 440, 6, 13];
 const MAC2 = [0, 0, 30, 0, 440, 6, 57];
 const PAY = [0, 0, 30, 0, 640, 6, 52];
 const k_ = (t, a) => [t, ...a.slice(1)];
-const CAMK = [k_(0, HOOK), k_(0.99, [0, 0, -1190, 0, 600, 9, 34]), k_(1.0, WIDE), k_(4.7, [0, 0, -560, 0, 4500, 7, 30]), k_(6.3, [0, 0, -520, 0, 4300, 7, 26]),
+const CAMK = [k_(0, HOOK), k_(0.99, [0, 0, -1170, 0, 720, 9, 34]), k_(1.0, WIDE), k_(4.7, [0, 0, -560, 0, 4500, 7, 30]), k_(6.3, [0, 0, -520, 0, 4300, 7, 26]),
   k_(7.3, MID), k_(8.35, MAC1), k_(14.75, [0, 0, 30, 0, 430, 6, 14]), k_(15.8, MAC2), k_(20.95, [0, 0, 30, 0, 430, 6, 58]), k_(21.6, PAY), k_(24.0, [0, 0, 30, 0, 620, 6, 50]), k_(LOOP, HOOK)];
 let KK = null;
 function setScene(t) {
@@ -151,6 +152,8 @@ function overlay(t) {
   if (aP > 0) { const fu = frontLug(u, 13); S.tag(g2, aP, 'CAM (IT TURNS)', ...scr(pw(3.95, fu - 9, y - 1.4)), 120, 170, 50, '#ffa114');
     S.tag(g2, aP, 'RIDGES', ...scr(pw(4.0, 35, 5.5)), 110, -150, 46, '#7fb0ff'); S.tag(g2, Math.min(aP, fade(t, 7.3, 8.45, 0.25)), 'BUTTON', ...scr(pw(3.2, -30, P + 6)), -110, -170, 46, '#ffffff'); }
   // steps
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  stepPlate(Math.max(fade(t, 8.45, 12.3), fade(t, 12.35, 15.75), fade(t, 15.9, 18.9), fade(t, 18.95, 21.05)));
   K.TXT.step(g2, fade(t, 8.45, 12.3), 1, 'PUSH: THE SLOPES TURN IT');
   K.TXT.step(g2, fade(t, 12.35, 15.75), 2, 'LET GO: IT HITS A LEDGE');
   K.TXT.step(g2, fade(t, 15.9, 18.9), 3, 'PUSH AGAIN: IT TURNS ON');
