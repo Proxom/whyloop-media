@@ -2,6 +2,16 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 18 Nov 2026 21:54): 2 Reels A DAY AGAIN (01:00 + 17:00) + QUEUE TARGET = 10 + 5 RUNS A DAY — overrides every older slot, schedule and queue rule in this file (incl. "1 a day at 17:00 only" of 14 Nov and "QUEUE TARGET = 2" of 15 Nov)
+- SLOTS: exactly 2 Reels a day, at 01:00 and 17:00 Europe/London (Metricool brand 7675089, Instagram, type REEL). The 01:00 slot is OPEN again from 19 Nov 01:00. 21:00 stays CLOSED. No other slot exists. Fill empty slots in date order, the nearest empty slot first (tonight/tomorrow 01:00 included if there is still time to finish it properly).
+- QUEUE = future non-draft Instagram, type REEL posts in Metricool + finished, gate-passed Reels not yet scheduled.
+  - QUEUE 10 or more: do NOT make a new one. Short check only (max 15 min: slots right, last posts PUBLISHED, metrics note), then end.
+  - QUEUE 9 or less: make Reels in this run one after another, each to the FULL hard gate and every quality, topic and no-repeat rule in this file, each scheduled into the next empty 01:00/17:00 slot, until QUEUE is 10 or the run's 2-hour cap is reached. The next run continues.
+  - Never lower quality, skip a gate or repeat a topic to fill the queue. A video that fails the gate is not scheduled.
+- Both slots follow the same current content rules (studio kit, data-driven topics, series, no repeats, etc.); 01:00 simply takes the next item in the same order/rotation. Spread series and formats so two Reels of the same kind do not go out back to back.
+- Every older rule that makes kit work, engine builds or long-video work wait until "QUEUE is full" (2 or 3) now means QUEUE 10.
+- RUNS: 5 runs a day (Erkan sets the times; trust list_triggers). Only one run of this agent at a time: if the previous run's lock/work is still active, do a short check and end. Hard cap per run stays 2 hours.
+
 ## TOP OVERRIDE (Erkan, 15 Nov 2026 17:19): NO REPEATED TOPICS — HARD GATE, before any script or scene work
 Erkan found repeats (the combination lock and the car differential were each posted twice). From now on:
 1. TOPIC REGISTRY: keep learnings/topics-used.md = one row per video ever published or scheduled on this account (from Metricool published + scheduled posts AND the posts/ folder): date, title, and a canonical TOPIC KEY = the object/mechanism/subject in 1-3 lowercase words (e.g. "combination lock", "car differential", "iss speed", "black hole interior"). Build it fully in the next run (go back to the first post), then update it every time a video is scheduled.
