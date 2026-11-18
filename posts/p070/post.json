@@ -57,5 +57,21 @@
   "Push again: it turns once more, into a long slot.",
   "The slot is long, so the spring lifts the ink. Tip in.",
   "Every click turns the cam. Ledge: out. Slot: in."
- ]
+ ],
+ "status": "scheduled",
+ "scheduledAt": "2026-11-19T17:00:00 Europe/London",
+ "metricoolPostId": 432911371,
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p070/pen_reel_v5.mp4",
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p070/pen_cover_v5.jpg"
+ ],
+ "qualityAudit": {
+  "technical": "PASS 1080x1920 30fps H.264 High yuv420p, AAC 48k, 25.6 s, no black first/last frame",
+  "audio": "PASS -15.1 LUFS, -3.0 dBTP, HP4k gap 19.9 dB",
+  "mechanism": "PASS check.py 0 overlaps over the 4-click loop (1/60 s)",
+  "facts": "PASS 4 sources in first comment",
+  "text": "PASS pyspellchecker (names/hashtags only), safe zones checked on 0.5 s still",
+  "clarity": "PASS on test 5 (v5): explanation correct, 14yo YES. Tests 1-4 NO (v1-v4).",
+  "visualScore": "5/10 on v1, 3 fixes applied, no re-score (rule)"
+ }
 }
