@@ -1,0 +1,179 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p072 toilet fill valve "HOW DOES A TOILET / KNOW IT'S FULL?" (group E, track A voice). Built from kit/kit.js.
+// mm, pivot of the float arm at the origin, side view in x-y, camera from +z. kin.json rows: [t, water level h, arm angle a (deg), valve gap g (mm), flow 0..1].
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180, TK = G.TANK;
+const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 3, far: 30000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);
+const CUTV = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);    // valve body section (opens later, in the macro)
+M.cer = phys({ color: 0xf2f2ee, metalness: 0, roughness: 0.18, clearcoat: 0.8, clearcoatRoughness: 0.08, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.cerIn = phys({ color: 0xd9dad6, metalness: 0, roughness: 0.4, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.cutF = phys({ color: 0xd2261d, metalness: 0, roughness: 0.55, side: THREE.DoubleSide });
+M.water = phys({ color: 0x1f78cc, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.58, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.waterTop = phys({ color: 0x7cc4f2, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT], envMapIntensity: 1.5 });
+M.stream = phys({ color: 0x6fc0ff, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.88, depthWrite: false, envMapIntensity: 1.6 });
+M.copper = phys({ color: 0xd0804a, metalness: 1, roughness: 0.3, envMapIntensity: 1.25 });
+M.brassV = phys({ color: 0xe7b85a, metalness: 1, roughness: 0.3, envMapIntensity: 1.2, side: THREE.DoubleSide, clippingPlanes: [CUTV] });
+M.brassIn = phys({ color: 0xa88440, metalness: 0.8, roughness: 0.5, side: THREE.DoubleSide, clippingPlanes: [CUTV] });
+M.washer = phys({ color: 0x151515, metalness: 0, roughness: 0.85 });
+M.piston = phys({ color: 0xffa114, metalness: 0.2, roughness: 0.4, clearcoat: 0.3 });
+K.backdrop(scene, { floorY: -720, R: 1200, zBack: -2600, h: 9000, width: 20000, wall: '#1d2026', floor: '#22252b', pool: false, catcher: 10 });
+const RIG = K.lightRig(scene, new THREE.Vector3(-95, -150, 0), 330);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.6;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(-600, 300, 1800); f.target.position.set(-95, -150, 0); scene.add(f, f.target); }
+const lath = (prof, mat, seg = 64) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
+// ---------- tank (ceramic box, wall 12), lid, flush lever, bowl ----------
+const W = 12;
+const TKG = new THREE.Group(); scene.add(TKG);
+const box = (x0, x1, y0, y1, z0, z1, mat, r = 2) => { const m = new THREE.Mesh(new K.RBox(x1 - x0, y1 - y0, z1 - z0, 2, r), mat); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); TKG.add(m); return m; };
+box(TK.x0 - W, TK.x1 + W, TK.y0 - W, TK.y0, -TK.z - W, TK.z + W, M.cer, 4);        // bottom
+box(TK.x0 - W, TK.x0, TK.y0, TK.y1, -TK.z - W, TK.z + W, M.cer, 4);               // left wall
+box(TK.x1, TK.x1 + W, TK.y0, TK.y1, -TK.z - W, TK.z + W, M.cer, 4);               // right wall
+box(TK.x0, TK.x1, TK.y0, TK.y1, -TK.z - W, -TK.z, M.cer, 2);                      // back wall
+const FRONT = box(TK.x0 - W, TK.x1 + W, TK.y0 - W, TK.y1, TK.z, TK.z + W, M.cer, 4);  // front wall (cut away)
+const LID = new THREE.Mesh(new K.RBox(TK.x1 - TK.x0 + 2 * W + 16, 18, 2 * TK.z + 2 * W + 16, 3, 6), M.cer); LID.position.set((TK.x0 + TK.x1) / 2, TK.y1 + 9, 0); scene.add(LID);
+const LEVER = new THREE.Group(); LEVER.position.set(TK.x0 + 50, TK.y1 - 40, TK.z + W + 2); scene.add(LEVER);
+{ const hub = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 8, 32), M.chrome); hub.rotation.x = Math.PI / 2; LEVER.add(hub);
+  const h = new THREE.Mesh(new K.RBox(70, 12, 6, 2, 3), M.chrome); h.position.set(40, 0, 4); LEVER.add(h); }
+{ const bowl = lath([[0, -700], [120, -700], [130, -620], [205, -520], [240, -430], [248, -395], [0, -395]], M.cer, 72); bowl.material = M.cer.clone(); bowl.material.clippingPlanes = []; bowl.scale.z = 1.35; bowl.position.set(-95, 0, 210); scene.add(bowl);
+  const seat = new THREE.Mesh(new THREE.TorusGeometry(200, 16, 16, 72), bowl.material); seat.rotation.x = Math.PI / 2; seat.scale.y = 1.35; seat.position.set(-95, -382, 210); scene.add(seat);
+  const neck = new THREE.Mesh(new K.RBox(260, 130, 150, 3, 20), bowl.material); neck.position.set(-95, -330, 10); scene.add(neck); }
+// red section faces where the front wall is cut (z = 0 plane): left, right, bottom wall sections
+const SEC = new THREE.Group(); scene.add(SEC);
+for (const [x0, x1, y0, y1] of [[TK.x0 - W, TK.x0, TK.y0 - W, TK.y1], [TK.x1, TK.x1 + W, TK.y0 - W, TK.y1], [TK.x0, TK.x1, TK.y0 - W, TK.y0]]) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), M.cutF); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0.05); SEC.add(m); }
+// ---------- water: box (clipped) + cap at the cut plane + surface ----------
+const WAT = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), M.water); scene.add(WAT);
+const CAP = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), M.water); scene.add(CAP);
+const TOP = new THREE.Mesh(new THREE.PlaneGeometry(TK.x1 - TK.x0 - 1, 2 * TK.z - 1), M.waterTop); TOP.rotation.x = -Math.PI / 2; scene.add(TOP);
+// ---------- valve: brass body (axis x at y = 24), inlet pipe through the right wall, seat, piston + washer ----------
+const VY = 24;
+const xl = (prof, mat, seg = 64) => { const m = lath(prof, mat, seg); m.rotation.z = -Math.PI / 2; m.position.y = VY; scene.add(m); return m; };  // lathe along +x (profile [r, x])
+xl([[9, -24], [13, -24], [13, 40], [9, 40]], M.brassV); xl([[0.01, -24], [13, -24]], M.brassV);            // body + closed back end
+xl([[3.5, G.W_OFF], [9, G.W_OFF], [9, G.W_OFF + 3], [3.5, G.W_OFF + 3], [3.5, G.W_OFF]], M.brassIn);        // seat (orifice plate)
+xl([[0.01, 40], [8, 40], [8, TK.x1 + W + 30], [0.01, TK.x1 + W + 30]], M.chrome);                           // inlet pipe
+xl([[3.5, G.W_OFF + 3], [5.5, G.W_OFF + 3], [5.5, 40], [3.5, 40]], M.brassIn);
+xl([[0, TK.x1 + W + 2], [20, TK.x1 + W + 2], [20, TK.x1 + W + 12], [0, TK.x1 + W + 12]], M.chrome);       // outside nut
+const PIS = new THREE.Group(); scene.add(PIS);
+{ const p = lath([[0.01, -12], [8.7, -12], [8.7, 11.5], [0.01, 11.5]], M.piston, 48); p.rotation.z = -Math.PI / 2; p.position.y = VY; PIS.add(p);
+  const w = lath([[0.01, 11.5], [8.4, 11.5], [8.0, 14], [0.01, 14]], M.washer, 48); w.rotation.z = -Math.PI / 2; w.position.y = VY; PIS.add(w); }
+// bracket from the body down to the pivot, pivot pin
+{ for (const z of [-9, 9]) { const b = new THREE.Mesh(new K.RBox(14, 22, 3, 2, 1), M.brass); b.position.set(-2, 6, z); scene.add(b); }
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 24, 24), M.chrome); pin.rotation.x = Math.PI / 2; scene.add(pin); }
+// ---------- float arm (rigid): long rod to the ball + short arm up into the piston ----------
+const ARM = new THREE.Group(); scene.add(ARM);
+const rodL = G.L - G.R_BALL + 4;
+{ const rod = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, rodL, 20), M.brass); rod.rotation.z = Math.PI / 2; rod.position.x = -rodL / 2; ARM.add(rod);
+  const ball = new THREE.Group(); ball.position.x = -G.L; ARM.add(ball);
+  const sph = new THREE.Mesh(new THREE.SphereGeometry(G.R_BALL, 64, 40), M.copper); ball.add(sph);
+  const seam = new THREE.Mesh(new THREE.TorusGeometry(G.R_BALL + 0.3, 1.6, 10, 72), M.copper); seam.rotation.y = Math.PI / 2; ball.add(seam);
+  const boss = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 14, 24), M.brass); boss.rotation.z = Math.PI / 2; boss.position.x = G.R_BALL + 2; ball.add(boss);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 12, 24), M.brass); hub.rotation.x = Math.PI / 2; ARM.add(hub); }
+const SHORT = new THREE.Group(); ARM.add(SHORT); SHORT.rotation.z = G.A_C * D2R;   // short arm points straight up when the valve is shut
+{ const s = new THREE.Mesh(new K.RBox(6, G.R_S + 4, 5, 1, 1.5), M.brass); s.position.y = (G.R_S) / 2; SHORT.add(s); }
+// ---------- water stream from the valve port (below the body), splash ring ----------
+const STR = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 20, 1, true), M.stream); scene.add(STR);
+const SPL = new THREE.Mesh(new THREE.TorusGeometry(1, 0.25, 8, 40), M.stream); SPL.rotation.x = Math.PI / 2; scene.add(SPL);
+S.shadowAll(scene); for (const o of [WAT, CAP, TOP, STR, SPL]) { o.castShadow = false; o.receiveShadow = false; }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (Math.abs(b[1] - a[1]) > 20) return a; return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const cutA = (t) => t < T.hookEnd ? 1 : Math.max(S.smooth((t - (T.vo1 + 0.4)) / 1.0), S.smooth((t - (LOOP - 0.5)) / 0.4));
+const cutV = (t) => t < T.hookEnd ? 1 : Math.min(S.smooth((t - (T.vo3 + 0.3)) / 0.8), 1);
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const MID = [0, -110, -60, 0, 1500, 6, 10];
+const WIDE = [0, -95, -230, 0, 2900, 9, 26];
+const VALV = [0, 6, 18, 0, 380, 4, 6];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, [0, -105, -40, 0, 1250, 6, 8]), k_(T.hookEnd - 0.01, [0, -105, -40, 0, 1190, 6, 9]), k_(T.hookEnd, WIDE), k_(T.vo1 + 0.6, [0, -95, -220, 0, 2700, 8, 22]),
+  k_(T.vo2, MID), k_(T.vo3 - 0.1, [0, -100, -50, 0, 1350, 5, 8]), k_(T.vo3 + 1.0, VALV), k_(T.vo4 - 0.3, [0, 6, 18, 0, 360, 3, 10]), k_(T.vo4 + 0.5, MID), k_(T.vo5 + 0.2, [0, -110, -55, 0, 1450, 5, 12]),
+  k_(T.vo5 + 3.4, [0, -100, -40, 0, 1300, 4, 8]), k_(T.vo5 + 4.6, VALV), k_(T.vo6 - 0.2, [0, 6, 18, 0, 360, 4, 10]), k_(T.vo6 + 0.6, [0, -105, -40, 0, 1350, 6, 10]), k_(LOOP - 0.5, [0, -105, -40, 0, 1280, 6, 9]), k_(LOOP, [0, -105, -40, 0, 1250, 6, 8])];
+let KK = null;
+function setScene(t) {
+  const k = kin(t); KK = k; const h = k[1], a = k[2] * D2R, g = k[3], fl = k[4];
+  ARM.rotation.z = -a;              // long arm points to -x; rotating by -a lifts the ball for a > 0 ... (a < 0: ball below the pivot)
+  const xt = G.R_S * Math.sin(a - G.A_C * D2R); PIS.position.x = xt;
+  // water
+  const hh = Math.max(TK.y0 + 0.5, h); const ht = hh - TK.y0;
+  WAT.scale.set(TK.x1 - TK.x0 - 0.5, ht, 2 * TK.z - 0.5); WAT.position.set((TK.x0 + TK.x1) / 2, TK.y0 + ht / 2, 0);
+  CAP.scale.set(TK.x1 - TK.x0 - 0.5, ht, 1); CAP.position.set((TK.x0 + TK.x1) / 2, TK.y0 + ht / 2, 0.1);
+  TOP.position.set((TK.x0 + TK.x1) / 2, hh, 0);
+  // stream: from the port under the body down to the surface
+  const r = 0.6 + 5.0 * fl; const y0 = VY - 12, y1 = hh; STR.visible = fl > 0.01; STR.scale.set(r, y0 - y1, r * 0.8); STR.position.set(6, (y0 + y1) / 2, 0);
+  SPL.visible = fl > 0.05; const sr = 6 + 22 * fl * (1 + 0.15 * Math.sin(t * 23)); SPL.scale.set(sr, sr, 1); SPL.position.set(6, hh + 0.5, 0);
+  // cutaway
+  const c = cutA(t); CUT.constant = c > 0.001 ? 120 * (1 - c) - 0.01 : 1e5; FRONT.visible = c < 0.999; SEC.visible = c > 0.98;
+  LID.visible = c < 0.02 || false; LID.position.y = TK.y1 + 9 + 400 * c;
+  const cv = cutV(t); CUTV.constant = cv > 0.001 ? 20 * (1 - cv) - 0.01 : 1e5;
+  LEVER.rotation.z = -0.5 * Math.min(S.smooth((t - (T.vo1 + 0.1)) / 0.25), 1 - S.smooth((t - (T.vo1 + 1.2)) / 0.4)) * (t > T.hookEnd ? 1 : 0);
+  K.glow(ARM, Math.max(fade(t, T.vo2 + 0.2, T.vo2 + 2.4, 0.25) * 0.55, fade(t, T.vo5 + 0.3, T.vo5 + 3.4, 0.25) * 0.5));
+  K.glow(PIS, fade(t, T.vo5 + 3.6, T.vo6, 0.25) * 0.6);
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function line(g2, a, P, col, w = 10) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; for (const [lw, c] of [[w + 8, 'rgba(0,0,0,0.6)'], [w, col]]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); }
+function badge(g2, a, on, g) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 742, y0 = 1170, w = 186, h = 250;
+  g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = on ? '#3fd0ff' : '#ffd21f'; g2.lineWidth = 4; g2.stroke();
+  const cx = x0 + w / 2; g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('WATER', cx, y0 + 50); g2.fillText('IN:', cx, y0 + 102);
+  g2.font = '76px Anton'; g2.fillStyle = on ? '#3fd0ff' : '#ffd21f'; g2.fillText(on ? 'ON' : 'OFF', cx, y0 + 180); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const h = k[1], a = k[2] * D2R, g = k[3], fl = k[4];
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.8 * fx); }
+  const hk = t < 2.4 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  const C = [-G.L * Math.cos(a), G.L * Math.sin(a)];
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A TOILET', "KNOW IT'S FULL?", 96); const [cx, cy] = scr(C[0], C[1]); K.TXT.circle(g2, hk, cx, cy, 95, [-160, 220]); }
+  // flush
+  { const a1 = fade(t, T.vo1 + 0.05, T.vo1 + 1.6, 0.2); if (a1 > 0) { const [x, y] = scr(TK.x0 + 50, TK.y1 - 40, TK.z + W); pill(g2, a1, 'FLUSH', x + 40, y - 120, 56, '#ffd21f'); } }
+  { const a2 = fade(t, T.vo1 + 1.5, T.vo2 + 0.3, 0.25); if (a2 > 0) { const [x, y] = scr(-60, (TK.y0 + h) / 2 + 40); S.forceArrow(g2, a2, x, y - 110, x, y + 110, 30); pill(g2, a2, 'WATER DROPS', x, y + 175, 50, '#3fd0ff'); } }
+  // parts
+  const aP = fade(t, T.vo2 + 0.1, T.vo3 + 0.2, 0.25);
+  if (aP > 0) { S.tag(g2, aP, 'FLOAT BALL', ...scr(C[0], C[1] + G.R_BALL * 0.6), -60, -170, 52, '#ffd21f'); S.tag(g2, aP, 'LONG ARM', ...scr(C[0] * 0.45, C[1] * 0.45), 60, 150, 48, '#ffd21f');
+    S.tag(g2, aP, 'VALVE', ...scr(20, VY + 13), 60, -150, 50, '#ffffff'); S.tag(g2, aP, 'WATER IN', ...scr(TK.x1 + W + 20, VY), 30, 130, 46, '#3fd0ff'); }
+  // steps
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo3, T.vo4 - 0.05), s2 = fade(t, T.vo4, T.vo5 - 0.05), s3 = fade(t, T.vo5, T.vo6 - 0.1);
+  stepPlate(Math.max(s1, s2, s3));
+  K.TXT.step(g2, s1, 1, 'BALL DOWN: VALVE OPENS', 64);
+  K.TXT.step(g2, s2, 2, 'WATER LIFTS THE BALL', 64);
+  K.TXT.step(g2, s3, 3, 'LONG ARM: STRONG PUSH', 64);
+  // step 1 (valve macro): washer pulled back from the hole, water flows
+  { const a1 = fade(t, T.vo3 + 1.0, T.vo4 - 0.1, 0.25); if (a1 > 0) { const [x, y] = scr(G.W_OFF + 1.5, VY + 9); pill(g2, a1, 'HOLE OPEN', x + 60, y - 150, 50, '#3fd0ff'); line(g2, a1, [[x, y - 10], [x + 30, y - 110]], '#3fd0ff', 6);
+      const [wx, wy] = scr(6, VY - 18); pill(g2, a1, 'WATER RUSHES IN', wx - 40, wy + 200, 50, '#3fd0ff'); } }
+  // step 2: buoyancy arrow under the ball
+  { const a2 = fade(t, T.vo4 + 0.5, T.vo5 + 0.2, 0.25); if (a2 > 0) { const [x, y] = scr(C[0], C[1] - G.R_BALL); S.forceArrow(g2, a2, x, y + 150, x, y + 10, 30); pill(g2, a2, 'WATER PUSHES UP', x + 20, y + 215, 48, '#3fd0ff'); } }
+  // step 3: lever lines + arrows
+  { const a3 = fade(t, T.vo5 + 0.3, T.vo5 + 3.5, 0.25); if (a3 > 0) { const P0 = scr(0, 0), P1 = scr(C[0], C[1]); const tip = [G.R_S * Math.sin(a - G.A_C * D2R), G.R_S * Math.cos(a - G.A_C * D2R)]; const P2 = scr(tip[0], tip[1]);
+      line(g2, a3, [P0, P1], '#ffd21f', 10); line(g2, a3, [P0, P2], '#3fd0ff', 10);
+      const [bx, by] = scr(C[0], C[1] - G.R_BALL); S.forceArrow(g2, a3, bx, by + 120, bx, by + 20, 22); pill(g2, a3, 'GENTLE LIFT', bx + 10, by + 180, 48, '#ffd21f');
+      pill(g2, a3, 'SHORT ARM', P2[0] + 150, P2[1] - 120, 46, '#3fd0ff'); } }
+  { const a4 = fade(t, T.vo5 + 4.0, T.vo6 + 0.2, 0.25); if (a4 > 0) { const [x, y] = scr(-6, VY); S.forceArrow(g2, a4, x - 150, y, x + 10, y, 40); pill(g2, a4, 'STRONG PUSH', x - 60, y - 150, 54, '#ffa114');
+      const [wx, wy] = scr(G.W_OFF, VY - 9); pill(g2, Math.min(a4, fade(t, G.closed_at - 0.1, T.vo6 + 0.2, 0.2)), 'HOLE SEALED', wx + 40, wy + 170, 52, '#ffd21f'); } }
+  badge(g2, fade(t, T.vo1 + 1.2, T.vo6 - 0.1, 0.3), fl > 0.01, g);
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.3, 0.3), 'THE FLOATING BALL', 'TURNS THE WATER OFF', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

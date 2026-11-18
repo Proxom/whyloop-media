@@ -1,0 +1,183 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p071 umbrella spring catch "WHAT HOLDS AN / UMBRELLA OPEN?" (group E, track A voice). Built from kit/kit.js.
+// World units = mm. Shaft axis = y. The spring catch pokes out on the +x side; the camera looks from +z (catch in profile).
+// kin.json rows (60 Hz): [t, runner top yt, catch pushed-in d (mm), rib angle from straight down (deg), finger press 0..1] -- see kin.py.
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 3, far: 40000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);     // keeps z <= constant; constant -> 0 opens the cutaway
+M.tube = phys({ color: 0x23262b, metalness: 0.9, roughness: 0.32, envMapIntensity: 1.2, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.tubeIn = phys({ color: 0x8b929c, metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.runner = phys({ color: 0x2b2e33, metalness: 0, roughness: 0.45, clearcoat: 0.25, clearcoatRoughness: 0.4, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.runnerIn = phys({ color: 0x7c828b, metalness: 0, roughness: 0.6, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.catch = phys({ color: 0xffa114, metalness: 0, roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
+M.spr = phys({ color: 0xd9dee6, metalness: 1, roughness: 0.22, envMapIntensity: 1.3 });
+M.rib = phys({ color: 0x2a2c30, metalness: 0.85, roughness: 0.35, envMapIntensity: 1.1 });
+M.canopy = phys({ color: 0xc0202c, metalness: 0, roughness: 0.78, sheen: 0.7, sheenRoughness: 0.5, sheenColor: new THREE.Color(0xff8a8a), side: THREE.DoubleSide });
+M.notch = phys({ color: 0x1b1d21, metalness: 0, roughness: 0.4, clearcoat: 0.3 });
+M.wood = phys({ color: 0x6a3d1f, metalness: 0, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+K.backdrop(scene, { floorY: -1150, R: 2500, zBack: -5200, h: 16000, width: 36000, wall: '#1d2026', floor: '#22252b', pool: false, catcher: 10 });
+const RIG = K.lightRig(scene, new THREE.Vector3(0, -300, 0), 700);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.8;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(-1500, -900, 2600); f.target.position.set(0, -300, 0); scene.add(f, f.target); } // under-canopy fill
+const lath = (prof, mat, seg = 96, p0 = 0, pl = Math.PI * 2) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg, p0, pl), mat);
+const RT = G.R_T, RI = 3.5;
+// ---------- shaft tube with the catch slit (+x side = lathe phi 90 deg), top notch, ferrule, handle ----------
+const SH = new THREE.Group(); scene.add(SH);
+const SL0 = G.Y_LO - 3, SL1 = G.Y_HI + 2, SW = 24;   // slit y range, half angle (deg)
+const tubeSeg = (y0, y1, p0 = 0, pl = Math.PI * 2) => { SH.add(lath([[RT, y0], [RT, y1]], M.tube, 96, p0, pl)); SH.add(lath([[RI, y0], [RI, y1]], M.tubeIn, 96, p0, pl)); };
+tubeSeg(-760, SL0); tubeSeg(SL1, 30); tubeSeg(SL0, SL1, (90 + SW) * D2R, (360 - 2 * SW) * D2R);
+for (const y of [SL0, SL1]) SH.add(lath([[RI, y], [RT, y]], M.tubeIn, 96, (90 + SW) * D2R, (360 - 2 * SW) * D2R));
+SH.add(lath([[RI, -760], [RT, -760]], M.tubeIn, 64));
+SH.add(lath([[0, -16], [10, -16], [11.5, -13], [11.5, 9], [9, 13], [4.5, 15], [4.5, 30], [0, 30]], M.notch, 64));            // top notch (ribs pivot here)
+SH.add(lath([[0, 30], [3.6, 30], [3.0, 70], [1.6, 78], [0, 79]], M.chrome, 48));                                              // ferrule
+SH.add(lath([[0, -760], [12, -762], [13.5, -775], [13.5, -880], [12.5, -890], [0, -892]], M.wood, 64));                       // grip
+{ const hk = new THREE.Mesh(new THREE.TorusGeometry(46, 12.5, 24, 64, Math.PI), M.wood); hk.rotation.z = Math.PI; hk.position.set(46, -885, 0); hk.rotation.y = 0; SH.add(hk);
+  const end = new THREE.Mesh(new THREE.SphereGeometry(12.5, 24, 16), M.wood); end.position.set(92, -885, 0); SH.add(end); }
+// ---------- spring catch: orange tab (slides in x by -d) on a V-shaped steel spring inside the tube ----------
+const CAT = new THREE.Group(); scene.add(CAT);
+{ const E = G.E, yl = G.Y_LO, yh = G.Y_HI;
+  const pts = [[2.3, yh], [RT + E, yh], [RT + E, yh - 1.2], [RT, yl], [RT - 0.2, yl - 1.0], [2.3, yl - 1.0]];
+  CAT.add(S.extrude(S.shapeOf(pts), -1.3, 1.3, M.catch, 0.15, 3)); }
+const VSP = new THREE.Mesh(new THREE.BufferGeometry(), M.spr); scene.add(VSP);
+function buildV(d) { const P = []; const top = G.Y_LO - 0.6, fold = -336;
+  P.push(new THREE.Vector3(2.65 - d, top, 0)); P.push(new THREE.Vector3(2.55 - d * 0.75, top - 10, 0)); P.push(new THREE.Vector3(2.35 - d * 0.42, top - 22, 0)); P.push(new THREE.Vector3(1.6 - d * 0.12, fold + 6, 0));
+  P.push(new THREE.Vector3(0, fold, 0)); P.push(new THREE.Vector3(-1.6, fold + 6, 0)); P.push(new THREE.Vector3(-2.7, fold + 22, 0)); P.push(new THREE.Vector3(-2.95, -300, 0));
+  VSP.geometry.dispose(); VSP.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 64, 0.55, 8); }
+buildV(0);
+// ---------- runner: sleeve (top = yt), stretcher hub ----------
+const RUN = new THREE.Group(); scene.add(RUN);
+RUN.add(lath([[G.R_IN, -G.RUN_L], [6.2, -G.RUN_L], [7.4, -G.RUN_L + 4], [7.6, -10], [10.5, -7], [11.2, -4.5], [11.2, -1], [10, 0], [G.R_IN, 0]], M.runner, 96));
+RUN.add(lath([[G.R_IN, -G.RUN_L], [G.R_IN, 0]], M.runnerIn, 96));
+// ---------- ribs, stretchers, canopy ----------
+const NR = 8, RA = [...Array(NR)].map((_, i) => (22.5 + 45 * i) * D2R);
+const RIBS = [], STR = [];
+for (let i = 0; i < NR; i++) { const g = new THREE.Group(); g.rotation.y = RA[i]; scene.add(g);
+  const piv = new THREE.Group(); piv.position.set(G.PIV[0], G.PIV[1], 0); g.add(piv);
+  const r = new THREE.Mesh(new K.RBox(2.6, G.L_RIB, 2.0, 1, 0.6), M.rib); r.position.y = -G.L_RIB / 2; piv.add(r);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(2.6, 12, 8), M.notch); tip.position.y = -G.L_RIB; piv.add(tip);
+  const sp = new THREE.Group(); g.add(sp); const s = new THREE.Mesh(new K.RBox(2.2, G.L_ST, 1.6, 1, 0.5), M.rib); s.position.y = G.L_ST / 2; sp.add(s);
+  RIBS.push(piv); STR.push(sp); }
+const NS = 16, NU = 10; const cpos = new Float32Array(NR * (NS + 1) * (NU + 1) * 3); const cidx = [];
+for (let i = 0; i < NR; i++) for (let a = 0; a < NS; a++) for (let b = 0; b < NU; b++) { const o = i * (NS + 1) * (NU + 1), p = o + a * (NU + 1) + b; cidx.push(p, p + NU + 1, p + 1, p + 1, p + NU + 1, p + NU + 2); }
+const cgeo = new THREE.BufferGeometry(); cgeo.setAttribute('position', new THREE.BufferAttribute(cpos, 3)); cgeo.setIndex(cidx);
+const CAN = new THREE.Mesh(cgeo, M.canopy); scene.add(CAN);
+const TH_OPEN = G.TH_OPEN * D2R;
+function canopy(th) { const L = G.L_RIB * 0.985; let q = 0; const half = Math.PI / NR;
+  for (let i = 0; i < NR; i++) { const a0 = RA[i], a1 = RA[(i + 1) % NR] + (i === NR - 1 ? 2 * Math.PI : 0);
+    for (let a = 0; a <= NS; a++) { const s = 8 + (L - 8) * a / NS; const rr = G.PIV[0] + s * Math.sin(th), yy = G.PIV[1] - s * Math.cos(th) + 1.5;
+      const rOpen = G.PIV[0] + s * Math.sin(TH_OPEN); const slack = Math.max(0, 2 * rOpen * Math.sin(half) - 2 * rr * Math.sin(half));
+      for (let b = 0; b <= NU; b++) { const u = b / NU, ang = a0 + (a1 - a0) * u; const w = Math.sin(Math.PI * u);
+        const chordR = rr * Math.cos(half) / Math.cos(Math.abs(u - 0.5) * 2 * half);   // straight panel between ribs
+        let R = rr * Math.cos(half) / Math.cos((u - 0.5) * 2 * half);
+        R = R * 0 + rr * (Math.cos(half) / Math.cos((u - 0.5) * 2 * half)) * 1.0; void chordR;
+        const bulge = 0.36 * slack * w + 0.025 * s * Math.sin(th) * w * (1 - Math.pow(a / NS, 6));   // slack fabric folds outward when closed; a soft dome when open
+        const sag = (a / NS > 0.82 ? ((a / NS - 0.82) / 0.18) : 0) * 10 * w * Math.sin(th);          // scalloped rim between the rib tips
+        const Rf = R + bulge;
+        cpos[q++] = Rf * Math.cos(ang); cpos[q++] = yy + sag + 0.6 * bulge * Math.cos(th) * 0; cpos[q++] = -Rf * Math.sin(ang); } } }
+  cgeo.attributes.position.needsUpdate = true; cgeo.computeVertexNormals(); }
+S.shadowAll(scene);
+CAN.castShadow = true; CAN.receiveShadow = false;
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (Math.abs(b[1] - a[1]) > 20) return a;  // a cut (no tween across it)
+  return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const cutA = (t) => Math.min(S.smooth((t - (T.vo2 + 0.5)) / 1.0), 1 - S.smooth((t - (T.vo5 + 2.2)) / 0.9));
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] (mm) ----------
+const HOOK = [0, 0, -360, 0, 3500, -7, 24];
+const WIDE = [0, 0, -380, 0, 3700, -5, 20];
+const MAC = [0, 5, -286, 0, 255, -3, 6];
+const MAC2 = [0, 5, -280, 0, 235, -3, 12];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 0, -360, 0, 3380, -7, 26]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.3, [0, 0, -340, 0, 3900, -4, 16]),
+  k_(T.vo2 + 1.3, [0, 4, -300, 0, 640, -13, 9]), k_(T.vo3 - 0.2, MAC), k_(T.vo4 + 2.0, MAC2), k_(T.vo5 + 0.9, [0, 5, -280, 0, 245, 2, 10]),
+  k_(T.vo5 + 2.6, [0, 3, -310, 0, 700, -13, 12]), k_(T.vo6 - 0.2, [0, 0, -380, 0, 3700, -5, 20]), k_(LOOP - 0.6, [0, 0, -360, 0, 3600, -7, 23]), k_(LOOP, HOOK)];
+let KK = null;
+function setScene(t) {
+  const k = kin(t); KK = k; const yt = k[1], d = k[2], th = k[3] * D2R;
+  RUN.position.y = yt; CAT.position.x = -d; buildV(d);
+  for (let i = 0; i < NR; i++) { RIBS[i].rotation.z = th; const rx = G.S_AT * Math.sin(th), ry = G.PIV[1] - G.S_AT * Math.cos(th);
+    STR[i].position.set(9.0, yt, 0); const vx = G.PIV[0] + rx - 9.0, vy = ry - yt; STR[i].rotation.z = Math.atan2(-vx, vy); }
+  canopy(th);
+  const c = cutA(t); CUT.constant = c > 0.001 ? 60 * (1 - c) - 0.01 : 1e5;
+  K.glow(CAT, Math.max(fade(t, T.vo2 + 0.6, T.vo2 + 2.4, 0.3) * 0.6, fade(t, T.vo3 + 0.2, T.vo3 + 2.6, 0.2) * 0.5, fade(t, T.vo5 + 0.1, T.vo5 + 1.6, 0.2) * 0.5));
+  K.glow(VSP, Math.max(fade(t, T.vo2 + 1.2, T.vo3 + 0.1, 0.3) * 0.7, fade(t, T.vo4 + 0.8, T.vo4 + 2.6, 0.2) * 0.9));
+  K.glow(RUN, fade(t, T.vo1 + 0.1, T.vo1 + 2.2, 0.25) * 0.55);
+  RUN.traverse(o => { if (o.isMesh) o.material.clippingPlanes = [CUT]; });
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function poly(g2, a, P, col, w = 9) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineJoin = 'round'; g2.lineCap = 'round';
+  for (const [lw, c] of [[w + 8, 'rgba(0,0,0,0.65)'], [w, col]]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); }
+// umbrella state badge (lower right, inside the safe area): icon opens/closes with the rib angle
+function badge(g2, a, th) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 742, y0 = 1110, w = 186, h = 318; const open = th > 68;
+  g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = open ? '#ffd21f' : '#ffffff'; g2.lineWidth = 4; g2.stroke();
+  const cx = x0 + w / 2, top = y0 + 40, L = 92, s = Math.sin(th * D2R), c = Math.cos(th * D2R);
+  g2.strokeStyle = '#c9d3e3'; g2.lineWidth = 6; g2.beginPath(); g2.moveTo(cx, top - 14); g2.lineTo(cx, top + 170); g2.arc(cx + 16, top + 170, 16, Math.PI, 0, true); g2.stroke();
+  g2.fillStyle = '#d0303a'; g2.beginPath(); g2.moveTo(cx, top); g2.lineTo(cx + L * s, top + L * c);
+  g2.quadraticCurveTo(cx + L * s * 0.5, top + L * c - 10 * s, cx, top + L * c * 0.9); g2.quadraticCurveTo(cx - L * s * 0.5, top + L * c - 10 * s, cx - L * s, top + L * c); g2.closePath(); g2.fill();
+  const ry = top + 64 + (1 - Math.min(1, Math.max(0, (th - 6) / 66))) * 70; g2.fillStyle = '#ffa114'; g2.fillRect(cx - 9, ry, 18, 16);
+  g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = open ? '#ffd21f' : '#ffffff'; g2.fillText(open ? 'OPEN' : (th < 10 ? 'CLOSED' : 'OPENING'), cx, y0 + h - 40); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const yt = k[1], d = k[2], th = k[3], fp = k[4];
+  for (const ts of [T.hookEnd]) { const fl = Math.max(0, 1 - Math.abs(t - ts) / 0.12); K.TXT.flash(g2, 0.8 * fl); }
+  // hook (0 .. hookEnd) and back at the loop end
+  const hk = t < 2.5 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHAT HOLDS AN', 'UMBRELLA OPEN?', 104); const [cx, cy] = scr(RT + 1, G.Y_HI - 4); K.TXT.circle(g2, hk, cx, cy, 70, [-220, 150]); }
+  // wide: runner + ribs named, push-up arrow
+  const aW = fade(t, T.vo1 + 0.15, T.vo2 + 0.4);
+  if (aW > 0) { S.tag(g2, aW, 'RUNNER', ...scr(11, yt - 20), -170, 40, 50, '#ffd21f'); S.tag(g2, aW, 'RIBS', ...scr(-0.38 * 300 * Math.sin(th * D2R) - 9, -2 - 300 * Math.cos(th * D2R), 300 * 0.92 * Math.sin(th * D2R)), -120, -110, 48, '#ffffff');
+    const [x, y] = scr(0, yt - 60); S.forceArrow(g2, Math.min(aW, fade(t, T.vo1 + 0.6, T.vo2 + 0.2)), x + 150, y + 190, x + 150, y + 10, 26); }
+  // cutaway: parts
+  const aP = fade(t, T.vo2 + 0.9, T.vo3 + 0.1, 0.3);
+  if (aP > 0) { S.tag(g2, aP, 'SPRING CATCH', ...scr(RT + G.E - d - 0.6, G.Y_HI - 4), 150, 140, 52, '#ffa114'); S.tag(g2, aP, 'RUNNER', ...scr(-7, yt - 22), -150, -40, 50, '#ffd21f');
+    S.tag(g2, aP, 'TUBE', ...scr(-3.6, G.Y_LO - 40), -150, 60, 46, '#c9d3e3'); S.tag(g2, aP, 'SPRING', ...scr(-2.6, G.Y_LO - 22), -150, 150, 46, '#ffffff'); }
+  // steps
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo3, T.vo4 - 0.05), s2 = fade(t, T.vo4, T.vo4 + 2.9), s2b = fade(t, T.vo4 + 2.95, T.vo5 - 0.05), s3 = fade(t, T.vo5, T.vo6 - 0.1);
+  stepPlate(Math.max(s1, s2, s2b, s3));
+  K.TXT.step(g2, s1, 1, 'PUSH UP: SLOPE PUSHES IT IN', 62);
+  K.TXT.step(g2, s2, 2, 'IT PASSES: SPRING POPS IT OUT', 62);
+  K.TXT.step(g2, s2b, 2, "FLAT TOP: CAN'T SLIDE DOWN", 62);
+  K.TXT.step(g2, s3, 3, 'PRESS IT IN: RUNNER SLIDES DOWN', 58);
+  // step 1: up arrow on the runner + "IN" arrow on the catch while it is pushed in
+  { const a = fade(t, T.vo3 + 0.2, T.vo4 + 1.0, 0.2); if (a > 0) { const [x, y] = scr(-8, yt - G.RUN_L - 6); S.forceArrow(g2, a, x - 40, y + 230, x - 40, y + 20, 30); pill(g2, a, 'PUSH UP', x - 60, y + 300, 50, '#ffd21f');
+      const ai = Math.min(a, S.smooth(d / 0.6)); if (ai > 0 && t < T.vo4 + 1.0) { const [cx, cy] = scr(RT + G.E - d + 0.4, G.Y_HI - 9); S.forceArrow(g2, ai, cx + 170, cy, cx + 14, cy, 24); pill(g2, ai, 'IN', cx + 120, cy - 110, 50, '#ffa114'); } } }
+  // step 2: pop out arrow at the snap, then the flat top outlined + blocked arrow
+  { const sp = G.snaps[1]; const a = fade(t, sp - 0.05, sp + 1.7, 0.15); if (a > 0) { const [cx, cy] = scr(RT + G.E - d, G.Y_HI - 7); S.forceArrow(g2, a, cx + 6, cy, cx + 170, cy, 24); pill(g2, a, 'SPRING: OUT!', cx + 130, cy - 120, 50, '#ffa114'); }
+    const af = fade(t, T.vo4 + 2.6, T.vo5 + 0.2, 0.25); if (af > 0) { poly(g2, af, [scr(RT - 0.3, G.Y_HI + 0.15, 1.3), scr(RT + G.E - d, G.Y_HI + 0.15, 1.3)], '#ffd21f', 9);
+      const [fx, fy] = scr(RT + G.E - d, G.Y_HI); pill(g2, af, 'FLAT TOP', fx + 150, fy - 110, 52, '#ffd21f');
+      const [rx, ry] = scr(-7.8, yt - 20); const [bx, by] = scr(-7.8, yt - G.RUN_L); S.forceArrow(g2, af, rx - 70, ry, rx - 70, by + 6, 28); pill(g2, af, 'BLOCKED', rx - 90, by + 90, 50, '#ff5a4a'); } }
+  // step 3: press arrow on the catch, then the runner slides down
+  { const a = Math.min(fade(t, T.vo5 + 0.1, T.vo5 + 2.3, 0.2), 1); if (a > 0) { const [cx, cy] = scr(RT + G.E - d + 0.2, G.Y_HI - 8); S.forceArrow(g2, a, cx + 200, cy + 20, cx + 16, cy, 26); pill(g2, a, 'PRESS', cx + 170, cy - 120, 52, '#ffa114'); }
+    const ad = fade(t, T.vo5 + 1.0, T.vo5 + 2.6, 0.2); if (ad > 0) { const [rx, ry] = scr(-8, yt - 10); S.forceArrow(g2, ad, rx - 110, ry - 120, rx - 110, ry + 120, 28); } }
+  badge(g2, fade(t, T.hookEnd + 0.2, T.vo6 - 0.2, 0.3), th);
+  // payoff + follow
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.35, 0.3), 'A TINY SPRING CATCH', 'HOLDS IT OPEN', 520);
+  K.TXT.follow(g2, fade(t, LOOP - 1.5, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
