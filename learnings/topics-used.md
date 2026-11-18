@@ -63,6 +63,7 @@ Update this file every time a video is scheduled.
 | 2026-11-16 17:00 | p067 | How a gate locks itself | gate latch | gravity latch, self-locking gate latch (scheduled 16 Nov 05:07 run) |
 | 2026-11-17 17:00 | p068 | How a scale knows the weight | spring scale | dial scale, spring balance, kitchen/bathroom scale, Hooke's law scale (scheduled 16 Nov 05:07 run) |
 | 2026-11-18 17:00 | p069 | How a clutch works | car clutch | clutch pedal, friction clutch, diaphragm spring clutch, pressure plate, flywheel clutch (scheduled 17 Nov 05:07 run) |
+| 2026-11-19 17:00 | p070 | How a click pen works | click pen | retractable pen, ballpoint click mechanism, push-push rotating cam, pen clicker (scheduled 18 Nov 05:07 run) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
