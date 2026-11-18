@@ -21,8 +21,8 @@
  },
  {
   "i": 4,
-  "text": "Let go: it slides onto a short ledge. The tip stays out.",
-  "dur": 3.243
+  "text": "Let go: it lands on a short ledge and can't go up. Tip out.",
+  "dur": 3.285
  },
  {
   "i": 5,
@@ -31,8 +31,8 @@
  },
  {
   "i": 6,
-  "text": "The slot is long, so the spring lifts the ink. Tip in.",
-  "dur": 2.987
+  "text": "No ledge here, so the spring lifts the ink. Tip in.",
+  "dur": 2.837
  },
  {
   "i": 7,
