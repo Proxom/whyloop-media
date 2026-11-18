@@ -21,3 +21,13 @@ TODO for v4 (one render ~21 min at 1.1 s/frame, then clarity test 4):
  3. A 2-s flat "unrolled ring" strip (2D overlay, ~5.0-7.0 s or during the 14.7-15.8 pan): alternating SHORT LEDGE (yellow) / LONG SLOT (cyan) cells with the cam block stepping one cell per click; use LONG SLOT everywhere (VO line 6 -> "The slot is long, so the spring lifts the ink. Tip in.").
  4. SHORT LEDGE pointer: draw a yellow outline on the ledge corner (overlay polyline from pw() points) instead of a dot on the grey wall; same for LONG SLOT (outline the slot).
  5. Keep labels out from under the TIP badge (check 1.5-4.5 'TIP: OUT' wide tag, 5.5 spring tag, 13.0 / 18.0 slide pills): move the slide pills left (x - 150).
+
+STATUS (18 Nov 13:07 run, ig-sweet-lamport-1307-18nov):
+- v4 (pen_reel_v4.mp4, not committed): all 5 TODO items done (BUTTON TEETH only, BUTTON SPRING tag removed + bottom spring drawn in the pen badge (yellow 18.8-21.6),
+  flat strip "laid flat" 12.45-21.7 with LEDGE/SLOT cells + live cam lugs from kin, yellow/cyan outlines on the 3D ledge/slot edges, slide pills x-150).
+  HARD GATE technical+audio PASS (25.6 s, -15.0 LUFS, -2.6 dBTP, gap 19.9 dB). Clarity test 4: explanation correct, 14yo NO
+  (never says WHY the ledge holds the tip out; strip header 'ridges' not spoken; 'IT TURNS ON' read as 'switches on'; payoff showed ledge+slot tags at once; TIP tag / spring tag hidden by the badge).
+- v5 fixes: VO 4 "Let go: it lands on a short ledge and can't go up. Tip out." VO 6 "No ledge here, so the spring lifts the ink. Tip in."
+  step 2 'LET GO: A LEDGE HOLDS IT DOWN', step 3 'PUSH AGAIN: IT TURNS MORE', strip header 'SAME THING, LAID FLAT', 'SHORT LEDGE STOPS IT' + 'SPRING PUSHES UP' arrow 13.75-15.7,
+  payoff without 3D tags, LONG SLOT tag 19.0-21.6, TIP / SPRING / INK tags moved left of the pen. Final render v5 -> clarity test 5.
+- Render note: background Bash default limit is 30 min; a full 768-frame render takes ~30 min at 2.4 s/frame -> pass timeout 3600000.
