@@ -1,4 +1,4 @@
-# p086 pop-up toaster "WHAT MAKES / THE TOAST POP?" - track A (Kokoro af_heart) - group E - v2 final, HARD GATE + CLARITY PASS, visual 5 -> rule B fixes applied (19 Nov 15:10 run)
+# p086 pop-up toaster "WHAT MAKES / THE TOAST POP?" - track A (Kokoro af_heart) - group E - v2 final, HARD GATE + CLARITY PASS, visual 5 -> rule B fixes applied (19 Nov 15:10 run) - SCHEDULED 24 Nov 2026 01:00 (Metricool 434432543, 19 Nov 15:10 run)
 topic key: toaster pop-up - not in learnings/topics-used.md (checked the registry + mechanism: no electromagnet-hold / timer-release row; p075 kettle switch = bimetal snap disc, deliberately NOT used here; mousetrap/gate latch = mechanical catches).
 Built from kit/kit.js (lightRig, backdrop + contactBlob floor shadow, materials steel/chrome/machined/plastic/rubber/cut/innerWall, K.spring, K.RBox, K.glow) + scene-local:
  outside = brushed-steel rounded body, top slots, side lever slot + knob, browning dial; cut view = back half only (cut at z 0, red cut faces on every wall edge, no x-ray),
