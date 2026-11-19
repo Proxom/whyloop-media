@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does the gas pump know your tank is full?",
+  "dur": 1.941
+ },
+ {
+  "i": 1,
+  "text": "Squeeze, and fuel flows. Then, click! It stops all by itself.",
+  "dur": 3.584
+ },
+ {
+  "i": 2,
+  "text": "Near the tip there's a tiny hole, and a thin tube runs back to the handle.",
+  "dur": 3.861
+ },
+ {
+  "i": 3,
+  "text": "While fuel flows, it sucks air in through that hole, nonstop.",
+  "dur": 3.179
+ },
+ {
+  "i": 4,
+  "text": "When the tank is full, fuel covers the hole, so no more air can get in.",
+  "dur": 3.755
+ },
+ {
+  "i": 5,
+  "text": "Now the suction pulls on a rubber disc instead. It trips a latch, and a spring shuts the valve.",
+  "dur": 5.248
+ },
+ {
+  "i": 6,
+  "text": "Fuel covers the hole. The suction shuts it off.",
+  "dur": 2.624
+ }
+]

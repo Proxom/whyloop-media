@@ -1,0 +1,177 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p077 fuel nozzle auto shut-off "HOW DOES THE PUMP / KNOW IT'S FULL?" (group E, track A voice). Built from kit/kit.js.
+// mm. Handle drawn in its own frame (x along the handle, y up) and tilted 31 deg (HR); spout, sensing hole, filler pipe and fuel in world coords. Cut removes z > 0.
+// kin.json rows: [t, fuel level y, squeeze 0..1, stem lift, pivot drop, diaphragm 0..1, flow, air, latched, flowSmooth, airSmooth]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.0, near: 3, far: 30000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);
+const cm = (m) => { const c = m.clone(); c.clippingPlanes = [CUT]; c.side = THREE.DoubleSide; return c; };
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.body = cm(phys({ color: 0x2f9a4a, metalness: 0.2, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.2 }));   // green handle cover
+M.alu2 = cm(M.alu); M.chr = cm(M.chrome); M.br = cm(M.brass); M.rub = cm(M.rubber); M.pl = cm(M.plastic);
+M.fuel = phys({ color: 0xf2b632, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.cap = new THREE.MeshPhysicalMaterial({ color: 0x9aa1aa, metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 });   // section face (cut aluminium)
+M.pipe = cm(phys({ color: 0x3a3d44, metalness: 0.6, roughness: 0.45 }));
+M.dia = phys({ color: 0x1c1c1e, metalness: 0, roughness: 0.7, emissive: 0xff7a1a, emissiveIntensity: 0 });
+K.backdrop(scene, { floorY: -260, R: 600, zBack: -1800, h: 8000, width: 14000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 6 });
+const RIG = K.lightRig(scene, V(20, 0, 0), 260);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.5;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(-300, 400, 1500); f.target.position.set(0, 0, 0); scene.add(f, f.target); }
+// ---------- handle (own frame), tilted ----------
+const HR = 31 * Math.PI / 180;
+const H = new THREE.Group(); H.rotation.z = HR; scene.add(H);
+const hp = (x, y) => V(x * Math.cos(HR) - y * Math.sin(HR), x * Math.sin(HR) + y * Math.cos(HR), 0);   // handle frame -> world
+const OUT = [[-25, -2], [150, -2], [156, 6], [156, 38], [150, 44], [96, 44], [94, 58], [66, 58], [64, 44], [20, 44], [18, 60], [-14, 60], [-16, 44], [-25, 40]];
+const HOLES = [
+  [[-25, 12], [4, 12], [8, 17], [22, 17], [26, 12], [70, 12], [70, 6], [90, 6], [90, 12], [150, 12], [150, 30], [90, 30], [90, 44], [70, 44], [70, 30], [26, 30], [22, 25], [8, 25], [4, 30], [-25, 30]],  // fuel passage + valve pocket + throat
+  [[-12, 40], [16, 40], [16, 56], [-12, 56]],      // diaphragm chamber (diaphragm across it)
+  [[11.3, 25], [12.7, 25], [12.7, 40], [11.3, 40]],  // port: throat -> chamber
+  [[0.8, -2], [3.2, -2], [3.2, 12], [0.8, 12]],     // plunger bore (from the bottom)
+  [[1.4, 30], [2.6, 30], [2.6, 40], [1.4, 40]],     // latch stem bore (chamber -> plunger)
+  [[78.8, -2], [81.2, -2], [81.2, 6], [78.8, 6]],   // valve stem bore
+];
+const shp = () => S.shapeOf(OUT.map(p => [p[0], p[1]]).reverse(), HOLES.map(h => h.slice().reverse()));
+{ const body = S.extrude(shp(), -16, 16, M.body, 1.2, 12); H.add(body);
+  const back = S.extrude(S.shapeOf(OUT.map(p => [p[0], p[1]]).reverse()), -16, -7, cm(M.innerWall), 0, 12); H.add(back);
+  const front = S.extrude(S.shapeOf(OUT.map(p => [p[0], p[1]]).reverse()), 6, 16.2, M.body, 1.2, 12); H.add(front);
+  const cap = new THREE.Mesh(new THREE.ShapeGeometry(shp(), 12), M.cap); cap.position.z = 0.02; H.add(cap); H.userData.cap = cap;
+  const hose = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 140, 32), M.rub); hose.rotation.z = Math.PI / 2; hose.position.set(226, 21, 0); H.add(hose);
+  const fit = new THREE.Mesh(new THREE.CylinderGeometry(16.5, 16.5, 16, 32), M.chr); fit.rotation.z = Math.PI / 2; fit.position.set(162, 21, 0); H.add(fit);
+  const guard = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V(-10, -2), V(-14, -22), V(20, -34), V(120, -32), V(150, -4)]), 60, 3, 12), M.chr); H.add(guard); }
+// valve (poppet + stem + spring), plunger + latch balls + latch stem, diaphragm, lever
+const POP = new THREE.Mesh(new K.RBox(12, 18, 14, 1.2, 3), M.br); H.add(POP);
+const VSTEM = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 14, 16), M.chrome); H.add(VSTEM);
+const VSPR = K.spring(M.steel, { R: 4.2, wire: 0.7, turns: 5, len: 14 }); H.add(VSPR);
+const PLU = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 22, 16), M.chrome); H.add(PLU);
+const BALLS = [0, 1].map(() => { const b = new THREE.Mesh(new THREE.SphereGeometry(1.05, 16, 12), M.chrome); H.add(b); return b; });
+const LSTEM = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 30, 12), M.chrome); H.add(LSTEM);
+const NSEG = 14, DIA = []; for (let i = 0; i < NSEG; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(28 / NSEG + 0.1, 1.4, 14), M.dia); H.add(b); DIA.push(b); }
+const LEV = new THREE.Group(); H.add(LEV);
+{ const s = new THREE.Shape(); s.moveTo(-4, -2.5); s.lineTo(118, -2.5); s.quadraticCurveTo(128, -2.5, 128, -6); s.lineTo(126, -9); s.lineTo(104, -9); s.quadraticCurveTo(60, -5, 4, -5); s.lineTo(-4, -5); s.closePath();
+  const lv = S.extrude(s, -6, 6, M.pl, 0.8, 16); lv.position.y = 2.5; LEV.add(lv);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 14, 16), M.chrome); pin.rotation.x = Math.PI / 2; LEV.add(pin); }
+// ---------- spout (world), air tube, filler pipe, fuel ----------
+const F0 = hp(-25, 21), DIR = V(-Math.cos(HR), -Math.sin(HR));
+const SPC = new THREE.CatmullRomCurve3([F0.clone().add(DIR.clone().multiplyScalar(-2)), F0.clone().add(DIR.clone().multiplyScalar(30)), V(G.TIPX + 2, -30), V(G.TIPX, -52), V(G.TIPX, G.TIPY)]);
+{ const so = new THREE.Mesh(new THREE.TubeGeometry(SPC, 120, G.SPOUT_R, 36, false), M.chr); scene.add(so);
+  const si = new THREE.Mesh(new THREE.TubeGeometry(SPC, 120, G.SPOUT_R - 1.4, 36, false), cm(phys({ color: 0x5d636b, metalness: 0.8, roughness: 0.4 }))); scene.add(si);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(G.SPOUT_R - 0.7, 0.7, 8, 36), M.chr); rim.rotation.x = Math.PI / 2; rim.position.set(G.TIPX, G.TIPY, 0); scene.add(rim);
+  const hole = new THREE.Mesh(new THREE.CylinderGeometry(G.HOLE_R, G.HOLE_R, 3.2, 20), new THREE.MeshBasicMaterial({ color: 0x050505 })); hole.rotation.z = Math.PI / 2; hole.position.set(G.TIPX - G.SPOUT_R + 0.8, G.HOLE_Y, -2.5); scene.add(hole); }
+// air path: hole -> up the inside of the spout (outer side of the bend) -> into the handle -> chamber -> port -> throat
+const AIRP = [];
+{ AIRP.push(V(G.TIPX - G.SPOUT_R - 1.5, G.HOLE_Y, -3)); AIRP.push(V(G.TIPX - G.SPOUT_R + 3.2, G.HOLE_Y, -3));
+  for (let i = 1; i <= 24; i++) { const u = 1 - i / 25 * 0.97; const p = SPC.getPointAt(u), tg = SPC.getTangentAt(u); const n = V(tg.y, -tg.x).normalize(); // left/outer normal
+    if (n.x > 0) n.multiplyScalar(-1); AIRP.push(p.clone().add(n.multiplyScalar(G.SPOUT_R - 3.0)).setZ(-3)); }
+  for (const [x, y] of [[-22, 34], [-14, 38], [-8, 48], [0, 50], [8, 50], [12, 46], [12, 34], [12, 26], [14, 21]]) AIRP.push(hp(x, y).setZ(-3)); }
+const AIRC = new THREE.CatmullRomCurve3(AIRP);
+{ const pts = AIRP.slice(1, 27); const tc = new THREE.CatmullRomCurve3(pts); scene.add(new THREE.Mesh(new THREE.TubeGeometry(tc, 100, 1.5, 10), M.br)); }
+const PIPE_TOP = -42;
+{ const p = new THREE.Mesh(new THREE.CylinderGeometry(G.PIPE_R + 1.6, G.PIPE_R + 1.6, 260, 48, 1, true), M.pipe); p.position.set(G.TIPX, PIPE_TOP - 130, 0); scene.add(p);
+  const pi = new THREE.Mesh(new THREE.CylinderGeometry(G.PIPE_R, G.PIPE_R, 260, 48, 1, true), cm(phys({ color: 0x4a4e56, metalness: 0.5, roughness: 0.5 }))); pi.position.copy(p.position); scene.add(pi);
+  const fl = new THREE.Mesh(new THREE.TorusGeometry(G.PIPE_R + 3, 3, 12, 48), cm(M.chrome)); fl.rotation.x = Math.PI / 2; fl.position.set(G.TIPX, PIPE_TOP, 0); scene.add(fl);
+  const car = new THREE.Mesh(new K.RBox(1400, 900, 10, 4, 3), M.paint(0x163a66)); car.position.set(G.TIPX - 100, PIPE_TOP - 470, -70); scene.add(car); }
+const FUEL = new THREE.Mesh(new THREE.CylinderGeometry(G.PIPE_R - 0.3, G.PIPE_R - 0.3, 1, 48), M.fuel); scene.add(FUEL);
+const STREAM = new THREE.Mesh(new THREE.CylinderGeometry(G.SPOUT_R - 2.2, G.SPOUT_R - 3.2, 1, 32, 1, true), M.fuel); scene.add(STREAM);
+// particles: fuel (amber) along the main path, air (white-blue) along AIRC
+const FUELP = [hp(200, 21), hp(150, 21), hp(100, 21), hp(80, 33), hp(60, 21), hp(26, 21), hp(15, 21), hp(-10, 21)].map(v => v.setZ(-3));
+for (let i = 1; i <= 20; i++) FUELP.push(SPC.getPointAt(0.1 + 0.9 * i / 20).setZ(-3));
+FUELP.push(V(G.TIPX, G.TIPY - 20, -3));
+const FUC = new THREE.CatmullRomCurve3(FUELP);
+const NF = 60, NA = 34;
+const FP = new THREE.InstancedMesh(new THREE.SphereGeometry(1.6, 10, 8), phys({ color: 0xffb21f, metalness: 0, roughness: 0.3, emissive: 0x6a3a00, emissiveIntensity: 0.6 }), NF); scene.add(FP);
+const AP = new THREE.InstancedMesh(new THREE.SphereGeometry(1.25, 12, 10), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, toneMapped: false }), NA); scene.add(AP);
+FP.frustumCulled = false; AP.frustumCulled = false;
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j === 8 ? a[8] : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const O = new THREE.Object3D();
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const lv = k[1], sq = k[2], stem = k[3], drop = k[4], dia = k[5], fs = k[9], as = k[10];
+  POP.position.set(80, 21 + stem, 0); VSTEM.position.set(80, 21 + stem - 9 - 7, 0); VSPR.setLength(56 - (30 + stem)); VSPR.position.set(80, 30 + stem, 0);
+  const piv = G.LEVER_Y - drop; PLU.position.set(2, piv + 11, 0);
+  const bo = 3.2 - 1.4 * Math.min(1, dia * 1.05); BALLS[0].position.set(2 - bo, 9.5 - Math.min(drop, 3), 0); BALLS[1].position.set(2 + bo, 9.5 - Math.min(drop, 3), 0);
+  const dl = G.DIA_LIFT * dia; for (let i = 0; i < NSEG; i++) { const x = -12 + 28 * (i + 0.5) / NSEG, xc = (x - 2) / 14; DIA[i].position.set(x, 46 + dl * Math.max(0, 1 - xc * xc), 0);
+    const dx = -2 * dl * xc / 14; DIA[i].rotation.z = Math.atan(dx); }
+  LSTEM.position.set(2, 46 + dl - 15, 0);
+  M.dia.emissiveIntensity = 0.5 * fade(t, T.vo5 + 0.3, T.vo6, 0.3);
+  const ang = Math.atan2(stem + drop, G.VALVE_X - G.PIVOT_X); LEV.position.set(2, piv, 0); LEV.rotation.z = ang;
+  // fuel in the filler pipe + falling stream
+  const yb = PIPE_TOP - 250; FUEL.scale.y = lv - yb; FUEL.position.set(G.TIPX, (lv + yb) / 2, 0);
+  STREAM.visible = fs > 0.02; const sl = Math.max(0.1, G.TIPY - lv); STREAM.scale.set(Math.max(0.05, fs), sl, Math.max(0.05, fs)); STREAM.position.set(G.TIPX, G.TIPY - sl / 2, 0);
+  for (let i = 0; i < NF; i++) { const u = ((t * 0.55) + i / NF) % 1; const p = FUC.getPointAt(u); O.position.copy(p); O.scale.setScalar(fs > 0.03 ? fs : 0.001); O.updateMatrix(); FP.setMatrixAt(i, O.matrix); }
+  FP.instanceMatrix.needsUpdate = true;
+  for (let i = 0; i < NA; i++) { const u = ((t * 0.16) + i / NA) % 1; const p = AIRC.getPointAt(u); O.position.copy(p); O.scale.setScalar(as > 0.03 ? as : 0.001); O.updateMatrix(); AP.setMatrixAt(i, O.matrix); }
+  AP.instanceMatrix.needsUpdate = true;
+  const cw = S.smooth((t - (T.vo2 - 0.15)) / 0.7) * (1 - S.smooth((t - (T.vo6 + 0.6)) / 0.6));
+  CUT.constant = cw > 0.001 ? 0 + 60 * (1 - Math.min(1, cw)) : 1e5; H.userData.cap.visible = cw > 0.98;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, 18, 8, 0, 1050, 7, 16];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const hw = (x, y) => { const v = hp(x, y); return [v.x, v.y]; };
+const [chx, chy] = hw(28, 22);
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 18, 10, 0, 1020, 7, 18]),
+  k_(T.hookEnd, [0, 10, -10, 0, 760, 8, 20]), k_(T.vo2 - 0.3, [0, 10, -10, 0, 740, 8, 16]),
+  k_(T.vo2 + 0.8, [0, G.TIPX + 5, G.HOLE_Y + 10, 0, 190, 3, 4]), k_(T.vo3 - 0.6, [0, G.TIPX + 5, G.HOLE_Y + 12, 0, 185, 3, 4]),
+  k_(T.vo3 + 0.8, [0, -30, 0, 0, 560, 4, 4]), k_(T.vo4 - 0.4, [0, -25, 5, 0, 540, 4, 4]),
+  k_(T.vo4 + 0.5, [0, G.TIPX + 5, G.HOLE_Y + 6, 0, 170, 3, 4]), k_(T.vo5 - 0.3, [0, G.TIPX + 5, G.HOLE_Y + 6, 0, 165, 3, 4]),
+  k_(T.vo5 + 0.6, [0, chx, chy, 0, 430, 3, 4]), k_(T.vo6 - 0.2, [0, chx, chy, 0, 415, 3, 4]),
+  k_(T.vo6 + 0.9, [0, 18, 8, 0, 1080, 7, 12]), k_(LOOP - 0.6, [0, 18, 8, 0, 1060, 7, 14]), k_(LOOP, HOOK)];
+// ---------- overlay ----------
+const scr = (v) => S.toScreen(camera, v);
+const H3 = (x, y, z = 0) => hp(x, y).setZ(z);
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const lv = k[1];
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12) + Math.max(0, 1 - Math.abs(t - T.sq2) / 0.1) * 0.7; K.TXT.flash(g2, 0.75 * Math.min(1, fx)); }
+  const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES THE PUMP', "KNOW IT'S FULL?", 92); const [cx, cy] = scr(V(G.TIPX, PIPE_TOP + 6, 12)); K.TXT.circle(g2, hk, cx, cy, 90, [230, 200]); }
+  // clicks
+  for (const c of T.clicks) { const a = fade(t, c, c + 1.1, 0.1); if (a > 0) { const [px, py] = scr(H3(60, -12, 8)); pill(g2, a, 'CLICK!', px + 60, py + 150, 66, '#ffd21f'); } }
+  { const a = fade(t, T.vo1 + 0.1, T.vo1 + 1.6, 0.2); if (a > 0) { const [px, py] = scr(H3(110, -14, 8)); S.forceArrow(g2, a, px + 20, py + 120, px + 20, py - 10, 18); pill(g2, a, 'SQUEEZE', px + 40, py + 200, 52, '#ffffff'); } }
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo2, T.vo3 - 0.05), s2 = fade(t, T.vo3, T.vo4 - 0.05), s3 = fade(t, T.vo4, T.vo5 - 0.05), s4 = fade(t, T.vo5, T.vo6 - 0.05);
+  stepPlate(Math.max(s1, s2, s3, s4));
+  K.TXT.step(g2, s1, 1, 'A TINY HOLE AT THE TIP', 60);
+  K.TXT.step(g2, s2, 2, 'FLOWING FUEL SUCKS AIR IN', 58);
+  K.TXT.step(g2, s3, 3, 'FUEL COVERS THE HOLE: NO AIR', 54);
+  K.TXT.step(g2, s4, 4, 'SUCTION PULLS THE DISC: CLICK', 54);
+  { const a = fade(t, T.vo2 + 1.0, T.vo3 - 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'SENSING HOLE', ...scr(V(G.TIPX - G.SPOUT_R, G.HOLE_Y, 2)), -60, -180, 50, '#ffd21f');
+      S.tag(g2, fade(t, T.vo2 + 2.0, T.vo3 - 0.1, 0.25), 'AIR TUBE', ...scr(AIRC.getPointAt(0.22)), -60, -260, 50, '#ffffff'); } }
+  { const a = fade(t, T.vo3 + 0.9, T.vo4 - 0.05, 0.25); if (a > 0) { S.tag(g2, a, 'AIR IN', ...scr(V(G.TIPX - G.SPOUT_R - 1, G.HOLE_Y, 2)), -40, 200, 50, '#bfe6ff');
+      S.tag(g2, fade(t, T.vo3 + 1.5, T.vo4 - 0.05, 0.25), 'FUEL FLOW', ...scr(H3(40, 21, 0)), 60, 220, 50, '#ffb21f'); } }
+  { const a = fade(t, T.cover2 - 0.2, T.vo5 - 0.05, 0.25); if (a > 0) { S.tag(g2, a, 'NO AIR GETS IN', ...scr(V(G.TIPX - G.SPOUT_R, G.HOLE_Y, 2)), -40, -220, 52, '#ff7a6a');
+      S.tag(g2, fade(t, T.vo4 + 0.3, T.vo5 - 0.05, 0.25), 'FUEL RISING', ...scr(V(G.TIPX + 8, lv - 6, 8)), 80, 160, 50, '#ffb21f'); } }
+  { const a = fade(t, T.vo5 + 0.4, T.vo6 + 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'RUBBER DISC', ...scr(H3(2, 47 + G.DIA_LIFT * k[5], 3)), -80, -230, 50, '#ffa15a');
+      const [ax, ay] = scr(H3(2, 52, 3)); S.forceArrow(g2, fade(t, T.vo5 + 0.6, T.trip2 + 0.3, 0.2), ax + 90, ay + 70, ax + 90, ay - 60, 16);
+      S.tag(g2, fade(t, T.vo5 + 1.2, T.vo6 + 0.1, 0.25), 'LATCH', ...scr(H3(2, 9, 3)), -120, 160, 50, '#ffffff');
+      S.tag(g2, fade(t, T.trip2, T.vo6 + 0.1, 0.25), 'SPRING SHUTS THE VALVE', ...scr(H3(80, 40, 3)), -60, 330, 48, '#ffd21f'); } }
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'FUEL COVERS THE HOLE', 'SUCTION SHUTS IT OFF', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
