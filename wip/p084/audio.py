@@ -27,7 +27,7 @@ KN = json.load(open('kin.json'))
 kt = np.array([r[0] for r in KN]); fl = np.array([r[3] + r[4] for r in KN]) / G['AMAX']
 for tc in (T['hookEnd'], T['inside'], T['outside']): put(thump(95), tc, gain=0.5)
 # top disc lifts away and sits back down (end of each settle): soft ceramic tock, low
-put(tock(260), T['vo1'] + 2.2 + 0.75, gain=0.3); put(tock(250), T['vo3'] + 0.1 + 0.85, gain=0.3)
+put(tock(260), T['vo1'] + 2.75, gain=0.3); put(tock(250), T['vo3'] + 0.45, gain=0.3)
 # lever lift / swing: very soft low thumps at the start of each move
 for tc in (T['lift_a'], T['hot_a'], T['cold_a']): put(thump(130), tc, pan=0.15, gain=0.28)
 # water: low rumble following the flow; quieter inside the cartridge view (it is a diagram)

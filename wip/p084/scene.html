@@ -7,99 +7,88 @@ html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
 <script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
 </head><body>
 <script type="module">
-// p084 single-lever mixer tap "ONE LEVER: / HOT OR COLD?" (group E, track A voice). Built from kit/kit.js.
-// Two scenes in one: EXT = chrome mixer tap over a vessel basin; INT = the ceramic disc cartridge (disc plane x-z, v = -z, scaled x6).
-// kin.json rows: [t, s (slide mm), theta (deg, + = toward HOT), hot overlap mm2, cold overlap mm2, outlet overlap mm2]
+// p084 v2 single-lever mixer tap "ONE LEVER: / HOT OR COLD?" (group E, track A voice). Built from kit/kit.js.
+// EXT = chrome mixer tap over a vessel basin on a stone counter; INT = the ceramic disc cartridge (disc plane x-z, v = -z, scaled x SC).
+// kin.json rows: [t, s (slide toward the viewer, mm), theta (deg, + = lever LEFT = HOT = clockwise from above), hot overlap mm2, cold overlap mm2, outlet overlap mm2]
 import * as K from '/kit/kit.js';
 const { THREE, S } = K;
 const G = await (await fetch('geom.json')).json();
 const KN = await (await fetch('kin.json')).json();
-const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180, SC = 6;
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180, SC = 5;
 const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.1, near: 2, far: 20000 });
 const { scene, camera } = st;
 const M = K.materials();
 const phys = (o) => new THREE.MeshPhysicalMaterial(o);
 const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
-M.ceramic = phys({ color: 0xf1eee6, roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.12, roughnessMap: M.plastic.roughnessMap });
+M.ceramic = phys({ color: 0xeeebe3, roughness: 0.46, clearcoat: 0.25, clearcoatRoughness: 0.35, sheen: 0.3, sheenColor: 0xffffff, roughnessMap: M.plastic.roughnessMap });
 M.basin = phys({ color: 0xf4f3ef, roughness: 0.12, clearcoat: 1.0, clearcoatRoughness: 0.05 });
-M.ghost = phys({ color: 0xf6f4ee, roughness: 0.25, transparent: true, opacity: 1, depthWrite: true, clearcoat: 0.5 });
+M.ghost = phys({ color: 0xf2efe8, roughness: 0.4, transparent: true, opacity: 1, depthWrite: true, clearcoat: 0.25, sheen: 0.3 });
 M.black = phys({ color: 0x1a1b1f, roughness: 0.4, clearcoat: 0.3 });
-M.water = phys({ color: 0x3a8cff, roughness: 0.05, transparent: true, opacity: 0.8, emissive: 0x0a2a66, emissiveIntensity: 1 });
+M.chrome2 = phys({ color: 0xffffff, metalness: 1, roughness: 0.06, envMapIntensity: 1.9, side: THREE.DoubleSide });
+M.stone = phys({ color: 0xc9c4bb, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.2, roughnessMap: M.plastic.roughnessMap });
+M.water = phys({ color: 0x3a8cff, roughness: 0.02, transparent: true, opacity: 0.66, clearcoat: 1, emissive: 0x0a2a66, emissiveIntensity: 1, depthWrite: false });
+M.streak = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
 
 K.backdrop(scene, { floorY: 0, R: 300, zBack: -700, h: 4000, width: 8000, wall: '#1d2026', floor: '#2b2d31', pool: false, catcher: 3, shadowOpacity: 0.45 });
 const RIG = K.lightRig(scene, V(0, 150, 0), 220);
 RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.2;
 { const g = new THREE.DirectionalLight(0xdbe8ff, 2.0); g.position.set(400, 300, -200); scene.add(g); const f = new THREE.DirectionalLight(0xfff0e0, 0.7); f.position.set(-300, 400, 700); scene.add(f); }
 
-// ================= EXT: tap + basin =================
+// ================= EXT: stone counter, basin, tap =================
 const EXT = new THREE.Group(); scene.add(EXT);
 const lathe = (prof, mat, seg = 96) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
-{ // vessel basin in front of the tap (outer + inner skin, rolled rim)
+{ const slab = new THREE.Mesh(new K.RBox(2400, 40, 1800, 3, 4), M.stone); slab.position.set(0, -19.2, 100); EXT.add(slab);
   const outer = [[0, 0], [62, 0], [70, 4], [120, 40], [142, 92], [146, 112]], inner = [[146, 112], [140, 114], [134, 100], [110, 48], [60, 20], [0, 16]];
-  const b = lathe([...outer, ...inner], M.basin); b.position.set(0, 0, 150); EXT.add(b);
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(143, 4.5, 16, 120), M.basin); rim.rotation.x = Math.PI / 2; rim.position.set(0, 113, 150); EXT.add(rim);
-  const drain = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 2, 48), M.chrome); drain.position.set(0, 17, 150); EXT.add(drain);
-  K.contactBlob(scene, 0, 0, 150, 130, 0.6); K.contactBlob(scene, 0, 0, -20, 40, 0.6);
-}
-const TAP = new THREE.Group(); TAP.position.set(0, 0, -20); EXT.add(TAP);
-{ const body = lathe([[0, 0], [36, 0], [37, 3], [37, 9], [30, 12], [26, 16], [24, 40], [24, 330], [25, 332], [25, 338], [0, 338]], M.chrome); TAP.add(body);
-  // spout: tube from the body forward over the basin, ends in a downward aerator
+  const b = lathe([...outer, ...inner], M.basin); b.position.set(0, 0.8, 150); EXT.add(b);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(143, 4.5, 16, 120), M.basin); rim.rotation.x = Math.PI / 2; rim.position.set(0, 113.8, 150); EXT.add(rim);
+  const drain = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 2, 48), M.chrome); drain.position.set(0, 17.8, 150); EXT.add(drain);
+  EXT.add(K.contactBlob(scene, 0, 0.9, 150, 130, 0.6)); EXT.add(K.contactBlob(scene, 0, 0.9, -20, 40, 0.6)); }
+const TAP = new THREE.Group(); TAP.position.set(0, 0.8, -20); EXT.add(TAP);
+{ const body = lathe([[0, 0], [36, 0], [37, 3], [37, 9], [30, 12], [26, 16], [24, 40], [24, 330], [25, 332], [25, 338], [0, 338]], M.chrome2); TAP.add(body);
   const c = new THREE.CatmullRomCurve3([V(0, 300, 0), V(0, 312, 60), V(0, 306, 130), V(0, 286, 168), V(0, 262, 176)]);
-  const sp = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 13, 32), M.chrome); TAP.add(sp);
-  const aer = lathe([[0, 0], [14.5, 0], [14.5, 14], [0, 14]], M.chrome); aer.position.set(0, 250, 176); TAP.add(aer);
-  const mesh = new THREE.Mesh(new THREE.CircleGeometry(10.5, 32), M.black); mesh.rotation.x = Math.PI / 2; mesh.position.set(0, 249.8, 176); TAP.add(mesh);
-}
-// lever: cap turns about y (swing), arm tilts (lift)
+  const sp = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 13, 32), M.chrome2); TAP.add(sp);
+  const aer = lathe([[0, 0], [14.5, 0], [14.5, 14], [0, 14]], M.chrome2); aer.position.set(0, 250, 176); TAP.add(aer);
+  const mesh = new THREE.Mesh(new THREE.CircleGeometry(10.5, 32), M.black); mesh.rotation.x = Math.PI / 2; mesh.position.set(0, 249.8, 176); TAP.add(mesh); }
 const CAP = new THREE.Group(); CAP.position.set(0, 338, 0); TAP.add(CAP);
 const ARM = new THREE.Group(); ARM.position.set(0, 22, 4); CAP.add(ARM);
-{ const cap = lathe([[0, 0], [25, 0], [25, 20], [22, 26], [0, 26]], M.chrome); CAP.add(cap);
+{ const cap = lathe([[0, 0], [25, 0], [25, 20], [22, 26], [0, 26]], M.chrome2); CAP.add(cap);
   const dotH = new THREE.Mesh(new THREE.CircleGeometry(4, 24), phys({ color: 0xe0281e, roughness: 0.3, emissive: 0x400000 })); dotH.position.set(-14, 12, 25.2); CAP.add(dotH);
   const dotC = new THREE.Mesh(new THREE.CircleGeometry(4, 24), phys({ color: 0x1e6be0, roughness: 0.3, emissive: 0x001040 })); dotC.position.set(14, 12, 25.2); CAP.add(dotC);
-  const arm = new THREE.Mesh(new K.RBox(26, 12, 130, 4, 5), M.chrome); arm.position.set(0, 0, 62); ARM.add(arm);
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 30, 32), M.chrome); hub.rotation.z = Math.PI / 2; ARM.add(hub); }
-// water stream (aerator -> basin floor)
-const STREAM = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 32, 1, true), M.water); EXT.add(STREAM);
-const SPL = new THREE.Mesh(new THREE.TorusGeometry(1, 0.25, 12, 48), M.water); SPL.rotation.x = Math.PI / 2; EXT.add(SPL);
+  const arm = new THREE.Mesh(new K.RBox(26, 12, 130, 4, 5), M.chrome2); arm.position.set(0, 0, 62); ARM.add(arm);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 30, 32), M.chrome2); hub.rotation.z = Math.PI / 2; ARM.add(hub); }
+// water: see-through stream + a bright specular streak + a splash ring in the basin
+const STREAM = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 32, 1, true), M.water); STREAM.renderOrder = 3; EXT.add(STREAM);
+const STRK = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 12, 1, true), M.streak); STRK.renderOrder = 4; EXT.add(STRK);
+const SPL = new THREE.Mesh(new THREE.TorusGeometry(1, 0.22, 12, 48), M.water); SPL.rotation.x = Math.PI / 2; EXT.add(SPL);
+const SPL2 = new THREE.Mesh(new THREE.TorusGeometry(1, 0.12, 12, 48), M.water); SPL2.rotation.x = Math.PI / 2; EXT.add(SPL2);
 
-// ================= INT: ceramic disc cartridge (scaled x SC) =================
+// ================= INT: ceramic disc cartridge =================
 const INT = new THREE.Group(); scene.add(INT);
-const Y0 = 36, YI = Y0 + 4 * SC;                         // lower disc on a dark base; interface height
-const uv = (u, v) => [u, v];                              // shape coords: x = u, y = v  (then rotate -90 deg about x so y -> -z)
-const circ = (cx, cy, r, n = 64, cw = true) => S.circle(cx, cy, r, n, cw);
+const Y0 = 36, YI = Y0 + 4 * SC;
 function rrPts(u0, v0, u1, v1, r, n = 8) { const p = []; const C = [[u1 - r, v1 - r, 0], [u0 + r, v1 - r, 90], [u0 + r, v0 + r, 180], [u1 - r, v0 + r, 270]];
   for (const [cx, cy, a0] of C) for (let i = 0; i <= n; i++) { const a = (a0 + 90 * i / n) * D2R; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return p; }
-const flat = (mesh) => { mesh.rotation.x = -Math.PI / 2; return mesh; };   // shape plane (u, v) -> world (x, -z), extrude along +y
-{ const base = new THREE.Mesh(new THREE.CylinderGeometry(22 * SC, 22 * SC, Y0, 96), M.black); base.position.y = Y0 / 2; INT.add(base);
-  const lip = new THREE.Mesh(new THREE.TorusGeometry(22 * SC, 2, 12, 120), M.chrome); lip.rotation.x = Math.PI / 2; lip.position.y = Y0; INT.add(lip);
-  K.contactBlob(scene, 0, 0, 0, 22 * SC, 0.7);
-  const holes = [circ(G.HOT[0] * SC, G.HOT[1] * SC, G.RI * SC), circ(G.COLD[0] * SC, G.COLD[1] * SC, G.RI * SC), rrPts(...G.OUT.map(x => x * SC), 3 * SC).reverse()];
-  const low = flat(S.extrude(S.shapeOf(circ(0, 0, G.RL * SC, 128, false), holes), 0, 4 * SC, M.ceramic, 1.2, 4)); low.position.y = Y0; INT.add(low); }
-// interface texture: holes (dim water), overlaps (bright water), flow arrows
+function secPts(r0, r1, a0, a1, n = 40) { const p = []; for (let i = 0; i <= n; i++) { const a = (a0 + (a1 - a0) * i / n) * D2R; p.push([r1 * Math.cos(a), r1 * Math.sin(a)]); }
+  for (let i = n; i >= 0; i--) { const a = (a0 + (a1 - a0) * i / n) * D2R; p.push([r0 * Math.cos(a), r0 * Math.sin(a)]); } return p; }
+const HOTP = rrPts(...G.HOTR), COLDP = rrPts(...G.COLDR), OUTP = secPts(...G.OUTS);
+const scl = (P) => P.map(p => [p[0] * SC, p[1] * SC]);
+const flat = (mesh) => { mesh.rotation.x = -Math.PI / 2; return mesh; };
+{ const base = new THREE.Mesh(new THREE.CylinderGeometry((G.RL + 2) * SC, (G.RL + 2) * SC, Y0, 96), M.black); base.position.y = Y0 / 2; INT.add(base);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry((G.RL + 2) * SC, 2, 12, 120), M.chrome); lip.rotation.x = Math.PI / 2; lip.position.y = Y0; INT.add(lip);
+  INT.add(K.contactBlob(scene, 0, 0, 0, (G.RL + 2) * SC, 0.7));
+  const holes = [scl(HOTP).reverse(), scl(COLDP).reverse(), scl(OUTP).reverse()];
+  const low = flat(S.extrude(S.shapeOf(S.circle(0, 0, G.RL * SC, 128, false), holes), 0, 4 * SC - 3, M.ceramic, 3, 5)); low.position.y = Y0; INT.add(low); }
 const TX = document.createElement('canvas'); TX.width = TX.height = 1024; const tg = TX.getContext('2d'); const TEX = new THREE.CanvasTexture(TX); TEX.colorSpace = THREE.SRGBColorSpace;
-const IF = new THREE.Mesh(new THREE.PlaneGeometry(52 * SC, 52 * SC), new THREE.MeshBasicMaterial({ map: TEX, transparent: true, depthWrite: false, toneMapped: false }));
+const IF = new THREE.Mesh(new THREE.PlaneGeometry(56 * SC, 56 * SC), new THREE.MeshBasicMaterial({ map: TEX, transparent: true, depthWrite: false, toneMapped: false }));
 IF.rotation.x = -Math.PI / 2; IF.position.y = YI + 0.6; IF.renderOrder = 2; INT.add(IF);
-const tp = (u, v) => [(u + 26) / 52 * 1024, (26 - v) / 52 * 1024];
-// upper (control) disc: lever holder turns it (theta), slide s along the holder
+const tp = (u, v) => [(u + 28) / 56 * 1024, (28 - v) / 56 * 1024];
 const HOLD = new THREE.Group(); HOLD.position.y = YI; INT.add(HOLD);
 const UP = new THREE.Group(); HOLD.add(UP);
-const elPts = (n = 128) => { const p = []; for (let i = 0; i < n; i++) { const a = i / n * 2 * Math.PI; p.push([(G.EL[0] + G.EL[2] * Math.cos(a)) * SC, (G.EL[1] + G.EL[3] * Math.sin(a)) * SC]); } return p; };
-const pkPts = rrPts(...G.PK.slice(0, 4).map(x => x * SC), G.PK[4] * SC);
-const UPM = [];
-{ const l1 = flat(S.extrude(S.shapeOf(elPts(), [pkPts.slice().reverse()]), 0, 1.4 * SC, M.ghost, 0.6, 3)); UP.add(l1); UPM.push(l1);
-  const l2 = flat(S.extrude(S.shapeOf(elPts()), 1.4 * SC, 4 * SC, M.ghost, 1.2, 4)); UP.add(l2); UPM.push(l2);
-  const ln = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pkPts.map(p => V(p[0], 2, -p[1]))), new THREE.LineBasicMaterial({ color: 0xffd21f, transparent: true, depthTest: false }));
-  ln.renderOrder = 5; UP.add(ln); UP.userData.pk = ln;
-  const ed = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(elPts().map(p => V(p[0], 4 * SC + 0.5, -p[1]))), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 })); UP.add(ed); UP.userData.ed = ed; }
-// lever holder (black) + chrome stem that tilts with the lift and turns with the swing
-const LH = new THREE.Group(); LH.position.y = 4 * SC; HOLD.add(LH);
-const STEM = new THREE.Group(); LH.add(STEM);
-{ const h = new THREE.Mesh(new K.RBox(7 * SC, 3 * SC, 5 * SC, 3, 0.8 * SC), M.black); h.position.set(0, 1.5 * SC, 13 * SC); LH.add(h);
-  STEM.position.set(0, 3 * SC, 13 * SC);
-  const s = new THREE.Mesh(new THREE.CylinderGeometry(1.3 * SC, 1.6 * SC, 15 * SC, 32), M.chrome); s.position.y = 7.5 * SC; STEM.add(s);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(2.0 * SC, 32, 16), M.chrome); knob.position.y = 15 * SC; STEM.add(knob);
-  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.9 * SC, 0.9 * SC, 7.4 * SC, 24), M.chrome); pin.rotation.z = Math.PI / 2; STEM.add(pin); }
-S.shadowAll(scene); IF.castShadow = false; IF.receiveShadow = false;
-for (const m of UPM) m.castShadow = false;
+const elPts = (n = 128) => { const p = []; for (let i = 0; i < n; i++) { const a = i / n * 2 * Math.PI; p.push([G.EL[0] + G.EL[2] * Math.cos(a), G.EL[1] + G.EL[3] * Math.sin(a)]); } return p; };
+const PKP = rrPts(...G.PK);
+{ const l1 = flat(S.extrude(S.shapeOf(scl(elPts()), [scl(PKP).reverse()]), 0, 1.4 * SC, M.ghost, 0.8, 3)); UP.add(l1);
+  const l2 = flat(S.extrude(S.shapeOf(scl(elPts())), 1.4 * SC, 4 * SC - 2.5, M.ghost, 2.5, 4)); UP.add(l2); }
+S.shadowAll(scene); IF.castShadow = false; IF.receiveShadow = false; UP.traverse(o => { if (o.isMesh) o.castShadow = false; });
+STREAM.castShadow = STRK.castShadow = SPL.castShadow = SPL2.castShadow = false;
 
 // ---------------- kinematics ----------------
 const DT = 1 / G.FPS_K;
@@ -110,95 +99,116 @@ const isExt = (t) => t < T.inside || t >= T.outside;
 const HOTC = new THREE.Color(0xff3a22), COLDC = new THREE.Color(0x2f8cff);
 const mixCol = (ah, ac) => COLDC.clone().lerp(HOTC, ah + ac > 0 ? ah / (ah + ac) : 0.5);
 const css = (c, a = 1) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+// control-disc frame -> world disc coords: R(-theta) * (u, v - s)
+const fw = (u, v, s, th) => { const c = Math.cos(th * D2R), sn = Math.sin(th * D2R), w = v - s; return [u * c + w * sn, -u * sn + w * c]; };
 let KK = null;
-// lift of the upper disc during the "two discs" / "bottom disc" explanation (it lifts away, then sits back down as a ghost)
-const upLift = (t) => { const a = S.smooth((t - (T.vo1 + 0.6)) / 0.9) * (1 - S.smooth((t - (T.vo1 + 2.2)) / 0.8)) * 0.5 + S.smooth((t - (T.vo2 - 0.2)) / 0.8) * (1 - S.smooth((t - (T.vo3 + 0.1)) / 0.9)) * 0.7; return a * 26 * SC; };
-const ghostA = (t) => 1 - 0.68 * S.smooth((t - (T.vo2 - 0.3)) / 0.7);
-function drawIF(k, t) {
-  const [_, s, th, ah, ac] = k; const g = tg; g.clearRect(0, 0, 1024, 1024);
-  const hole = (c, col) => { const [x, y] = tp(c[0], c[1]); g.fillStyle = col; g.beginPath(); g.arc(x, y, G.RI / 52 * 1024, 0, 7); g.fill(); };
-  // dim water standing in the inlets (coloured from below), dark outlet
-  hole(G.HOT, 'rgba(150,28,18,0.95)'); hole(G.COLD, 'rgba(18,60,150,0.95)');
-  const [o0x, o0y] = tp(G.OUT[0], G.OUT[3]), [o1x, o1y] = tp(G.OUT[2], G.OUT[1]); g.fillStyle = 'rgba(14,16,20,0.95)'; S.rrect(g, o0x, o0y, o1x - o0x, o1y - o0y, 3 / 52 * 1024); g.fill();
-  // pocket path in world disc coords
-  const c = Math.cos(th * D2R), sn = Math.sin(th * D2R); const P = pkPts.map(p => { const u = p[0] / SC, v = p[1] / SC + s; return tp(u * c - v * sn, u * sn + v * c); });
+const upLift = (t) => { const a = S.smooth((t - (T.vo1 + 0.6)) / 0.9) * (1 - S.smooth((t - (T.vo1 + 2.1)) / 0.7)) * 0.5 + S.smooth((t - (T.vo2 - 0.2)) / 0.8) * (1 - S.smooth((t - (T.vo3 - 0.3)) / 0.8)) * 0.45; return a * 26 * SC; };
+const ghostA = (t) => 1 - 0.5 * S.smooth((t - (T.vo2 - 0.3)) / 0.7);
+function pathOf(g, P) { g.beginPath(); P.forEach((p, i) => { const q = tp(p[0], p[1]); i ? g.lineTo(...q) : g.moveTo(...q); }); g.closePath(); }
+function drawIF(k) {
+  const [, s, th, ah, ac] = k; const g = tg; g.clearRect(0, 0, 1024, 1024);
+  pathOf(g, HOTP); g.fillStyle = 'rgba(150,28,18,0.95)'; g.fill(); pathOf(g, COLDP); g.fillStyle = 'rgba(18,60,150,0.95)'; g.fill();
+  pathOf(g, OUTP); g.fillStyle = 'rgba(14,16,20,0.95)'; g.fill();
   const flow = ah + ac;
-  if (flow > 0.05) { const col = mixCol(ah, ac); const a = Math.min(1, 0.35 + flow / 4);
-    g.save(); g.beginPath(); P.forEach((p, i) => i ? g.lineTo(...p) : g.moveTo(...p)); g.closePath(); g.clip();
-    g.fillStyle = css(col, 0.85 * a); g.fillRect(0, 0, 1024, 1024);                       // mixed water filling the pocket
-    hole(G.HOT, 'rgba(255,70,40,1)'); hole(G.COLD, 'rgba(60,150,255,1)');               // bright where the pocket uncovers a hole
-    g.restore();
-    // animated flow arrows from each open inlet toward the outlet
-    const arrows = (cIn, w, colr) => { if (w < 0.05) return; const [x0, y0] = tp(cIn[0], cIn[1]), [x1, y1] = tp(cIn[0] * 0.25, (G.OUT[1] + G.OUT[3]) / 2);
-      const n = 3; for (let i = 0; i < n; i++) { const u = ((t * 0.9 + i / n) % 1); const x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u; const ang = Math.atan2(y1 - y0, x1 - x0);
-        g.save(); g.globalAlpha = Math.min(1, w / 3) * Math.sin(Math.PI * u); g.translate(x, y); g.rotate(ang); g.fillStyle = colr; g.strokeStyle = '#000'; g.lineWidth = 3;
-        g.beginPath(); g.moveTo(26, 0); g.lineTo(-10, -18); g.lineTo(-2, 0); g.lineTo(-10, 18); g.closePath(); g.fill(); g.stroke(); g.restore(); } };
-    arrows(G.HOT, ah, '#ffb09a'); arrows(G.COLD, ac, '#a8d2ff'); }
+  if (flow > 0.05) { const col = mixCol(ah, ac); const P = PKP.map(p => fw(p[0], p[1], s, th));
+    g.save(); pathOf(g, P); g.clip(); g.fillStyle = css(col, 0.2); g.fillRect(0, 0, 1024, 1024);
+    pathOf(g, HOTP); g.fillStyle = 'rgba(255,80,50,1)'; g.fill(); pathOf(g, COLDP); g.fillStyle = 'rgba(70,160,255,1)'; g.fill(); pathOf(g, OUTP); g.fillStyle = css(col, 0.95); g.fill(); g.restore(); }
   TEX.needsUpdate = true;
 }
 function setScene(t) {
   const k = KK = kin(t); const [, s, th, ah, ac] = k; const ext = isExt(t);
   EXT.visible = ext; INT.visible = !ext;
-  // exterior lever: lift tilts the arm up, swing turns the cap (+theta = toward HOT = screen left)
   CAP.rotation.y = -th * D2R; ARM.rotation.x = -(4 + 20 * s / G.S_OPEN) * D2R;
-  const flow = (ah + ac) / G.AMAX; STREAM.visible = SPL.visible = flow > 0.01; const r = 2 + 6.5 * Math.sqrt(Math.max(0, flow));
-  STREAM.scale.set(r, 250 - 17, r); STREAM.position.set(0, (250 + 17) / 2, 156); SPL.position.set(0, 17.5, 156); SPL.scale.set(r * 2.2, r * 2.2, r * 2.2);
-  const col = mixCol(ah, ac); M.water.color.copy(col); M.water.emissive.copy(col).multiplyScalar(0.35);
-  // interior: holder turns, disc slides along the holder, stem tilts
-  HOLD.rotation.y = th * D2R; UP.position.set(0, upLift(t), -s * SC); LH.position.set(0, 4 * SC + upLift(t), -s * SC); STEM.rotation.x = (38 + 22 * s / G.S_OPEN) * D2R;
-  const ga = ghostA(t); M.ghost.opacity = ga; M.ghost.depthWrite = ga > 0.98; UP.userData.ed.material.opacity = (1 - ga) * 1.4;
-  const pkA = Math.max(H(t, T.vo3 + 0.2, T.vo6), 0.0); UP.userData.pk.material.opacity = pkA; UP.userData.pk.visible = pkA > 0.01;
-  K.glow(STEM, H(t, T.vo4 + 0.1, T.vo6 - 0.2) * 0.6);
-  if (!ext) drawIF(k, t);
+  const flow = (ah + ac) / G.AMAX; const on = flow > 0.01; STREAM.visible = STRK.visible = SPL.visible = SPL2.visible = on; const r = 2.5 + 6 * Math.sqrt(Math.max(0, flow));
+  const top = 250.8 - 20, bot = 18.8, h = top - bot, mid = (top + bot) / 2 + 0, zc = 156;
+  STREAM.scale.set(r, h, r); STREAM.position.set(0, mid, zc); STRK.scale.set(r * 0.22, h, r * 0.22); STRK.position.set(-r * 0.45, mid, zc + r * 0.55);
+  SPL.position.set(0, 19.2, zc); SPL.scale.setScalar(r * 2.0); const ph = (t * 2.2) % 1; SPL2.position.set(0, 19.0, zc); SPL2.scale.setScalar(r * (2.2 + 2.8 * ph)); SPL2.material = M.water;
+  const col = mixCol(ah, ac); M.water.color.copy(col); M.water.emissive.copy(col).multiplyScalar(0.45);
+  HOLD.rotation.y = -th * D2R; UP.position.set(0, upLift(t), s * SC);
+  const ga = ghostA(t); M.ghost.opacity = ga; M.ghost.depthWrite = ga > 0.98;
+  if (!ext) drawIF(k);
   K.shoot(st, CAMK, t);
 }
 // ---------------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------------
 const k_ = (t, a) => [t, ...a];
-const HOOK = [0, 330, 60, 860, 8, 38], HOOK2 = [0, 328, 60, 830, 8, 36], EXTW = [0, 225, 40, 1150, 10, 32], EXTW2 = [0, 227, 40, 1090, 10, 30];
-const SIDE = [0, 80, 20, 1250, 20, 0], SIDE2 = [0, 95, 20, 1320, 22, 0], TOP = [0, 60, 55, 1260, 60, 0], TOP2 = [0, 60, 50, 1200, 64, 0];
+const HOOK = [0, 372, 60, 860, 8, 38], HOOK2 = [0, 370, 60, 830, 8, 36], EXTW = [0, 235, 40, 1150, 10, 32], EXTW2 = [0, 237, 40, 1090, 10, 30];
+const SIDE = [0, 70, 20, 1150, 20, 0], SIDE2 = [0, 85, 20, 1210, 22, 0], TOP = [0, 60, 30, 1180, 60, 0], TOP2 = [0, 60, 28, 1130, 64, 0];
 const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, HOOK2), k_(T.hookEnd, EXTW), k_(T.inside - 0.01, EXTW2),
-  k_(T.inside, SIDE), k_(T.vo2 - 0.2, SIDE2), k_(T.vo2 + 0.9, TOP), k_(T.vo4, TOP2), k_(T.outside - 0.01, [0, 60, 50, 1160, 64, 0]),
-  k_(T.outside, EXTW), k_(LOOP - 1.0, [0, 325, 60, 880, 8, 37]), k_(LOOP, HOOK)];
+  k_(T.inside, SIDE), k_(T.vo2 - 0.2, SIDE2), k_(T.vo2 + 0.9, TOP), k_(T.vo4, TOP2), k_(T.outside - 0.01, [0, 60, 28, 1100, 64, 0]),
+  k_(T.outside, EXTW), k_(LOOP - 0.9, [0, 368, 60, 880, 8, 37]), k_(LOOP, HOOK)];
 // ---------------- overlay ----------------
-const scr = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
 const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
-const dpt = (u, v, y = YI) => { const p = V(u * SC, y, -v * SC); return S.toScreen(camera, p); };   // interior disc point (world, INT at origin)
-function spoutInset(g2, a, ah, ac) { if (a <= 0) return; const x = 112, y = 1180, w = 250, h = 236; g2.save(); g2.globalAlpha = a;
-  g2.fillStyle = 'rgba(10,12,16,0.86)'; S.rrect(g2, x, y, w, h, 22); g2.fill(); g2.strokeStyle = '#596170'; g2.lineWidth = 4; g2.stroke();
-  // little spout
-  g2.strokeStyle = '#d9dee6'; g2.lineWidth = 22; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(x + 50, y + 60); g2.lineTo(x + 150, y + 60); g2.quadraticCurveTo(x + 178, y + 60, x + 178, y + 84); g2.stroke();
+const dpt = (u, v, y = YI) => S.toScreen(camera, V(u * SC, y, -v * SC));
+function polyScr(g2, P) { g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.closePath(); }
+function arrowPath(g2, a, pts, col, w = 12, t = 0) { if (a <= 0 || pts.length < 2) return; g2.save(); g2.globalAlpha = a; g2.lineJoin = 'round'; g2.lineCap = 'round';
+  g2.strokeStyle = 'rgba(0,0,0,0.7)'; g2.lineWidth = w + 7; g2.beginPath(); pts.forEach((p, i) => i ? g2.lineTo(...p) : g2.moveTo(...p)); g2.stroke();
+  g2.strokeStyle = col; g2.lineWidth = w; g2.setLineDash([26, 16]); g2.lineDashOffset = -t * 90; g2.stroke(); g2.setLineDash([]);
+  const [x1, y1] = pts[pts.length - 1], [x0, y0] = pts[pts.length - 2]; const an = Math.atan2(y1 - y0, x1 - x0);
+  g2.fillStyle = col; g2.strokeStyle = '#000'; g2.lineWidth = 4; g2.beginPath(); g2.moveTo(x1 + 22 * Math.cos(an), y1 + 22 * Math.sin(an));
+  g2.lineTo(x1 + 24 * Math.cos(an + 2.4), y1 + 24 * Math.sin(an + 2.4)); g2.lineTo(x1 + 24 * Math.cos(an - 2.4), y1 + 24 * Math.sin(an - 2.4)); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function spoutInset(g2, a, ah, ac) { if (a <= 0) return; const x = 112, y = 1196, w = 250, h = 222; g2.save(); g2.globalAlpha = a;
+  g2.fillStyle = 'rgba(10,12,16,0.88)'; S.rrect(g2, x, y, w, h, 22); g2.fill(); g2.strokeStyle = '#596170'; g2.lineWidth = 4; g2.stroke();
+  g2.strokeStyle = '#d9dee6'; g2.lineWidth = 22; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(x + 50, y + 56); g2.lineTo(x + 150, y + 56); g2.quadraticCurveTo(x + 182, y + 56, x + 182, y + 82); g2.stroke();
   const flow = (ah + ac) / G.AMAX; const col = mixCol(ah, ac);
-  if (flow > 0.01) { const ww = 6 + 30 * Math.sqrt(flow); g2.fillStyle = css(col, 0.95); g2.fillRect(x + 178 - ww / 2, y + 96, ww, 96); }
-  g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = flow > 0.01 ? css(col) : '#8a92a0'; g2.fillText(flow > 0.01 ? 'WATER' : 'OFF', x + 22, y + 160);
+  if (flow > 0.01) { const ww = 6 + 30 * Math.sqrt(flow); g2.fillStyle = css(col, 0.95); g2.fillRect(x + 182 - ww / 2, y + 94, ww, 108); }
+  g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = flow > 0.01 ? css(col) : '#8a92a0'; g2.fillText(flow > 0.01 ? 'WATER' : 'OFF', x + 18, y + 165);
+  g2.restore(); }
+function leverInset(g2, a, t, s, th) { if (a <= 0) return; const x = 600, y = 1196, w = 300, h = 222; g2.save(); g2.globalAlpha = a;
+  g2.fillStyle = 'rgba(10,12,16,0.88)'; S.rrect(g2, x, y, w, h, 22); g2.fill(); g2.strokeStyle = '#596170'; g2.lineWidth = 4; g2.stroke();
+  g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffd21f';
+  if (t < T.vo5) { // side view: lever tilts up, the disc below slides toward you
+    g2.fillText('LIFT', x + 18, y + 40); const px = x + 120, py = y + 120, an = (-8 + 32 * s / G.S_OPEN) * D2R;
+    g2.fillStyle = '#d9dee6'; g2.fillRect(px - 50, py, 100, 26); g2.strokeStyle = '#d9dee6'; g2.lineWidth = 16; g2.lineCap = 'round';
+    g2.beginPath(); g2.moveTo(px, py); g2.lineTo(px + 130 * Math.cos(an), py - 130 * Math.sin(an)); g2.stroke(); g2.fillStyle = '#9aa2ae'; g2.beginPath(); g2.arc(px, py, 12, 0, 7); g2.fill();
+    const dx = 46 - 70 * s / G.S_OPEN; g2.fillStyle = '#efece4'; S.rrect(g2, px + dx - 52, py + 44, 104, 22, 6); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 4; g2.stroke();
+  } else { // top view: swing left = hot
+    g2.fillText('SWING', x + 18, y + 40); const cx = x + 175, cy = y + 84, L = 66, an = th * D2R;
+    g2.fillStyle = '#ff4a2e'; g2.beginPath(); g2.arc(cx - 46, cy - 6, 9, 0, 7); g2.fill(); g2.fillStyle = '#3c8cff'; g2.beginPath(); g2.arc(cx + 46, cy - 6, 9, 0, 7); g2.fill();
+    g2.fillStyle = '#9aa2ae'; g2.beginPath(); g2.arc(cx, cy, 26, 0, 7); g2.fill(); g2.strokeStyle = '#d9dee6'; g2.lineWidth = 18; g2.lineCap = 'round';
+    g2.beginPath(); g2.moveTo(cx, cy); g2.lineTo(cx - L * Math.sin(an), cy + L * Math.cos(an)); g2.stroke();
+    g2.font = '44px Anton'; g2.textAlign = 'center'; g2.fillStyle = th > 4 ? '#ff6a4a' : (th < -4 ? '#5aa8ff' : '#c9cfd8'); g2.fillText(th > 4 ? 'LEFT = HOT' : (th < -4 ? 'RIGHT = COLD' : 'MIDDLE'), x + w / 2 + 6, y + h - 26); }
   g2.restore(); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const [, s, th, ah, ac] = k; const ext = isExt(t);
-  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12), fi = Math.max(0, 1 - Math.abs(t - T.inside) / 0.12), fo = Math.max(0, 1 - Math.abs(t - T.outside) / 0.12); K.TXT.flash(g2, 0.75 * Math.max(fx, fi * 0.8, fo * 0.8)); }
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.75 * fx); }
   const hk = t < 3 ? 1 - S.smooth((t - (T.vo0 + 1.6)) / 0.2) : 0;
-  if (hk > 0) { K.TXT.hook(g2, hk, 'ONE LEVER:', 'HOT OR COLD?', 104); const [cx0, cy0] = wpt(ARM, 0, 0, 100); K.TXT.circle(g2, (t < T.hookEnd ? 1 : 0), cx0, cy0, 70, [-230, -150]); }
+  if (hk > 0) { K.TXT.hook(g2, hk, 'ONE LEVER:', 'HOT OR COLD?', 104); const [cx0, cy0] = wpt(ARM, 0, 0, 100); K.TXT.circle(g2, (t < T.hookEnd ? 1 : 0), cx0, cy0, 66, [230, 190]); }
   if (ext && t > T.hookEnd && t < T.inside) { S.tag(g2, H(t, T.vo0 + 1.75, T.inside), 'HOT', ...wpt(CAP, -14, 12, 26), -150, 120, 50, '#ff5a3a'); S.tag(g2, H(t, T.vo0 + 1.75, T.inside), 'COLD', ...wpt(CAP, 14, 12, 26), 150, 120, 50, '#5aa8ff'); }
-  // interior captions (each held at full opacity, hard cuts)
   K.TXT.step(g2, H(t, T.vo1 + 0.05, T.vo2 - 0.02), 1, 'TWO FLAT CERAMIC DISCS', 60);
   K.TXT.step(g2, H(t, T.vo2, T.vo3 - 0.02), 2, 'THE BOTTOM DISC NEVER MOVES', 56);
-  K.TXT.step(g2, H(t, T.vo3, T.vo4 - 0.02), 3, 'WATER ONLY WHERE IT OVERLAPS', 56);
+  K.TXT.step(g2, H(t, T.vo3, T.vo4 - 0.02), 3, 'WATER ONLY UNDER THE POCKET', 56);
   K.TXT.step(g2, H(t, T.vo4, T.vo5 - 0.02), 4, 'LIFT: MORE OVERLAP, MORE WATER', 54);
   K.TXT.step(g2, H(t, T.vo5, T.outside), 5, 'SWING: MORE HOT OR MORE COLD', 54);
   if (!ext) {
-    S.tag(g2, H(t, T.vo1 + 0.9, T.vo2 + 0.1), 'TOP DISC', ...wpt(UP, 0, 4 * SC, -14 * SC), -200, -120, 50, '#ffffff');
-    S.tag(g2, H(t, T.vo1 + 1.4, T.vo2 + 0.1), 'BOTTOM DISC', ...dpt(0, -19, YI - 2 * SC), 160, 150, 50, '#ffffff');
-    S.tag(g2, H(t, T.vo2 + 1.1, T.vo3 + 0.3), 'HOT', ...dpt(G.HOT[0], G.HOT[1]), -170, -150, 54, '#ff5a3a');
-    S.tag(g2, H(t, T.vo2 + 1.7, T.vo3 + 0.3), 'COLD', ...dpt(G.COLD[0], G.COLD[1]), 150, -150, 54, '#5aa8ff');
-    S.tag(g2, H(t, T.vo2 + 2.5, T.vo3 + 0.3), 'WAY OUT', ...dpt(0, -7), 160, 200, 54, '#ffffff');
-    { const c = Math.cos(th * D2R), sn = Math.sin(th * D2R), u = 0, v = -8 + s; S.tag(g2, H(t, T.vo3 + 0.5, T.vo4 + 0.4), 'POCKET', ...dpt(u * c - v * sn, u * sn + v * c, YI + 2), -260, -20, 54, '#ffd21f'); }
-    S.tag(g2, H(t, T.vo3 + 2.0, T.vo4 - 0.05), 'HOLES COVERED: NO WATER', ...dpt(G.COLD[0], G.COLD[1]), -60, -210, 48, '#ffffff');
-    { const a = H(t, T.vo4 + 0.2, T.lift_b + 0.3); if (a > 0) { const [x0, y0] = wpt(STEM, 0, 15 * SC, 0); S.forceArrow(g2, a, x0 + 110, y0 + 70, x0 + 110, y0 - 60, 16); } }
-    S.tag(g2, H(t, T.vo4 + 0.2, T.vo5 - 0.05), 'LEVER', ...wpt(STEM, 0, 15 * SC, 0), -220, 30, 50, '#ffd21f');
-    S.tag(g2, H(t, T.hot_a + 0.6, T.cold_a + 0.3), 'MORE HOT', ...dpt(G.HOT[0], G.HOT[1]), -150, -170, 54, '#ff5a3a');
-    S.tag(g2, H(t, T.cold_a + 0.9, T.outside), 'MORE COLD', ...dpt(G.COLD[0], G.COLD[1]), 140, -170, 54, '#5aa8ff');
+    const lift = upLift(t), ga = ghostA(t);
+    // top disc: clean solid outline (+ pocket outline, a dark 'dip' when nothing flows)
+    if (ga < 0.99) { const yTop = YI + lift + 4 * SC, yBot = YI + lift + 1;
+      const E = elPts(96).map(p => dpt(...fw(p[0], p[1], s, th), yTop)); g2.save(); g2.globalAlpha = Math.min(1, (1 - ga) * 3); polyScr(g2, E); g2.strokeStyle = '#ffffff'; g2.lineWidth = 5; g2.stroke(); g2.restore();
+      const pkA = Math.max(H(t, T.vo3 + 0.1, T.outside), 0); if (pkA > 0) { const P = PKP.map(p => dpt(...fw(p[0], p[1], s, th), yBot)); g2.save(); g2.globalAlpha = pkA; polyScr(g2, P);
+        if (ah + ac < 0.05) { g2.fillStyle = 'rgba(40,30,0,0.35)'; g2.fill(); } g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.stroke(); g2.restore(); } }
+    S.tag(g2, H(t, T.vo1 + 0.9, T.vo2 + 0.1), 'TOP DISC', ...wpt(UP, -14 * SC, 4 * SC, 0), -170, -110, 50, '#ffffff');
+    S.tag(g2, H(t, T.vo1 + 1.4, T.vo2 + 0.1), 'BOTTOM DISC', ...dpt(-18, -14, YI - 2 * SC), -120, 150, 50, '#ffffff');
+    S.tag(g2, H(t, T.vo2 + 1.1, T.vo3 + 0.3), 'HOT', ...dpt(-5, -5.75), -190, 120, 54, '#ff5a3a');
+    S.tag(g2, H(t, T.vo2 + 1.7, T.vo3 + 0.3), 'COLD', ...dpt(5, -5.75), 170, 120, 54, '#5aa8ff');
+    S.tag(g2, H(t, T.vo2 + 2.4, T.vo3 + 0.3), 'WAY OUT', ...dpt(0, 14.5), 190, -120, 54, '#ffffff');
+    { const [u, v] = fw(0, 12, s, th); S.tag(g2, H(t, T.vo3 + 0.5, T.vo4 + 0.4), 'POCKET', ...dpt(u, v, YI + 2), -250, -60, 54, '#ffd21f'); }
+    S.tag(g2, H(t, T.vo3 + 2.0, T.vo4 - 0.05), 'HOLE SHUT BY CERAMIC', ...dpt(5, -6.5, YI + 4 * SC), 30, 170, 48, '#ffffff');
+    S.tag(g2, H(t, T.hot_a + 0.5, T.cold_a + 0.1), 'MORE HOT', ...dpt(-5, -5.75), -170, 120, 54, '#ff5a3a');
+    S.tag(g2, H(t, T.cold_a + 0.8, T.outside), 'MORE COLD', ...dpt(5, -5.75), 160, 120, 54, '#5aa8ff');
+    // flow: open inlet -> up into the pocket -> across the pocket -> down the way-out slot
+    if (ah + ac > 0.3) { const col = css(mixCol(ah, ac)); const yP = YI + 1;
+      const mid1 = dpt(...fw(0, 4, s, th), yP), mid2 = dpt(...fw(0, 12.5, s, th), yP), out = dpt(0, 14.5, YI), outDn = [out[0], out[1] + 70];
+      const fa = Math.min(1, (ah + ac) / 4);
+      if (ah > 0.3) arrowPath(g2, fa * Math.min(1, ah / 3), [dpt(-4.5, -5.0, YI - 6), dpt(...fw(-1.5, 1.5, s, th), yP), mid1], '#ff7a5a', 10, t);
+      if (ac > 0.3) arrowPath(g2, fa * Math.min(1, ac / 3), [dpt(4.5, -5.0, YI - 6), dpt(...fw(1.5, 1.5, s, th), yP), mid1], '#7ab8ff', 10, t);
+      arrowPath(g2, fa, [mid1, mid2, out], col, 12, t); arrowPath(g2, fa, [out, outDn], col, 12, t); }
     spoutInset(g2, H(t, T.vo3 + 0.3, T.outside), ah, ac);
+    leverInset(g2, H(t, T.vo4 + 0.1, T.outside), t, s, th);
   }
-  K.TXT.answer(g2, H(t, T.vo6 + 0.05, LOOP - 1.55), 'ONE MOVING POCKET', 'TWO FIXED HOLES', 560);
-  K.TXT.follow(g2, H(t, LOOP - 1.5, LOOP + 1));
+  K.TXT.answer(g2, H(t, T.vo6 + 0.05, LOOP - 1.2), 'ONE MOVING POCKET', 'TWO FIXED HOLES', 560);
+  { const a = H(t, LOOP - 1.15, LOOP + 1); if (a > 0) { const text = 'FOLLOW → A NEW MACHINE EVERY DAY'; g2.save(); g2.globalAlpha = a; g2.font = '44px Anton'; const w = g2.measureText(text).width + 44, yy = 420;
+    S.rrect(g2, S.CX - w / 2, yy - 34, w, 68, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = '#ffffff'; g2.lineWidth = 4; g2.stroke();
+    g2.fillStyle = '#fff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, S.CX, yy + 2); g2.restore(); } }
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;
