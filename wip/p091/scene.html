@@ -115,7 +115,7 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 2300, az = 14, ty = -150, tx = 40) => [tx, ty, 0, d, 4, az];
+const OUTK = (d = 2300, az = 14, ty = -150, tx = 95) => [tx, ty, 0, d, 4, az];
 const INK = (dx = 4, d = 170, az = 10, el = 6) => [6000 + dx + 3, -13, 0, d, el, az];
 const CAMK = [k_(0, OUTK(2250, 12)), k_(T.cutIn - 0.01, OUTK(2150, 16, -150)),
   k_(T.cutIn, INK(4, 182, 14)), k_(T.vo2 - 0.01, INK(3, 168, 8)), k_(T.vo3, INK(3, 160, 4)), k_(T.vo4, INK(5, 150, -4, 7)), k_(T.vo5, INK(5, 142, 2, 6)),

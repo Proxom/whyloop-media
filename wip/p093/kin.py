@@ -6,7 +6,7 @@
 import json, math
 GAP0 = 8.0; DISC_T = 4.0; SEAT_Y = 0.0; CH_TOP = 14.0
 SPR_FLOOR = 20.0; COLLAR0 = 48.0; COLLAR_T = 3.0; BONNET_CAP = 52.0
-STEM_TOP0 = 66.0; PUSH_T = 3.0; CAP_TOP = 146.0
+STEM_TOP0 = 66.0; PUSH_T = 33.0; CAP_TOP = 146.0
 SPR_TURNS, SPR_WIRE = 5, 1.0; SPR_BOUND = (SPR_TURNS + 2) * 2 * SPR_WIRE
 FPS_K = 120
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
@@ -16,7 +16,7 @@ GAP = {2: 0.3, 3: 0.3, 4: 0.3, 5: 0.3, 6: 0.4}
 for i in range(2, 7): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
 LOOP = round(T['vo6'] + dur[6] + 1.5, 2); T['LOOP'] = LOOP
 T['cutIn'] = round(T['vo1'] + 1.5, 3)
-T['warmA'] = T['vo3'] + 0.1; T['warmB'] = T['vo3'] + 1.6          # room warms (thermometer)
+T['warmA'] = T['vo3'] + 0.05; T['warmB'] = T['vo3'] + 0.8          # room warms (thermometer)
 T['pushA'] = T['vo3'] + 0.7; T['pushB'] = T['vo4'] + 2.0          # wax grows -> pin down -> valve shuts
 T['coolA'] = T['vo5'] + 0.2; T['coolB'] = T['vo5'] + 1.7          # room cools
 T['openA'] = T['vo5'] + 0.8; T['openB'] = T['vo5'] + 3.3          # wax shrinks, spring pushes the valve open
