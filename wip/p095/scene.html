@@ -101,9 +101,9 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 600, az = -45, el = 55) => [25, 0, 3, d, el, az];
+const OUTK = (d = 600, az = -45, el = 55) => [14.6, 0, -7.4, d * 1.07, el, az];
 const INK = (d = 118, az = 24, el = 24) => [0, 2.5, 12, d, el, az];
-const WIDE = (d = 560, az = 90, el = 66) => [-20, 0, 30, d, el, az];
+const WIDE = (d = 560, az = 90, el = 66) => [-4, 0, 30, d * 1.05, el, az];
 const CAMK = [k_(0, OUTK(610, -45)), k_(T.cutIn - 0.01, OUTK(580, -43)),
   k_(T.cutIn, INK(150, 30, 28)), k_(T.vo2 - 0.01, INK(128, 22, 24)), k_(T.vo2, INK(112, 30, 22)), k_(T.vo3 - 0.01, INK(98, 36, 20)),
   k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.4, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(570, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
@@ -135,7 +135,7 @@ function overlay(t) {
   if (s2) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, 1, 'TOOTH', lx, ly, 150, -170, 50, '#ffd21f');
     S.tag(g2, hard(t, T.vo2 + 1.8, T.vo3), 'NOTCH IN THE CASE', ...pw(8.6, 7.3, 0), 60, -290, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 3.0, T.vo3), 'LOCKED', ...pw(-8.6, 5.5, 0), -150, 250, 52, '#ff6a4a'); }
   if (s3) { const [bx, by] = pw(0, 10.5 - k[2], 0); arrowC(g2, hard(t, T.press - 0.5, T.press + 0.4), bx, by - 230, bx, by - 40, 30, '#ffd21f'); S.tag(g2, hard(t, T.press + 0.4, T.vo4), 'TEETH OUT: FREE', ...pw(-6.45, 2.5 - k[2], 0), -150, 260, 52, '#7dff9a'); }
-  if (s4) { S.outlined(g2, 'SLOW MOTION', 540, 520, 44, '#ffd21f'); if (t > T.snapB - 0.05) S.tag(g2, 1, 'STOP', ...sp(16, 4, 4), 150, 200, 56, '#ff6a4a'); }
+  if (s4) { S.outlined(g2, 'SLOW MOTION', 300, 640, 48, '#ffd21f'); if (t > T.snapB - 0.05) S.tag(g2, 1, 'STOP', ...sp(16, 4, 4), 150, 200, 56, '#ff6a4a'); }
   if (s5) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, hard(t, T.pop + 0.15, T.outA), 'BACK IN THE NOTCH', lx, ly, 120, 260, 50, '#ffd21f'); const [bx, by] = pw(0, 12, 0); arrowC(g2, hard(t, T.pop - 0.1, T.pop + 0.9), bx, by - 20, bx, by - 200, 28, '#7dff9a'); }
   if (t >= T.outA && t < T.foldB + 0.3) { const [ax, ay] = sp(46, 2, 30); arrowC(g2, 1, ax + 40, ay + 120, ax - 120, ay + 220, 26, '#ffd21f'); S.tag(g2, hard(t, T.foldA, T.foldB + 0.3), 'WINDS THE SPRING', ...pw(0, 9, 0), -60, 330, 48, '#ffb21f'); }
   K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 520);
