@@ -22,17 +22,15 @@ T = {'vo0': 0.15}
 T['hookEnd'] = T['vo0'] + D[0] + 0.15
 for i in range(1, 7): T[f'vo{i}'] = T[f'vo{i-1}'] + (D[i - 1] if i > 1 else 0) + (0.1 if i == 1 else 0.2)
 T['vo1'] = T['hookEnd'] + 0.1
-for i in range(2, 7): T[f'vo{i}'] = T[f'vo{i-1}'] + D[i - 1] + (0.25 if i in (3, 6) else 0.2)
+for i in range(2, 7): T[f'vo{i}'] = T[f'vo{i-1}'] + D[i - 1] + (0.9 if i == 6 else 0.3 if i in (3, 4) else 0.2)
 LOOP = round(T['vo6'] + D[6] + 1.1, 1); T['LOOP'] = LOOP
 def ramp(t, a, b): return smooth((t - a) / (b - a))
 def u_at(t):         # engagement 0 (open) .. 1 (pads on the rim)
     if t < T['hookEnd']: return ramp(t, 0.3, 0.75)
     if t < T['vo2'] - 0.45: return ramp(t, T['vo1'] + 0.8, T['vo1'] + 1.25)
     if t < T['vo3']: return 1 - ramp(t, T['vo2'] - 0.45, T['vo2'] + 0.1)
-    if t < T['vo4']: return 0.97 * ramp(t, T['vo3'] + 0.6, T['vo3'] + 4.6)
-    if t < T['vo5'] + 0.2: return 0.97 + 0.03 * ramp(t, T['vo4'] + 0.1, T['vo4'] + 0.45)
-    if t < T['vo5'] + 1.2: return 1 - ramp(t, T['vo5'] + 0.2, T['vo5'] + 0.8)
-    if t < LOOP - 1.4: return ramp(t, T['vo5'] + 1.3, T['vo5'] + 2.7)
+    if t < T['vo5']: return 0.97 * ramp(t, T['vo3'] + 0.9, T['vo5'] - 0.1)
+    if t < LOOP - 1.4: return 0.97 + 0.03 * ramp(t, T['vo5'] + 0.1, T['vo5'] + 0.45)
     return 1 - ramp(t, LOOP - 1.4, LOOP - 0.7)
 def phi_of(u): return PHI_O + (PHI_C - PHI_O) * u
 def top_x(phi): return PX + S_TOP * math.sin(phi)

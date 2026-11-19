@@ -52,7 +52,7 @@ for (const sx of [-1, 1]) { scene.add(cyl([sx * 56, 175, -40], [sx * 52, -310, -
   scene.add(cyl([0, 200, -40], [0, 400, -20], 15, M.frame, 24)); scene.add(cyl([0, 405, -20], [0, 425, 60], 17, M.alu, 24));
   scene.add(cyl([-330, 440, 70], [330, 440, 70], 11, M.alu, 24)); for (const sx of [-1, 1]) scene.add(cyl([sx * 210, 440, 70], [sx * 330, 440, 70], 15, M.rubber, 24)); }
 const LEV = new THREE.Group(); LEV.position.set(205, 440, 70); scene.add(LEV);
-{ const b = new THREE.Mesh(new K.RBox(22, 26, 26, 2, 5), M.alu); LEV.add(b); const bl = new THREE.Mesh(new K.RBox(110, 9, 14, 2, 4), M.alu); bl.position.set(62, -6, 30); LEV.add(bl); }
+{ const b = new THREE.Mesh(new K.RBox(22, 26, 26, 2, 5), M.alu); LEV.add(b); const bl = new THREE.Mesh(new K.RBox(150, 14, 20, 3, 4), M.alu); bl.position.set(82, -8, 34); LEV.add(bl); }
 // ---------- brake arms (rotate about z at the bosses) ----------
 function makeArm(sx) { const g = new THREE.Group(); g.position.set(sx * G.PX, G.PY, 0); scene.add(g);
   const a = new THREE.Mesh(new K.RBox(10, G.S_TOP + 14, 9, 2, 3), M.armA); a.position.y = (G.S_TOP) / 2 - 2; g.add(a);
@@ -79,7 +79,7 @@ const WIDE = [0, 40, 60, 0, 2300, 10, 32];
 const FRONT = [0, 0, 10, 0, 640, 8, 0];
 const k_ = (t, a) => [t, ...a.slice(1)];
 const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 0, -5, 0, 590, 12, 36]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.6, [0, 40, 50, 0, 2150, 10, 28]),
-  k_(T.vo2 + 0.6, [0, 0, 10, 0, 680, 6, 8]), k_(T.vo3 - 0.1, FRONT), k_(T.vo5 + 3.2, [0, 0, 10, 0, 620, 6, 2]), k_(T.vo5 + 4.2, [0, 0, -20, 0, 700, 12, 30]), k_(T.vo6 + 0.3, [0, 0, -15, 0, 720, 12, 32]),
+  k_(T.vo2 + 0.6, [0, 0, 0, 0, 700, 10, 22]), k_(T.vo3 - 0.2, [0, 0, 0, 0, 690, 10, 20]), k_(T.vo3 + 0.5, [0, 0, -80, 0, 700, 6, 6]), k_(T.vo4 - 0.3, [0, 0, -80, 0, 700, 6, 4]), k_(T.vo4 + 0.4, FRONT), k_(T.vo5 + 2.2, [0, 0, 10, 0, 620, 6, 2]), k_(T.vo5 + 3.4, [0, 0, -20, 0, 700, 12, 30]), k_(T.vo6 + 0.3, [0, 0, -15, 0, 720, 12, 32]),
   k_(LOOP - 0.5, [0, 0, -8, 0, 650, 12, 34]), k_(LOOP, HOOK)];
 let KK = null;
 function setScene(t) {
@@ -92,11 +92,11 @@ function setScene(t) {
     HOUS.geometry.dispose(); HOUS.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(H), 80, 2.6, 10); }
   { const A = new THREE.Vector3(xl + 4, yl, 0), B = new THREE.Vector3(xr, yr, 0); CAB.position.copy(A).add(B).multiplyScalar(0.5); CAB.scale.set(0.9, A.distanceTo(B), 0.9);
     CAB.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); }
-  LEV.rotation.y = 0.32 * k[1];
-  K.glow(CAB, fade(t, T.vo3 + 0.2, T.vo4, 0.25) * 0.9); K.glow(NOOD, fade(t, T.vo3 + 2.4, T.vo4, 0.25) * 0.9);
-  const gp = Math.max(fade(t, T.vo4 + 0.1, T.vo5 + 0.2, 0.2), fade(t, T.vo5 + 2.6, T.vo6, 0.2) * 0.7) * 0.9; K.glow(AR.userData.pad, gp); K.glow(AL.userData.pad, gp);
-  K.glow(AR, fade(t, T.vo2 + 0.4, T.vo3, 0.25) * 0.35); K.glow(AL, fade(t, T.vo2 + 0.4, T.vo3, 0.25) * 0.35);
-  const cw = Math.min(S.smooth((t - (T.vo2 + 0.2)) / 0.6), 1 - S.smooth((t - (T.vo5 + 3.2)) / 0.5)) * (t > T.hookEnd ? 1 : 0); CUTW.constant = cw > 0.001 ? 45 + 400 * (1 - cw) : 1e5;
+  LEV.rotation.y = 0.5 * k[1];
+  K.glow(CAB, fade(t, T.vo3 + 0.2, T.vo5, 0.25) * 0.9); K.glow(NOOD, fade(t, T.vo3 + 1.8, T.vo5, 0.25) * 0.9);
+  const gp = fade(t, T.vo5, T.vo6, 0.2) * 0.9; K.glow(AR.userData.pad, gp); K.glow(AL.userData.pad, gp);
+  K.glow(AR, Math.max(fade(t, T.vo2 + 0.4, T.vo3, 0.25), fade(t, T.vo4, T.vo5, 0.25)) * 0.35); K.glow(AL, Math.max(fade(t, T.vo2 + 0.4, T.vo3, 0.25), fade(t, T.vo4, T.vo5, 0.25)) * 0.35);
+  const cw = Math.min(S.smooth((t - (T.vo2 + 0.2)) / 0.6), 1 - S.smooth((t - (T.vo5 + 2.4)) / 0.5)) * (t > T.hookEnd ? 1 : 0); CUTW.constant = cw > 0.001 ? 45 + 400 * (1 - cw) : 1e5;
   K.shoot(st, CAMK, t);
 }
 // ---------- overlay ----------
@@ -114,44 +114,48 @@ function overlay(t) {
   { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.8 * fx); }
   const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
   const [xr, yr] = top(1, phi), [xl, yl] = top(-1, phi);
-  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES ONE CABLE', 'SQUEEZE BOTH SIDES?', 92); const [cx, cy] = scr(G.RIM_X + 4, -10); K.TXT.circle(g2, hk, cx, cy, 95, [-200, 230]); }
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES ONE CABLE', 'SQUEEZE BOTH SIDES?', 92); const [cx, cy] = scr(G.RIM_X + 4, -10); K.TXT.circle(g2, hk, cx, cy, 95, [-200, 230]); pill(g2, hk, 'PAD', cx + 170, cy - 120, 52, '#ffffff'); }
   // wide: lever + cable
-  { const a = fade(t, T.vo1 + 0.15, T.vo2 - 0.3, 0.2); if (a > 0) { S.tag(g2, a, 'BRAKE LEVER', ...scr(260, 434, 100), 40, -150, 48, '#ffd21f'); S.tag(g2, a, 'CABLE', ...scr(-40, 300, 50), -150, -60, 46, '#ffffff');
+  { const a = fade(t, T.vo1 + 0.15, T.vo2 - 0.3, 0.2); if (a > 0) { S.tag(g2, a, 'BRAKE LEVER', ...scr(290, 434, 110), 40, -150, 48, '#ffd21f'); S.tag(g2, a, 'CABLE', ...scr(-40, 300, 50), -150, -60, 46, '#ffffff');
       S.tag(g2, a, 'BRAKE', ...scr(0, 30), -160, 120, 48, '#ffd21f'); } }
-  // parts (front close-up)
-  { const a = fade(t, T.vo2 + 0.6, T.vo3 + 0.2, 0.25); if (a > 0) { S.tag(g2, a, 'ARM', ...scr(-G.PX - 8, G.PY + 90), -130, -60, 50, '#ffd21f'); S.tag(g2, a, 'ARM', ...scr(G.PX + 8, G.PY + 90), 130, -60, 50, '#ffd21f');
-      S.tag(g2, a, 'PAD', ...scr(-G.RIM_X - 8, -12), -150, 150, 48, '#ffffff'); S.tag(g2, a, 'PAD', ...scr(G.RIM_X + 8, -12), 150, -170, 48, '#ffffff'); S.tag(g2, a, 'RIM', ...scr(0, -40), 120, 260, 48, '#c9d3e3'); S.tag(g2, a, 'TIRE (CUT OPEN)', ...scr(0, 16), 150, -230, 46, '#c9d3e3'); } }
+  // parts (tilted close-up): no tyre tag
+  { const a = fade(t, T.vo2 + 0.6, T.vo3 + 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'ARM', ...scr(-G.PX - 8, G.PY + 90), -130, -60, 50, '#ffd21f'); S.tag(g2, a, 'ARM', ...scr(G.PX + 8, G.PY + 90), 130, -60, 50, '#ffd21f');
+      S.tag(g2, a, 'PAD', ...scr(-G.RIM_X - 8, -12), -150, 150, 48, '#ffffff'); S.tag(g2, a, 'PAD', ...scr(G.RIM_X + 8, -12), 190, 130, 48, '#ffffff'); S.tag(g2, a, 'RIM', ...scr(0, -40), 120, 260, 48, '#c9d3e3'); } }
   // steps
   const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
   const s1 = fade(t, T.vo3, T.vo4 - 0.05), s2 = fade(t, T.vo4, T.vo5 - 0.05), s3 = fade(t, T.vo5, T.vo6 - 0.1);
   stepPlate(Math.max(s1, s2, s3));
-  K.TXT.step(g2, s1, 1, 'CABLE PULLS, CASING PUSHES', 60);
-  K.TXT.step(g2, s2, 2, 'BOTH PADS HIT THE RIM', 64);
-  K.TXT.step(g2, s3, 3, 'LONG ARMS: HARD SQUEEZE', 64);
-  // step 1: two opposite arrows at the arm tops
-  { const a = fade(t, T.vo3 + 0.3, T.vo4 + 0.2, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr), [lx, ly] = scr(xl, yl);
-      S.forceArrow(g2, Math.min(a, fade(t, T.vo3 + 0.3, T.vo4 + 0.2)), rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'INNER CABLE PULLS', rx + 40, ry + 110, 48, '#ffffff');
-      const ab = fade(t, T.vo3 + 2.2, T.vo4 + 0.2, 0.25); S.forceArrow(g2, ab, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, ab, 'CASING PUSHES', lx - 60, ly + 175, 48, '#ffa114'); } }
-  { const an = fade(t, T.vo3 + 0.1, T.vo3 + 3.0, 0.25); if (an > 0) { S.tag(g2, an, 'OUTER CASING', ...scr(xl - 24, yl + 30), -150, -40, 48, '#ffa114'); S.tag(g2, an, 'INNER CABLE', ...scr((xl + xr) / 2, yr), 40, -170, 48, '#ffffff'); }
-    const at = fade(t, T.vo3, T.vo4 + 0.3, 0.25); if (at > 0) { g2.save(); g2.globalAlpha = at; g2.fillStyle = '#ffd21f'; for (const dd of [8, 20, 32, 44, 56]) { const x = xr - dd; if (x < xl + 5) continue; const [tx, ty] = scr(x, yr); g2.fillRect(tx - 3, ty - 14, 6, 28); } g2.restore();
-      const ag = fade(t, T.vo3 + 2.9, T.vo4 + 0.3, 0.25); const yb = yr + 22; const [bx0, by0] = scr(xl + 4, yb), [bx1, by1] = scr(xr, yb); line(g2, ag, [[bx0, by0], [bx1, by1]], '#ffd21f', 6);
-      for (const [x, d] of [[bx0, 1], [bx1, -1]]) { g2.save(); g2.globalAlpha = ag; g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.moveTo(x, by0); g2.lineTo(x + d * 22, by0 - 13); g2.lineTo(x + d * 22, by0 + 13); g2.closePath(); g2.fill(); g2.restore(); }
-      pill(g2, ag, `GAP: ${(xr - xl - 4).toFixed(0)} MM`, (bx0 + bx1) / 2, by0 - 62, 46, '#ffd21f'); } }
-  // step 2: squeeze marks at the pads
-  { const a = fade(t, T.vo4 + 0.3, T.vo5 + 0.1, 0.2); if (a > 0) { const [px, py] = scr(G.RIM_X + 6, -10), [qx, qy] = scr(-G.RIM_X - 6, -10); S.forceArrow(g2, a, px + 150, py + 90, px + 14, py + 10, 22); S.forceArrow(g2, a, qx - 150, qy + 90, qx - 14, qy + 10, 22);
-      pill(g2, a, 'SQUEEZE!', (px + qx) / 2, py + 220, 54, '#ffd21f'); } }
-  // step 3: travel readouts (live) + friction
-  { const a = fade(t, T.vo5 + 0.9, T.vo5 + 3.4, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr); pill(g2, a, `CABLE: ${pull.toFixed(0)} MM`, rx - 170, ry + 80, 50, '#ffd21f');
-      const pad = Math.max(0, G.GAP * u); const [px, py] = scr(G.RIM_X + 10, -15); pill(g2, a, `EACH PAD: ${pad.toFixed(0)} MM`, px - 120, py + 150, 50, '#3fd0ff'); } }
-  { const a = fade(t, T.vo5 + 0.2, T.vo5 + 3.4, 0.25); if (a > 0) { for (const sx of [-1, 1]) { const [qx, qy] = scr(sx * G.PX, G.PY, 6); g2.save(); g2.globalAlpha = a; g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(qx, qy, 13, 0, 7); g2.fill(); g2.restore(); }
-      const [px0, py0] = scr(G.PX, G.PY, 6); pill(g2, a, 'PIVOT', px0 + 130, py0 - 60, 46, '#ffffff');
-      const off = (d) => { const nx = Math.cos(phi), ny = -Math.sin(phi); return [G.PX + nx * d, G.PY + ny * d]; };
-      const P0 = off(16), Pt = [P0[0] + G.S_TOP * Math.sin(phi), P0[1] + G.S_TOP * Math.cos(phi)], Pp = [P0[0] + G.S_PAD * Math.sin(phi), P0[1] + G.S_PAD * Math.cos(phi)];
-      const Q0 = off(30), Qp = [Q0[0] + G.S_PAD * Math.sin(phi), Q0[1] + G.S_PAD * Math.cos(phi)];
-      line(g2, a, [scr(P0[0], P0[1], 6), scr(Pt[0], Pt[1], 6)], '#ffd21f', 8); line(g2, a, [scr(Q0[0], Q0[1], 6), scr(Qp[0], Qp[1], 6)], '#3fd0ff', 8);
-      const am = fade(t, T.vo5 + 1.4, T.vo5 + 3.4, 0.25); pill(g2, am, 'SQUEEZE ≈ 2× THE PULL', 495, 590, 52, '#ffa114'); } }
-  { const a = fade(t, T.vo5 + 3.6, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS THE WHEEL', 495, Math.min(py + 190, 1110), 52, '#ffa114'); } }
-  badge(g2, Math.max(fade(t, T.vo1 + 0.3, T.vo2 + 0.2, 0.3), fade(t, T.vo5 + 3.6, LOOP - 1.5, 0.3)), sp);
+  K.TXT.step(g2, s1, 1, 'WIRE PULLS, CASING PUSHES', 60);
+  K.TXT.step(g2, s2, 2, 'BOTH ARMS SWING IN', 64);
+  K.TXT.step(g2, s3, 3, 'BOTH PADS PINCH THE RIM', 62);
+  // step 1: flat 2D strip of the cable (wire inside its casing) under the brake
+  { const a = fade(t, T.vo3 + 0.1, T.vo4 + 0.1, 0.3); if (a > 0) { g2.save(); g2.globalAlpha = a;
+      const Y0 = 1075, Y1 = 1435, yc = 1185, d = 30 * u, xL = 360 + d, xR = 700 - d, pv = 1370;
+      g2.fillStyle = 'rgba(8,10,14,0.9)'; S.rrect(g2, 70, Y0, 860, Y1 - Y0, 26); g2.fill(); g2.strokeStyle = 'rgba(255,255,255,0.25)'; g2.lineWidth = 3; g2.stroke();
+      // arms (pivot at the bottom, top moves in)
+      for (const [x, px] of [[xL, 360], [xR, 700]]) { line(g2, 1, [[px, pv - 30], [x, yc - 30]], '#d5d9de', 22); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(px, pv - 30, 11, 0, 7); g2.fill(); }
+      // casing (thick, orange) from the lever side to the left arm top; wire (thin, white) through it and across to the right arm top
+      line(g2, 1, [[110, yc], [xL - 12, yc]], '#ffa114', 30); g2.fillStyle = '#ffa114'; g2.fillRect(xL - 16, yc - 24, 12, 48);
+      line(g2, 1, [[110, yc], [xR, yc]], '#ffffff', 7);
+      g2.fillStyle = '#ffd21f'; const sl = (t - T.vo3) * 22 % 40; for (let x = xR - 20 - ((40 - sl) % 40); x > 120; x -= 40) { if (x < xL && x > xL - 60) continue; g2.fillRect(x - 3, yc - 12, 6, 24); }
+      const aw = fade(t, T.vo3 + 0.5, T.vo4 + 0.1, 0.25), ac = fade(t, T.vo3 + 2.1, T.vo4 + 0.1, 0.25);
+      S.forceArrow(g2, aw, 270, yc - 60, 150, yc - 60, 24); S.forceArrow(g2, aw, xR + 130, yc - 60, xR + 20, yc - 60, 24);
+      S.forceArrow(g2, ac, 140, yc + 62, 260, yc + 62, 24); S.forceArrow(g2, ac, xL - 150, yc + 62, xL - 26, yc + 62, 24);
+      g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+      g2.globalAlpha = a * aw; g2.fillStyle = '#ffffff'; g2.fillText('WIRE PULLS', 560, Y0 + 40);
+      g2.globalAlpha = a * ac; g2.fillStyle = '#ffa114'; g2.fillText('CASING PUSHES BACK', 500, Y1 - 38);
+      g2.globalAlpha = a; g2.font = '44px Anton'; g2.fillStyle = '#c9d3e3'; g2.textAlign = 'right'; g2.fillText('LEFT ARM', 335, pv - 30); g2.textAlign = 'left'; g2.fillText('RIGHT ARM', 725, pv - 30);
+      g2.restore(); } }
+  // step 2: the same two pushes on the real brake
+  { const a = fade(t, T.vo4 + 0.2, T.vo5 + 0.1, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr), [lx, ly] = scr(xl, yl);
+      S.forceArrow(g2, a, rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'WIRE PULLS', rx + 60, ry + 110, 48, '#ffffff');
+      S.forceArrow(g2, a, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, a, 'CASING PUSHES', lx - 60, ly + 175, 48, '#ffa114'); } }
+  { const an = fade(t, T.vo4 + 0.2, T.vo5 - 0.1, 0.25); if (an > 0) { S.tag(g2, an, 'CASING', ...scr(xl - 24, yl + 30), -170, 90, 48, '#ffa114'); S.tag(g2, an, 'WIRE', ...scr((xl + xr) / 2, yr), 60, -200, 48, '#ffffff'); } }
+  // step 3: squeeze marks at the pads
+  { const a = fade(t, T.vo5 + 0.2, T.vo5 + 1.4, 0.2); if (a > 0) { const [px, py] = scr(G.RIM_X + 6, -10), [qx, qy] = scr(-G.RIM_X - 6, -10); S.forceArrow(g2, a, px + 150, py + 90, px + 14, py + 10, 22); S.forceArrow(g2, a, qx - 150, qy + 90, qx - 14, qy + 10, 22);
+      pill(g2, a, 'PINCH!', (px + qx) / 2, py + 220, 54, '#ffd21f'); } }
+  { const a = fade(t, T.vo5 + 1.3, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS THE WHEEL', 495, Math.min(py + 190, 1110), 52, '#ffa114'); } }
+  badge(g2, fade(t, T.vo5 + 0.3, LOOP - 1.5, 0.3), sp);
   K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.3, 0.3), 'ONE PULL, TWO ARMS', 'BOTH SIDES SQUEEZED', 560);
   K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
 }

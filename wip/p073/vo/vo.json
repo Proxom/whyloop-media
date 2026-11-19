@@ -6,8 +6,8 @@
  },
  {
   "i": 1,
-  "text": "Squeeze the lever, and the cable pulls. The wheel stops.",
-  "dur": 2.944
+  "text": "Squeeze the lever. The cable pulls, and the wheel stops.",
+  "dur": 2.901
  },
  {
   "i": 2,
@@ -16,18 +16,18 @@
  },
  {
   "i": 3,
-  "text": "The inner cable pulls this arm in. Its outer casing pushes back on the other arm, so it moves in too.",
-  "dur": 5.675
+  "text": "Inside the cable, a wire pulls one way, so its casing shoves back the other way.",
+  "dur": 4.48
  },
  {
   "i": 4,
-  "text": "Both pads close on the rim at once.",
-  "dur": 1.771
+  "text": "The wire drags the right arm in. The casing pushes the left arm in.",
+  "dur": 3.712
  },
  {
   "i": 5,
-  "text": "The arms are long, so the cable moves a lot and the pads a little, and they squeeze hard. Friction stops the wheel.",
-  "dur": 6.08
+  "text": "Both pads pinch the rim at once, and friction stops the wheel.",
+  "dur": 3.136
  },
  {
   "i": 6,

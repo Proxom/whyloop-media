@@ -4,11 +4,11 @@ from kokoro_onnx import Kokoro
 TTS = sys.argv[1]; OUT = sys.argv[2]; os.makedirs(OUT, exist_ok=True)
 LINES = [
  "How does one cable squeeze both sides?",
- "Squeeze the lever, and the cable pulls. The wheel stops.",
+ "Squeeze the lever. The cable pulls, and the wheel stops.",
  "The brake has two arms, one on each side of the rim.",
- "The inner cable pulls this arm in. Its outer casing pushes back on the other arm, so it moves in too.",
- "Both pads close on the rim at once.",
- "The arms are long, so the cable moves a lot and the pads a little, and they squeeze hard. Friction stops the wheel.",
+ "Inside the cable, a wire pulls one way, so its casing shoves back the other way.",
+ "The wire drags the right arm in. The casing pushes the left arm in.",
+ "Both pads pinch the rim at once, and friction stops the wheel.",
  "One pull, two arms, both sides squeezed.",
 ]
 k = Kokoro(f'{TTS}/kokoro.onnx', f'{TTS}/voices.bin')

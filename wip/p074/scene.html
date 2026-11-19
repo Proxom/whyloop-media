@@ -1,0 +1,127 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p074 nail clipper "WHY DOES A TINY CLIPPER / CUT SO HARD?" (group E, track A voice). Built from kit/kit.js.
+// mm. Side view: x along the clipper (blades at +x), y up, z across. kin.json rows: [t, engagement e, upper leaf angle (deg), lever angle (deg), finger offset (mm), time since cut (-1 = whole)]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 2, far: 8000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+M.leaf = phys({ color: 0xd9dde2, metalness: 1, roughness: 0.2, envMapIntensity: 1.35 });
+M.lev = phys({ color: 0xcfd4da, metalness: 1, roughness: 0.3, envMapIntensity: 1.3 });
+M.skin = phys({ color: 0xd9a083, metalness: 0, roughness: 0.55, sheen: 0.6, sheenColor: 0xffd8c4, clearcoat: 0.1 });
+M.nail = phys({ color: 0xf3ddd2, metalness: 0, roughness: 0.3, clearcoat: 0.5, transparent: true, opacity: 0.93 });
+K.backdrop(scene, { floorY: -28, R: 120, zBack: -260, h: 900, width: 3000, wall: '#1d2026', floor: '#24272d', pool: false, catcher: 4 });
+const RIG = K.lightRig(scene, new THREE.Vector3(28, 4, 0), 80);
+RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.05;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.6); f.position.set(-60, 120, 260); f.target.position.set(28, 0, 0); scene.add(f, f.target); }
+const prof = (top, bot) => { const s = new THREE.Shape(); top.forEach((p, i) => i ? s.lineTo(p[0], p[1]) : s.moveTo(p[0], p[1])); [...bot].reverse().forEach(p => s.lineTo(p[0], p[1])); s.closePath(); return s; };
+const extr = (shape, depth, mat, bev = 0.35) => { const g = new THREE.ExtrudeGeometry(shape, { depth: depth - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev * 0.8, bevelSegments: 3, curveSegments: 12 });
+  g.translate(0, 0, -(depth - 2 * bev) / 2); return new THREE.Mesh(g, mat); };
+// ---------- lower leaf (fixed), upper leaf (lever 2, pivots at P2) ----------
+const LO_BOT = G.LO_TOP.map(([x, y], i, a) => i === a.length - 1 ? [57.4, 0.6] : [x, y - 1.4]);
+const LO = extr(prof(G.LO_TOP, LO_BOT), 12.5, M.leaf); scene.add(LO);
+const UPG = new THREE.Group(); UPG.position.set(G.P2[0], G.P2[1], 0); scene.add(UPG);
+const UP = extr(prof(G.UP_TOP.map(([x, y]) => [x - G.P2[0], y - G.P2[1]]), G.UP_BOT.map(([x, y]) => [x - G.P2[0], y - G.P2[1]])), 12.5, M.leaf); UPG.add(UP);
+// rear joint rivet, pin (through both leaves) with its head, nail-file tab at the rear
+{ const r = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 6.2, 20), M.chrome); r.position.set(1.2, 1.2, 0); scene.add(r);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, G.F[1] + 4.2, 20), M.chrome); pin.position.set(G.XF, (G.F[1] - 4.2) / 2, 0); scene.add(pin);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 1.3, 28), M.chrome); head.position.set(G.XF, -4.6, 0); scene.add(head);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(1.7, 20, 12), M.chrome); knob.position.set(G.XF, G.F[1], 0); scene.add(knob); }
+// ---------- top lever (lever 1, pivots on the pin top F) ----------
+const LVG = new THREE.Group(); LVG.position.set(G.F[0], G.F[1], 0); scene.add(LVG);
+{ const C = G.LEV_C; const top = C.map(([x, y]) => [x, y + G.LEV_HT]), bot = C.map(([x, y]) => [x, y - G.LEV_HT]);
+  const s = prof([...top].reverse(), [...bot].reverse()); const L = extr(s, 10, M.lev, 0.4); LVG.add(L);
+  const nub = new THREE.Mesh(new THREE.CylinderGeometry(G.NUB_R, G.NUB_R, 8, 20), M.lev); nub.rotation.x = Math.PI / 2; nub.position.set(G.NUB_C[0], G.NUB_C[1], 0); LVG.add(nub);
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(5.6, 5.6, 1.4, 32), M.lev); pad.position.set(-53.5, 12.6, 0); pad.rotation.z = Math.atan2(3.5, 16); LVG.add(pad);
+  LVG.userData.mesh = L; }
+// ---------- finger + nail (inner piece is the clipped tip) ----------
+const FING = new THREE.Group(); scene.add(FING);
+{ const f = new THREE.Mesh(new THREE.CapsuleGeometry(8, 30, 10, 24), M.skin); f.rotation.z = Math.PI / 2; f.position.set(83, -6.1, 0); f.scale.set(1, 1, 0.92); FING.add(f); }
+const nailPiece = (x0, x1) => { const m = new THREE.Mesh(new K.RBox(x1 - x0, G.NAIL_T - G.NAIL_B, 12, 0.2, 2), M.nail); m.position.set((x0 + x1) / 2, (G.NAIL_T + G.NAIL_B) / 2, 0); return m; };
+const N_OUT = nailPiece(G.XJ + 0.6, 84); FING.add(N_OUT);
+const N_IN = nailPiece(53.4, G.XJ + 0.6); scene.add(N_IN);
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  return a.map((v, j) => j === 5 ? (a[5] < 0 ? (u > 0.5 ? b[5] : -1) : a[5] + (b[5] - a[5]) * u) : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const rotP = (p, c, a) => { const x = p[0] - c[0], y = p[1] - c[1]; return [c[0] + x * Math.cos(a) - y * Math.sin(a), c[1] + x * Math.sin(a) + y * Math.cos(a)]; };
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, 50, 3, 0, 165, 12, 32];
+const WIDE = [0, 25, 2, 0, 285, 14, 20];
+const SIDE = [0, 24, 3, 0, 258, 8, 4];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 50, 3, 0, 150, 12, 34]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.2, [0, 25, 2, 0, 270, 14, 16]),
+  k_(T.vo3 - 0.3, SIDE), k_(T.vo4 + 0.8, [0, 27, 3, 0, 255, 8, 3]), k_(T.vo5 - 0.9, [0, 27, 3, 0, 255, 8, 3]), k_(T.vo5 + 0.25, [0, 50, 3, 0, 175, 10, 24]), k_(T.vo5 + 2.0, [0, 51, 3, 0, 160, 12, 30]),
+  k_(T.vo6 + 0.2, [0, 34, 3, 0, 250, 14, 26]), k_(LOOP - 0.6, [0, 46, 3, 0, 200, 12, 30]), k_(LOOP, HOOK)];
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const th = k[2] * D2R, ph = k[3] * D2R, fx = k[4], cs = k[5];
+  UPG.rotation.z = -th; LVG.rotation.z = ph; FING.position.x = fx;
+  N_IN.visible = true; N_IN.position.set((53.4 + G.XJ + 0.6) / 2 + fx, (G.NAIL_T + G.NAIL_B) / 2, 0); N_IN.rotation.set(0, 0, 0); N_IN.material.opacity = 0.93;
+  if (cs > 0.12) { const c = Math.min(cs - 0.12, 1.6); N_IN.position.x += 3 * c; N_IN.position.y += 8 * c - 30 * c * c; N_IN.position.z += 18 * c; N_IN.rotation.set(2.2 * c, 0.6 * c, -1.4 * c); if (c > 1.4) N_IN.visible = false; }
+  K.glow(LVG.userData.mesh, Math.max(fade(t, T.vo2 + 0.2, T.vo2 + 1.5, 0.2), fade(t, T.vo3, T.vo4, 0.25)) * 0.55);
+  K.glow(UP, Math.max(fade(t, T.vo2 + 1.4, T.vo3, 0.2), fade(t, T.vo4, T.vo5, 0.25)) * 0.55);
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function line(g2, a, P, col, w = 10) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.lineCap = 'round'; for (const [lw, c] of [[w + 8, 'rgba(0,0,0,0.6)'], [w, col]]) { g2.strokeStyle = c; g2.lineWidth = lw; g2.beginPath(); P.forEach((p, i) => i ? g2.lineTo(p[0], p[1]) : g2.moveTo(p[0], p[1])); g2.stroke(); } g2.restore(); }
+function dot(g2, a, x, y, r = 13) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = '#000'; g2.beginPath(); g2.arc(x, y, r + 4, 0, 7); g2.fill(); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const th = k[2] * D2R, ph = k[3] * D2R;
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.8 * fx); }
+  const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  const Fp = [G.F[0], G.F[1]], thumb = rotP([G.F[0] - 54, G.F[1] + 13.8], Fp, ph), heel = rotP([G.F[0] + G.NUB_C[0], G.F[1] + G.NUB_C[1] - G.NUB_R], Fp, ph);
+  const blade = rotP([56.6, 4.8], G.P2, -th);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DOES A TINY CLIPPER', 'CUT SO HARD?', 88); const [cx, cy] = scr(56.6, 3.4); K.TXT.circle(g2, hk, cx, cy, 90, [-210, 220]); pill(g2, hk, 'BLADES', cx - 40, cy - 150, 52, '#ffffff'); }
+  { const a = fade(t, T.vo1 + 0.2, T.vo2, 0.2); if (a > 0) { S.tag(g2, a, 'LEVER', ...scr(thumb[0], thumb[1] + 1, 5), 40, -150, 50, '#ffd21f'); S.tag(g2, a, 'JAWS', ...scr(56, 3.4, 6), 60, 170, 50, '#ffffff'); } }
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo2, T.vo3 - 0.05), s2 = fade(t, T.vo3, T.vo4 - 0.05), s3 = fade(t, T.vo4, T.vo5 - 0.05), s4 = fade(t, T.vo5, T.vo6 - 0.05);
+  stepPlate(Math.max(s1, s2, s3, s4));
+  K.TXT.step(g2, s1, 1, 'TWO LEVERS, STACKED', 64);
+  K.TXT.step(g2, s2, 2, 'LEVER 1: 8X THE PUSH', 64);
+  K.TXT.step(g2, s3, 3, 'LEVER 2: BLADES GET 6X', 62);
+  K.TXT.step(g2, s4, 4, 'THE BLADES MEET', 64);
+  { const a1 = fade(t, T.vo2 + 0.2, T.vo3 + 0.1, 0.25), a2 = fade(t, T.vo2 + 1.4, T.vo3 + 0.1, 0.25);
+    S.tag(g2, a1, 'LEVER 1', ...scr(G.F[0] - 30, G.F[1] + 7, 5), -60, -200, 52, '#ffd21f'); S.tag(g2, a2, 'LEVER 2 (TOP JAW)', ...scr(30, 6.5, 6), 40, 200, 50, '#ffa114'); }
+  // step 2: lever 1 = pivot on the pin, LONG to the thumb, SHORT to the push; thumb arrow small, push arrow big
+  { const a = fade(t, T.vo3 + 0.3, T.vo4 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(Fp[0], Fp[1], 5); dot(g2, a, px, py); pill(g2, a, 'PIVOT (PIN)', px + 175, py + 45, 46, '#ffffff');
+      const yl = Math.min(...[scr(thumb[0], thumb[1] + 3, 5)[1], py]) - 70; const [tx] = scr(thumb[0], thumb[1], 5), [hx] = scr(heel[0], heel[1], 5);
+      const aL = fade(t, T.vo3 + 1.3, T.vo4 + 0.1, 0.25), aS = fade(t, T.vo3 + 2.6, T.vo4 + 0.1, 0.25);
+      line(g2, aL, [[px, yl], [tx, yl]], '#ffd21f', 9); pill(g2, aL, 'LONG', (px + tx) / 2, yl - 50, 46, '#ffd21f');
+      line(g2, aS, [[px, yl + 40], [hx, yl + 40]], '#3fd0ff', 9); pill(g2, aS, 'SHORT', (px + hx) / 2, yl + 95, 46, '#3fd0ff');
+      const [ttx, tty] = scr(thumb[0], thumb[1] + 1.5, 5); S.forceArrow(g2, fade(t, T.vo3 + 1.0, T.vo4 + 0.1, 0.25), ttx, tty - 110, ttx, tty - 20, 18); pill(g2, fade(t, T.vo3 + 1.0, T.vo4 + 0.1, 0.25), 'THUMB', ttx, tty - 160, 44, '#ffffff');
+      const [hhx, hhy] = scr(heel[0], heel[1], 6); const ab = fade(t, T.vo3 + 4.0, T.vo4 + 0.1, 0.25); S.forceArrow(g2, ab, hhx, hhy + 30, hhx, hhy + 250, 34); pill(g2, ab, '8X THE PUSH', hhx - 40, hhy + 320, 54, '#ffa114'); } }
+  // step 3: lever 2 = upper jaw, pivot at the rear joint; the push lands nearer the pivot than the blades
+  { const a = fade(t, T.vo4 + 0.3, T.vo5 + 0.1, 0.25); if (a > 0) { const [qx, qy] = scr(G.P2[0], G.P2[1], 6); dot(g2, a, qx, qy); pill(g2, a, 'PIVOT', qx, qy + 120, 46, '#ffffff');
+      const [hx, hy] = scr(heel[0], heel[1], 6), [bx, by] = scr(blade[0], blade[1], 6); const yb = Math.max(qy, by) + 210;
+      line(g2, fade(t, T.vo4 + 1.2, T.vo5 + 0.1, 0.25), [[qx, yb], [hx, yb]], '#3fd0ff', 9); line(g2, fade(t, T.vo4 + 1.6, T.vo5 + 0.1, 0.25), [[qx, yb + 40], [bx, yb + 40]], '#ffd21f', 9);
+      pill(g2, fade(t, T.vo4 + 1.2, T.vo5 + 0.1, 0.25), 'PUSH', (qx + hx) / 2, yb - 50, 44, '#3fd0ff'); pill(g2, fade(t, T.vo4 + 1.6, T.vo5 + 0.1, 0.25), 'BLADES', (qx + bx) / 2 + 60, yb + 100, 44, '#ffd21f');
+      const ab = fade(t, T.vo4 + 0.3, T.vo5 + 0.1, 0.25); S.forceArrow(g2, ab, hx, hy - 260, hx, hy - 50, 34);
+      const ac = fade(t, T.vo4 + 3.0, T.vo5 + 0.1, 0.25); S.forceArrow(g2, ac, bx, by - 230, bx, by - 40, 28); pill(g2, ac, '6X YOUR THUMB', Math.min(bx, 760), by - 300, 54, '#ffa114'); } }
+  { const a = fade(t, T.cut + 0.05, T.cut + 1.5, 0.15); if (a > 0) { const [bx, by] = scr(56.6, 2.6, 6); pill(g2, a, 'SNIP!', bx - 40, by + 200, 64, '#ffd21f'); } }
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'TWO LEVERS', '6X THE FORCE', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
