@@ -5,10 +5,11 @@ TTS = sys.argv[1]; OUT = sys.argv[2]; os.makedirs(OUT, exist_ok=True)
 LINES = [
  "Why does Velcro stick?",
  "One side is covered in tiny, stiff hooks.",
- "The other side is soft loops. Press them together, and the hooks catch the loops.",
- "Pull it flat, and every hook pulls at the same time. So it holds hard.",
- "But peel it, and only one row of hooks lets go at a time.",
- "That's why it opens so easily.",
+ "The other side is soft loops.",
+ "Press them together, and the hooks catch the loops.",
+ "Pull it flat, and every hook holds a little, all at the same time. So it holds hard.",
+ "But peeling pulls on just one row, so it lets go easily.",
+ "Then the next row, and the next.",
  "Thousands of tiny hooks. One row at a time.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')

@@ -12,17 +12,22 @@ FPS = 30; FPS_K = 120
 import os; DXR = float(os.environ.get('DXR', '0.8')); HR = float(os.environ.get('HR', '4.6'))   # released loops spring back combed: lower + leaning
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
 T = {'vo0': 0.3, 'hookEnd': 1.0, 'vo1': 1.75}
-GAP = {2: 0.35, 3: 0.4, 4: 0.4, 5: 0.25, 6: 0.45}
-for i in range(2, 7): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
-LOOP = round(T['vo6'] + dur[6] + 1.45, 2); LOOP = round(math.ceil(LOOP * FPS) / FPS, 4); T['LOOP'] = LOOP
+GAP = {2: 0.3, 3: 0.3, 4: 0.45, 5: 0.35, 6: 0.2, 7: 0.45}
+for i in range(2, 8): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
+LOOP = round(T['vo7'] + dur[7] + 1.45, 2); LOOP = round(math.ceil(LOOP * FPS) / FPS, 4); T['LOOP'] = LOOP
 T['cutIn'] = T['hookEnd']
-T['p0'] = T['vo2'] + 1.45; T['p1'] = T['p0'] + 0.9; T['p2'] = T['p1'] + 0.55; T['p3'] = T['p2'] + 0.6     # press: down, slide, settle
-T['s0'] = T['vo3'] + 0.25; T['s1'] = T['s0'] + 0.7; T['s2'] = T['vo4'] - 0.55; T['s3'] = T['vo4'] - 0.1   # shear pull: right, hold, relax
-T['f0'] = T['vo4'] + 0.15; T['f1'] = T['vo5'] + dur[5] + 0.15                                           # peel front travels
-T['ans'] = T['vo6'] - 0.05
-XF0, XF1 = -46.0, 22.0; SHEAR = 1.3
+T['p3'] = T['vo3'] + 1.85; T['p0'] = T['p3'] - 3.2; T['p1'] = T['p0'] + 1.4; T['p2'] = T['p1'] + 1.0          # press (slow): down, slide over, settle = CAUGHT on 'catch'
+T['s0'] = T['vo4'] + 0.2; T['s1'] = T['s0'] + 0.8; T['s2'] = T['vo5'] - 0.5; T['s3'] = T['vo5'] - 0.1      # flat pull (shear): right, hold, relax
+T['f0'] = T['vo5'] + 0.1; T['f1'] = T['vo6'] + dur[6] + 0.2                                               # peel front travels
+T['ans'] = T['vo7'] - 0.05
+XF0, XF1 = -41.0, 4.0; SHEAR = 2.0; LEAN = math.radians(8)   # flat pull: tape slides 2.0, hooks lean back 8 deg (cups move only ~0.7)
 def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
 def lerp(a, b, u): return a + (b - a) * u
+def lean_at(t):
+    if T['s0'] <= t < T['s1']: return -LEAN * ease((t - T['s0']) / (T['s1'] - T['s0']))
+    if T['s1'] <= t < T['s2']: return -LEAN
+    if T['s2'] <= t < T['s3']: return -LEAN * (1 - ease((t - T['s2']) / (T['s3'] - T['s2'])))
+    return 0.0
 def tape_pose(t):
     """(ox, oy, xf): tape offset (x, root-y shift) and peel front."""
     if t < T['p0']: return (-2.9, 42.0 - G, -1e9) if t >= T['cutIn'] else (0.0, 0.0, -1e9)
@@ -67,7 +72,7 @@ for kk in range(NK):
     t = min(LOOP, kk * DTK); ox, oy, xf = tape_pose(t); caughtNow = t >= T['p3'] and t < T['ans']
     R = []
     for i, xi in enumerate(XS):
-        rx, ry, rot = tape_point(xi, ox, oy, xf); st = state[i]; xe = xi + 1.6
+        rx, ry, rot = tape_point(xi, ox, oy, xf); rot += lean_at(t); st = state[i]; xe = xi + 1.6
         b, s, apex, glow = 1.0, S_CUP, (xe, H0), 0.0
         if t < T['p3'] or t >= T['ans']:                  # before the catch completes (and in the outside end shot): loops at rest, hooks free
             st['caught'] = False; st['rel'] = None; st.pop('off', None)
@@ -77,9 +82,9 @@ for kk in range(NK):
             if st['rel'] is None:
                 fx, fy = to_world(*fibre_local(1.0, S_CUP), rx, ry, rot)
                 if fy - H0 > YREL: st['rel'] = t; REL_LOG[i] = t
-            if st['rel'] is None: b = 1.0; s = S_CUP; apex = to_world(*fibre_local(1.0, S_CUP), rx, ry, rot); glow = 1.0 if (T['s0'] <= t < T['s3']) else 0.0
+            if st['rel'] is None: b = 1.0; s = S_CUP; apex = to_world(*fibre_local(1.0, S_CUP), rx, ry, rot); glow = 0.6 if (T['s0'] <= t < T['s3']) else 0.0
             else:
-                tr = t - st['rel']; glow = max(0.0, 1 - max(0, tr - 0.35) / 0.25)
+                tr = t - st['rel']; glow = 0.0
                 if tr < REL_T: u = ease(tr / REL_T); b = lerp(1.0, 0.32, u); s = lerp(S_CUP, ARC_LEN * 0.92, u); apex = to_world(*fibre_local(b, s), rx, ry, rot)
                 elif tr < REL_T + SLIDE_T: u = ease((tr - REL_T) / SLIDE_T); b = 0.32; s = lerp(ARC_LEN * 0.92, ARC_LEN + 1.6, u); apex = to_world(*fibre_local(b, s), rx, ry, rot)
                 else:
@@ -87,7 +92,17 @@ for kk in range(NK):
                     p_off = st.setdefault('off', to_world(*fibre_local(b0, s), rx, ry, rot))
                     u = ease(tr2 / SNAP_T); apex = (lerp(p_off[0], xe + DXR, u), lerp(p_off[1], HR, u))
                     b = lerp(b0, 1.0, ease((tr2 - SNAP_T * 0.6) / BACK_T)); s = -1
-        R.append([round(rx, 4), round(ry, 4), round(rot, 5), round(b, 4), round(apex[0], 4), round(apex[1], 4), round(glow, 3)])
+        R.append([round(rx, 4), round(ry, 4), round(rot, 5), round(b, 4), round(apex[0], 4), round(apex[1], 4), round(glow, 3), 0.0])
+    if T['f0'] <= t < T['ans']:      # peel: ONLY the row at the bend glows; released and not-yet-loaded rows dimmed
+        act = None
+        for i in range(NCOL):
+            r_ = state[i]['rel']
+            if r_ is not None and t - r_ < REL_T + SLIDE_T + 0.12: act = i; break
+        if act is None:
+            lifts = [(R[i][5] - H0, i) for i in range(NCOL) if state[i]['rel'] is None]
+            lifts = [x for x in lifts if x[0] > 0.4]
+            if lifts: act = max(lifts)[1]
+        for i in range(NCOL): R[i][6] = 1.0 if i == act else 0.0; R[i][7] = 0.0 if i == act else 1.0
     rows.append((t, R, (round(ox, 4), round(oy, 4), round(max(xf, -999), 4))))
 # ---- HARD GATE 5.2 checks (120 Hz): hook tube vs every loop fibre crossing the hook plane, hooks vs bottom tape ----
 def loop_top_segment(ax, ay): return [(ax, ay), (ax, ay - 0.05)]   # superellipse arch (n=4, half-width 2.2): within |z|<0.8 of the hook plane the fibre dips < 0.02

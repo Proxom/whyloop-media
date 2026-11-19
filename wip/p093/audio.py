@@ -27,9 +27,9 @@ KN = json.load(open('kin.json')); kt = np.array([r[0] for r in KN]); ks = np.arr
 # valve seats: first time s reaches GAP0 in the hook and in step 4
 for i in range(1, len(KN)):
     if ks[i] >= G['GAP0'] - 1e-6 and ks[i - 1] < G['GAP0'] - 1e-6: put(thump(95), kt[i], gain=0.45); put(thump(190), kt[i] + 0.005, gain=0.12)
-for c in [T['hookEnd'], T['cutIn']]: put(tock(220), c, gain=0.15)
+put(tock(220), T['hookEnd'], gain=0.15)   # the only hard cut (hook -> outside)
 tt = np.arange(N) / SR; fw = np.interp(tt, kt, kf)
-ins = ((tt < T['hookEnd']) | (tt >= T['cutIn'])).astype(float)   # outside shot: quieter flow
+ins = np.clip(np.where(tt < T['hookEnd'], 1.0, (tt - (T['cutIn'] - 1.0)) / 0.8), 0, 1)   # outside shot: quieter flow
 fw = fw * (0.35 + 0.65 * ins); k = int(0.12 * SR); fw = np.convolve(fw, np.ones(k) / k, mode='same')
 wh = bandnoise(N, 60, 350) * (0.8 + 0.2 * np.sin(2 * np.pi * 0.7 * tt)); L += 0.06 * wh * fw; R += 0.06 * np.roll(wh, 233) * fw
 def note(m): return 440 * 2 ** ((m - 69) / 12)

@@ -11,26 +11,31 @@
  },
  {
   "i": 2,
-  "text": "The other side is soft loops. Press them together, and the hooks catch the loops.",
-  "dur": 4.181
+  "text": "The other side is soft loops.",
+  "dur": 1.515
  },
  {
   "i": 3,
-  "text": "Pull it flat, and every hook pulls at the same time. So it holds hard.",
-  "dur": 3.733
+  "text": "Press them together, and the hooks catch the loops.",
+  "dur": 2.347
  },
  {
   "i": 4,
-  "text": "But peel it, and only one row of hooks lets go at a time.",
-  "dur": 2.923
+  "text": "Pull it flat, and every hook holds a little, all at the same time. So it holds hard.",
+  "dur": 4.416
  },
  {
   "i": 5,
-  "text": "That's why it opens so easily.",
-  "dur": 1.664
+  "text": "But peeling pulls on just one row, so it lets go easily.",
+  "dur": 3.008
  },
  {
   "i": 6,
+  "text": "Then the next row, and the next.",
+  "dur": 1.621
+ },
+ {
+  "i": 7,
   "text": "Thousands of tiny hooks. One row at a time.",
   "dur": 2.603
  }

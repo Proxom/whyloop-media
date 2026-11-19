@@ -120,7 +120,8 @@ GL.updateMatrixWorld(true);
 const gc = glw(-170, 190);
 const OUTK = (d = 2600, el = 36, az = 4, dx = 0) => [gc.x + dx, gc.y, gc.z, d, el, az];
 const INK = (d = 640, el = 58, az = 0, dx = 0, dz = 0) => [6000 + dx + 10, 12, dz + 8, d, el, az];
-const CAMK = [k_(0, OUTK(1500, 30, 2)), k_(T.park0, OUTK(1560, 30, 3)), k_(T.cutIn - 0.01, OUTK(1900, 33, 7, 60)),
+const gw = glw(-300, 400); const OUTW = (d = 2900, el = 36, az = 4) => [gw.x, gw.y, gw.z, d, el, az];
+const CAMK = [k_(0, OUTK(1500, 30, 2)), k_(T.park0, OUTK(1560, 30, 3)), k_(T.on + 0.5, OUTW(2900, 36, 3)), k_(T.cutIn - 0.01, OUTW(2750, 37, 7)),
   k_(T.cutIn, INK(700, 56, -6)), k_(T.vo3 - 0.01, INK(610, 58, 3, 10, -10)), k_(T.vo4 - 0.01, INK(480, 62, -3, -10, -14)), k_(T.open + 0.2, INK(440, 64, 2, -8, -16)), k_(T.cutOut - 0.01, INK(460, 63, 4, -6, -14)),
   k_(T.cutOut, OUTK(1650, 30, -3)), k_(LOOP, OUTK(1520, 30, 1))];
 // ---------- overlay ----------
