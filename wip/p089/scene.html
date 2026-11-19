@@ -121,40 +121,43 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OK_ = (d = 330, az = 24, el = 34, tx = -20) => [5000 + tx, 4, 6, d, el, az];
+const OK_ = (d = 230, az = 18, el = 42, tx = -10) => [5000 + tx, 4, 0, d, el, az];
 const MK = (tx, ty, d, az = 22, el = 9, tz = -6) => [tx, ty, tz, d, el, az];
-const CAMK = [k_(0, OK_(235, 24, 36, -40)), k_(T.cutIn - 0.01, OK_(215, 28, 38, -30)),
-  k_(T.cutIn, MK(-6, 33, 95, 26, 10)), k_(T.vo2, MK(-5, 34, 72, 22, 8)),
-  k_(T.vo2 + 0.6, MK(-4, 13, 82, 20, 12)), k_(T.p0, MK(-4, 16, 88, 22, 9)), k_(T.p3, MK(-5, 10, 62, 24, 8)),
-  k_(T.vo3 - 0.3, MK(-4.6, 8.5, 34, 28, 6, -1)), k_(T.vo3 + 0.15, MK(-3, 16, 84, 22, 8)), k_(T.vo4 - 0.1, MK(-1, 16, 92, 18, 8)),
-  k_(T.vo4 + 0.2, MK(-34, 16, 108, 20, 8)), k_(T.f1, MK(6, 18, 112, 22, 8)), k_(T.ans - 0.01, MK(8, 18, 112, 22, 8)),
-  k_(T.ans, OK_(250, 20, 34, -40)), k_(LOOP, OK_(235, 24, 36, -40))];
+const CAMK = [k_(0, OK_(215, 16, 44)), k_(T.cutIn - 0.01, OK_(200, 20, 46)),
+  k_(T.cutIn, MK(-6, 30, 92, 26, 9)), k_(T.vo2 - 0.1, MK(-5, 31, 74, 22, 8)),
+  k_(T.vo2 + 0.5, MK(-4, 9, 80, 20, 11)), k_(T.p0 + 0.3, MK(-4, 13, 92, 22, 9)), k_(T.p1, MK(-5, 10, 70, 24, 8)),
+  k_(T.p3 + 0.1, MK(-4.6, 7.5, 40, 28, 6, -1)), k_(T.vo4 - 0.05, MK(-4.6, 7.5, 38, 28, 6, -1)), k_(T.vo4 + 0.4, MK(-2, 12, 90, 22, 8)), k_(T.vo5 - 0.1, MK(-1, 12, 94, 18, 8)),
+  k_(T.vo5 + 0.2, MK(-26, 12, 98, 20, 8)), k_(T.f1, MK(-6, 12, 100, 22, 8)), k_(T.ans - 0.01, MK(-5, 12, 100, 22, 8)),
+  k_(T.ans, OK_(225, 14, 42)), k_(LOOP, OK_(215, 16, 44))];
 // ---------- overlay ----------
 const ms = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
 const hookCup = (i) => { const h = HOOKS[i][0]; return S.toScreen(camera, h.localToWorld(V(1.6, -9.6, 0))); };
 const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
 function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
   g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function band(g2, a) { if (a <= 0) return; g2.save(); g2.globalAlpha = a * 0.82; const gr = g2.createLinearGradient(0, 330, 0, 500); gr.addColorStop(0, 'rgba(8,10,14,0.95)'); gr.addColorStop(0.75, 'rgba(8,10,14,0.85)'); gr.addColorStop(1, 'rgba(8,10,14,0)');
+  g2.fillStyle = gr; g2.fillRect(0, 330, 1080, 170); g2.restore(); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const r = R_ || row(t);
   { let fx = 0; for (const c of [T.cutIn, T.ans]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
   const hk = t < 3 ? 1 - S.smooth((t - (T.vo1 - 0.2)) / 0.2) : 0;
-  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DOES', 'VELCRO STICK?', 104); if (t < T.cutIn) { const [cx, cy] = S.toScreen(camera, OUT.localToWorld(V(outFront(t) - 4, 8, 0))); K.TXT.circle(g2, hk, cx, cy, 105, [-190, 230]); } }
-  const s1 = hard(t, T.vo1, T.vo2), s2a = hard(t, T.vo2, T.p0), s2b = hard(t, T.p0, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.ans);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DOES', 'VELCRO STICK?', 104); if (t < T.cutIn) { const [cx, cy] = S.toScreen(camera, OUT.localToWorld(V(outFront(t) - 3, 9, 0))); K.TXT.circle(g2, hk, cx, cy, 100, [-190, 230]); } }
+  const s1 = hard(t, T.vo1, T.vo2), s2a = hard(t, T.vo2, T.vo3), s2b = hard(t, T.vo3, T.vo4), s3 = hard(t, T.vo4, T.vo5), s4 = hard(t, T.vo5, T.ans);
+  band(g2, hk > 0.5 ? 0 : Math.max(s1, s2a, s2b, s3, s4));
   K.TXT.step(g2, s1, 1, 'ONE SIDE: TINY STIFF HOOKS', 56);
   K.TXT.step(g2, s2a, 2, 'OTHER SIDE: SOFT LOOPS', 58);
   K.TXT.step(g2, s2b, 2, 'PRESS: HOOKS CATCH LOOPS', 58);
-  K.TXT.step(g2, s3, 3, 'PULL FLAT: EVERY HOOK PULLS', 54);
-  K.TXT.step(g2, s4, 4, 'PEEL: ONE ROW AT A TIME', 58);
-  if (s1) { const [hx, hy] = hookCup(9); S.tag(g2, 1, 'HOOK', hx, hy, 150, 120, 52, '#ffffff'); }
-  if (s2a) { const [lx, ly] = ms(XS[9] + 1.6, G.H0, 0); S.tag(g2, 1, 'LOOP', lx, ly, 170, 150, 52, '#7fb0ff'); }
-  if (s2b && t >= T.p3) { const [hx, hy] = hookCup(9); S.tag(g2, 1, 'CAUGHT!', hx, hy, 160, 170, 52, '#ffd21f'); }
-  if (s3) { const a = hard(t, T.s0, T.s3); const [x0, y0] = ms(-10, 20, 5), [x1] = ms(12, 20, 5); const ya = Math.max(620, y0 - 30); arrowC(g2, a, 300, ya, 800, ya, 34, '#ffd21f');
-    S.outlined(g2, 'PULL', 495, ya - 45, 58, '#ffd21f');
-    if (t > T.s1) { const [lx, ly] = ms(XS[10] + 1.6 + G.SHEAR, G.H0, 0); S.tag(g2, 1, 'ALL HOOKS HOLD', lx, ly, 0, 230, 50, '#ffd21f'); } }
-  if (s4) { let best = -1, bv = 0; for (let i = 0; i < NC; i++) { const gl = r[4 + i * NH + 6]; if (gl > bv + 0.01 || (gl >= bv && gl > 0.5)) { bv = gl; best = i; } }
-    if (best >= 0 && bv > 0.5) { const [hx, hy] = hookCup(best); S.tag(g2, 1, 'UNHOOKED', hx, hy, 140, 230, 52, '#ffd21f'); }
-    const xf = r[3]; const [ax0, ay0] = ms(xf - 7, 21, 5), [ax1, ay1] = ms(xf - 15, 31, 5); arrowC(g2, hard(t, T.f0, T.f1), ax0, ay0, ax1, ay1, 30, '#ffd21f'); }
+  K.TXT.step(g2, s3, 3, 'PULL FLAT: ALL HOOKS SHARE IT', 54);
+  K.TXT.step(g2, s4, 4, 'PEEL FROM THE EDGE', 60);
+  const below = (x, y, text, col, dx = 120, dy = 300) => S.tag(g2, 1, text, x, y, dx, dy, 52, col);
+  if (s1) { const [hx, hy] = hookCup(9); below(hx, hy, 'HOOK', '#ffffff', 150, 260); }
+  if (s2a) { const [lx, ly] = ms(XS[9] + 1.6, G.H0, 0); below(lx, ly, 'LOOP', '#7fb0ff', 170, 230); }
+  if (s2b && t >= T.p3 - 0.05) { const [hx, hy] = hookCup(9); below(hx, hy, 'CAUGHT!', '#ffd21f', 170, 280); }
+  if (s3) { const a = hard(t, T.s0, T.s3); arrowC(g2, a, 300, 560, 800, 560, 34, '#ffd21f'); if (a) S.outlined(g2, 'PULL', 495, 535, 54, '#ffd21f');
+    if (t > T.s1 && t < T.s3) { const [lx, ly] = ms(XS[10] + 1.6 + 0.7, G.H0 - 1, 0); below(lx, ly, 'EVERY HOOK HOLDS', '#ffd21f', -20, 330); } }
+  if (s4) { let best = -1; for (let i = 0; i < NC; i++) if (r[4 + i * NH + 6] > 0.5) best = i;
+    if (best >= 0) { const [hx, hy] = hookCup(best); below(hx, hy, 'ONE ROW AT A TIME', '#ff9a1f', 60, 330); }
+    const xf = r[3]; const [ax0, ay0] = ms(xf - 9, 30, 5), [ax1, ay1] = ms(xf - 17, 44, 5); arrowC(g2, hard(t, T.f0, T.f1), ax0, ay0, ax1, ay1, 30, '#ffd21f'); }
   K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'THOUSANDS OF TINY HOOKS', 'ONE ROW AT A TIME', 600);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

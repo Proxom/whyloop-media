@@ -26,7 +26,6 @@ def thump(f0=110, g=1.0): return modal([f0, f0 * 1.5, f0 * 2.1], [1.0, 0.35, 0.1
 KN = json.load(open('kin.json'))
 kt = np.array([r[0] for r in KN]); kw = np.array([r[4] for r in KN])
 for c in [T['cutIn'], T['out']]: put(tock(220), c, gain=0.16)
-put(thump(95, 0.8), T['slideB'], gain=0.22)                       # cup settles over the magnet (soft, low)
 tt = np.arange(N) / SR; w = np.interp(tt, kt, kw)
 k = int(0.1 * SR); w = np.convolve(w, np.ones(k) / k, mode='same')
 hum = bandnoise(N, 60, 320) * (0.75 + 0.25 * np.sin(2 * np.pi * (2.0 + 4 * w) * tt))   # soft low whirr of the spinning cable/magnet, follows the spin speed
