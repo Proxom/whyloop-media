@@ -53,7 +53,9 @@
   "https://patents.google.com/patent/US11279530B2/en",
   "https://www.epa.gov/sites/default/files/2014-03/documents/sannerchildresistantscrewcap.pdf"
  ],
- "status": "scheduling",
+ "status": "scheduled",
  "approval": "a-042 approved by Erkan 19 Nov 18:15 (not counted as a ratchet repeat)",
- "clarityV2": "fresh reviewer 19 Nov 20:55: explanation correct, 14yo YES (minor: spring role implied, closing step fuzzy)"
+ "clarityV2": "fresh reviewer 19 Nov 20:55: explanation correct, 14yo YES (minor: spring role implied, closing step fuzzy)",
+ "metricoolPostId": 434737743,
+ "scheduledAt": "2026-11-24T21:00 Europe/London"
 }
