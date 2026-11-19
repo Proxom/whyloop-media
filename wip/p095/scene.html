@@ -105,12 +105,12 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 600, az = -45, el = 55) => [-3.3, 0, 1.1, d * 0.98, el, az];
+const OUTK = (d = 600, az = -45, el = 55) => [-20, 0, 6, d * 0.98 * 0.72, el, az];   // v2: closer, centred on the whole fob
 const INK = (d = 118, az = 24, el = 24) => [0, 2.5, 12, d, el, az];
 const WIDE = (d = 560, az = 90, el = 66) => [-4, 0, 30, d * 1.05, el, az];
 const CAMK = [k_(0, OUTK(610, -45)), k_(T.cutIn - 0.01, OUTK(580, -43)),
   k_(T.cutIn, INK(150, 30, 28)), k_(T.vo2 - 0.01, INK(128, 22, 24)), k_(T.vo2, INK(112, 30, 22)), k_(T.vo3 - 0.01, INK(98, 36, 20)),
-  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.2, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(560, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
+  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.2, INK(116, 22, 30)), k_(T.vo4 + 0.69, INK(118, 22, 30)), k_(T.vo4 + 0.7, WIDE(560, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
   k_(T.vo5, INK(112, 30, 24)), k_(T.outA - 0.01, INK(100, 34, 22)),
   k_(T.outA, INK(170, 30, 32)), k_(T.outB - 0.01, INK(160, 26, 32)),
   k_(T.outB, OUTK(585, -47)), k_(LOOP, OUTK(610, -45))];

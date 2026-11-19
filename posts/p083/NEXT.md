@@ -1,4 +1,4 @@
-# p083 push-and-turn child-resistant cap "WHY DOES IT / JUST CLICK?" - track A (Kokoro af_heart) - group E - FINAL v2 READY, NOT SCHEDULED (19 Nov 15:10 run; coordinator holds it for Erkan's approval: possible ratchet repeat)
+# p083 push-and-turn child-resistant cap "WHY DOES IT / JUST CLICK?" - track A (Kokoro af_heart) - group E - FINAL v2 - a-042 APPROVED - scheduled 24 Nov 2026 21:00 (19 Nov 18:13 run, resumed)
 topic key: child-proof cap (child-resistant closure, push-and-turn cap, safety cap) - not in learnings/topics-used.md (checked 70 rows + mechanism: no child-cap / two-cap clutch row).
 Repeat note: the patents call the top teeth "one-way ratchet ramps" (cousin of the ratchet wrench p048/p050); new object + new idea (two caps, a spring, and flat drive lugs that only lock when pushed). Coordinator sends the approval request.
 

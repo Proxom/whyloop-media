@@ -2,7 +2,7 @@
  "id": "p083",
  "track": "A",
  "group": "E",
- "slot": "",
+ "slot": "2026-11-24T21:00 Europe/London",
  "topicKey": "child-proof cap",
  "outlier": "scorecard rule: hand-held everyday object + \"why does it click / only one way\" question; our own model, script, words and sound",
  "topic": "Push-and-turn child-resistant cap: an inner cap screwed on the bottle and a loose, spring-held outer cap; turning to open alone makes the sloped teeth between them ride over and slip (click); pushing down drops flat drive lugs into place so the outer cap turns the inner cap; closing, the steep tooth sides catch.",
@@ -52,5 +52,8 @@
   "https://patents.google.com/patent/US20200385182A1/en",
   "https://patents.google.com/patent/US11279530B2/en",
   "https://www.epa.gov/sites/default/files/2014-03/documents/sannerchildresistantscrewcap.pdf"
- ]
+ ],
+ "status": "scheduling",
+ "approval": "a-042 approved by Erkan 19 Nov 18:15 (not counted as a ratchet repeat)",
+ "clarityV2": "fresh reviewer 19 Nov 20:55: explanation correct, 14yo YES (minor: spring role implied, closing step fuzzy)"
 }
