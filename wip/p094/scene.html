@@ -101,7 +101,7 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const FRONT = (az = 8, d = 1300, el = -6) => [0, 2, 0, d * 0.9, el, az];
+const FRONT = (az = 8, d = 1300, el = -6) => [30, 2, 0, d * 0.9, el, az];
 const SIDE = (dx = 0, d = 1000, az = -88, el = 3) => [0, 18, 85 + dx, d * 0.84, el, az];
 const CAMK = [k_(0, FRONT(6, 1380)), k_(T.hookEnd - 0.01, FRONT(8, 1440)), k_(T.hookEnd, FRONT(10, 1460)), k_(T.orb_a, FRONT(12, 1430)),
   k_(T.orb_b, SIDE(4, 1220)), k_(T.vo2, SIDE(0, 1200)), k_(T.vo4, SIDE(0, 1185)), k_(T.vo5, SIDE(0, 1200)), k_(T.back_a, SIDE(2, 1210)),

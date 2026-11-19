@@ -146,9 +146,9 @@ function overlay(t) {
   band(g2, hk > 0.5 ? 0 : Math.max(s1, s2a, s2b, s3, s4));
   K.TXT.step(g2, s1, 1, 'ONE SIDE: TINY STIFF HOOKS', 56);
   K.TXT.step(g2, s2a, 2, 'OTHER SIDE: SOFT LOOPS', 58);
-  K.TXT.step(g2, s2b, 2, 'PRESS: HOOKS CATCH LOOPS', 58);
-  K.TXT.step(g2, s3, 3, 'PULL FLAT: ALL HOOKS SHARE IT', 54);
-  K.TXT.step(g2, s4, 4, 'PEEL FROM THE EDGE', 60);
+  K.TXT.step(g2, s2b, 3, 'PRESS: HOOKS CATCH LOOPS', 58);
+  K.TXT.step(g2, s3, 4, 'PULL FLAT: ALL HOOKS SHARE IT', 54);
+  K.TXT.step(g2, s4, 5, 'PEEL FROM THE EDGE', 60);
   const below = (x, y, text, col, dx = 120, dy = 300) => S.tag(g2, 1, text, x, y, dx, dy, 52, col);
   if (s1) { const [hx, hy] = hookCup(9); below(hx, hy, 'HOOK', '#ffffff', 150, 260); }
   if (s2a) { const [lx, ly] = ms(XS[9] + 1.6, G.H0, 0); below(lx, ly, 'LOOP', '#7fb0ff', 170, 230); }
@@ -156,8 +156,7 @@ function overlay(t) {
   if (s3) { const a = hard(t, T.s0, T.s3); arrowC(g2, a, 300, 560, 800, 560, 34, '#ffd21f'); if (a) S.outlined(g2, 'PULL', 495, 535, 54, '#ffd21f');
     if (t > T.s1 && t < T.s3) { const [lx, ly] = ms(XS[10] + 1.6 + 0.7, G.H0 - 1, 0); below(lx, ly, 'EVERY HOOK HOLDS', '#ffd21f', -20, 330); } }
   if (s4) { let best = -1; for (let i = 0; i < NC; i++) if (r[4 + i * NH + 6] > 0.5) best = i;
-    if (best >= 0) { const [hx, hy] = hookCup(best); below(hx, hy, 'ONE ROW AT A TIME', '#ff9a1f', 60, 330); }
-    const xf = r[3]; const [ax0, ay0] = ms(xf - 7, 21, 5), [ax1, ay1] = ms(xf - 13, 29, 5); arrowC(g2, hard(t, T.f0, T.f1), ax0, ay0, ax1, ay1, 30, '#ffd21f'); }
+    if (best >= 0) { const [hx, hy] = hookCup(best); if (hx > 90 && hx < 900 && hy > 520 && hy < 1400) below(hx, hy, 'ONE ROW AT A TIME', '#ff9a1f', 60, 330); } }   // tag only while its row is in frame; no peel arrow
   K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'THOUSANDS OF TINY HOOKS', 'ONE ROW AT A TIME', 600);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

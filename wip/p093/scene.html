@@ -186,7 +186,7 @@ function overlay(t) {
       g2.strokeStyle = '#ffe9b0'; g2.lineWidth = Math.max(2, w * 0.38); g2.setLineDash([w * 1.1, w * 0.9]); g2.lineDashOffset = -ph * 2200 * ppm / 6; g2.stroke(); g2.restore(); };
     const W = 5.2 * ppm; seg(0, U_SEAT, W); const fw = Math.max(0, Math.min(1, (flow - 0.02) / 0.98)); seg(U_SEAT, 1, W * Math.sqrt(fw)); }
   // big valve-state tag at the seat
-  if (xa > 0.6 || t < T.hookEnd) { const shut = s > G.GAP0 - 0.15; S.tag(g2, 1, shut ? 'SHUT' : 'OPEN', ...ip(9, G.GAP0 - s - 1, 8), 200, 120, 64, shut ? '#ff4a3a' : '#4ade6a'); }
+  if ((xa > 0.6 || t < T.hookEnd) && t < T.vo6) { const shut = s > G.GAP0 - 0.15; S.tag(g2, 1, shut ? 'SHUT' : 'OPEN', ...ip(9, G.GAP0 - s - 1, 8), 200, 120, 64, shut ? '#ff4a3a' : '#4ade6a'); }
   if (t >= T.cutIn && t < T.vo6) thermo(g2, 1, tp, t);
   // warm room air -> into the knob (with the 'warms' line)
   const ha = hard(t, T.vo3, T.vo4 + 0.6); if (ha) { const [hx, hy] = ip(-24, 120, 10); for (let j = 0; j < 3; j++) { const y0 = hy - 90 + j * 90, x1 = hx - 14, x0 = Math.max(80, x1 - 230);
