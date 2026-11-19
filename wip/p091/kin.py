@@ -22,7 +22,7 @@ for _ in range(60):
 U_LOCK = lo; L_LOCK = 2 * LS * U_LOCK      # cord travel from bottom to lock
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
 T = {'vo0': 0.3, 'vo1': 2.75}
-GAP = {2: 0.35, 3: 0.35, 4: 0.3, 5: 0.35, 6: 0.4}
+GAP = {2: 0.35, 3: 0.35, 4: 0.3, 5: 1.5, 6: 0.4}
 for i in range(2, 7): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
 LOOP = round(T['vo6'] + dur[6] + 1.45, 2); T['LOOP'] = LOOP
 T['cutIn'] = T['vo1'] - 0.15; T['outEnd'] = T['vo6'] - 0.05
@@ -34,7 +34,7 @@ T['hl0'], T['hl1'] = 0.48, 0.80                  # hook: let go -> rolls up -> L
 c1 = C_HOOK - L_LOCK
 T['pd0'], T['pd1'] = T['vo2'] + 0.25, T['vo3'] - 0.35   # PULL DOWN (blind rises)
 c2 = c1 + PULL
-T['lg0'] = T['vo3'] + 0.9; T['lg1'] = T['vo4'] + dur[4] - 0.5   # LET GO, slow motion lock-up
+T['lg0'] = T['vo3'] + 0.9; T['lg1'] = T['vo4'] + dur[4] - 0.35   # LET GO, slow motion lock-up; LOCK lands on 'pinched', then ~1.8 s hold
 c3 = c2 - L_LOCK
 T['rp0'], T['rp1'] = T['vo5'] + 0.05, T['vo5'] + 0.35          # release: small pull down unpinches
 T['rf0'], T['rf1'] = T['rp1'], T['rp1'] + 0.35                 # roller falls (gravity) to the wide end
@@ -87,8 +87,9 @@ def cord_path(u, m):
         while gam < s0: gam += 2 * math.pi
         while gam - s0 > 2 * math.pi: gam -= 2 * math.pi
         pts += wrap_pts(P[0], P[1], Rp, s0, gam, 10); pts.append(E)
-    # continue below the exit along the last direction (hanging cord), 34 mm
-    (x0, y0), (x1, y1) = pts[-2], pts[-1]; L = math.hypot(x1 - x0, y1 - y0); pts.append((x1 + (x1 - x0) / L * 34, y1 + (y1 - y0) / L * 34))
+    # below the exit hole the cord hangs straight down (as in the outside shot), or toward the middle when pulled there
+    dx, dy = -0.45 * m, -1.0; L = math.hypot(dx, dy); x1, y1 = pts[-1]
+    pts.append((x1 + dx / L * 2.0 - 0.0, y1 + dy / L * 2.0)); pts.append((x1 + dx / L * 40, y1 + dy / L * 40))
     return pts, contact, rce
 def resample(pts, n=110):
     acc = [0.0]

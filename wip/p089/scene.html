@@ -27,14 +27,23 @@ const weave = (() => { const c = document.createElement('canvas'); c.width = c.h
   for (let k = 0; k < 2500; k++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},0.12)`; g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })();
 const wv = (r) => { const t = weave.clone(); t.repeat.set(r, r); t.needsUpdate = true; return t; };
+const fuzz = (base, cols, n, seed, loops = true) => { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, 512, 512); let q = seed;
+  const r = () => (q = (q * 16807) % 2147483647) / 2147483647; g.lineCap = 'round';
+  for (let k = 0; k < n; k++) { const x = r() * 512, y = r() * 512, rad = 2 + r() * 4; g.strokeStyle = cols[k % cols.length]; g.lineWidth = 1 + r() * 1.4; g.beginPath();
+    if (loops) g.arc(x, y, rad, r() * 6.28, r() * 6.28 + 3.5); else { g.moveTo(x, y); g.lineTo(x + 2, y + 3); g.arc(x + 3.5, y + 3, 1.6, 3.14, 0); } g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; };
+const FZ = fuzz('#2a58c4', ['#5f8cf0', '#1b3f9c', '#86a8ff', '#2349ab'], 22000, 11); FZ.repeat.set(0.03, 0.03);
+const HK = fuzz('#e9e5da', ['#ffffff', '#bdb7a8', '#d8d2c3'], 16000, 5, false); HK.repeat.set(0.03, 0.03);
+const NV = fuzz('#232a3a', ['#2f3850', '#1a2030', '#39435e'], 14000, 3); NV.repeat.set(0.006, 0.006);
 M.nylon = phys({ color: 0xf1eee6, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.3, sheen: 0.3 });
 M.tapeW = phys({ color: 0xece8de, roughness: 0.7, bumpMap: wv(0.25), bumpScale: 0.4, roughnessMap: wv(0.25) });
 M.loopF = phys({ color: 0x2f62d8, roughness: 0.75, sheen: 1, sheenColor: new THREE.Color(0x7fa6ff), sheenRoughness: 0.5 });
 M.tapeB = phys({ color: 0x2a55bf, roughness: 0.9, bumpMap: wv(0.25), bumpScale: 0.5, sheen: 0.6, sheenColor: new THREE.Color(0x7fa6ff) });
-M.canvas = phys({ color: 0x3c4a3a, roughness: 0.95, bumpMap: wv(0.08), bumpScale: 1.2 });
+M.canvas = phys({ color: 0xffffff, map: NV, roughness: 0.95, bumpMap: NV, bumpScale: 1.5, sheen: 0.5, sheenColor: new THREE.Color(0x5a6a90) });
 const gr2 = K.grainTex(5, 60); gr2.repeat.set(0.06, 0.06);
-M.patchB = phys({ color: 0x2c5ad0, roughness: 0.95, bumpMap: gr2, bumpScale: 1.4, sheen: 0.8, sheenColor: new THREE.Color(0x86a8ff) });
-M.strapW = phys({ color: 0xeeeae2, roughness: 0.6, bumpMap: gr2, bumpScale: 0.5 });
+M.patchB = phys({ color: 0xffffff, map: FZ, roughness: 0.95, bumpMap: FZ, bumpScale: 2.2, sheen: 0.8, sheenColor: new THREE.Color(0x86a8ff) });
+M.strapW = phys({ color: 0xeeeae2, roughness: 0.6, bumpMap: wv(0.35), bumpScale: 0.6 });
+M.strapH = phys({ color: 0xffffff, map: HK, roughness: 0.5, bumpMap: HK, bumpScale: 1.6, clearcoat: 0.3 });
 M.stitch = phys({ color: 0xd9d4c4, roughness: 0.8 });
 // ---------- ribbon (tape with thickness) following the peel curve ----------
 function tapePoint(u, ox, oy, xf, RP, AMAX, base) {
@@ -43,17 +52,18 @@ function tapePoint(u, ox, oy, xf, RP, AMAX, base) {
   if (s <= sa) { const ph = s / RP; return [xf - RP * Math.sin(ph) + ox, base + RP * (1 - Math.cos(ph)) + oy, -ph]; }
   const x0 = xf - RP * Math.sin(AMAX), y0 = base + RP * (1 - Math.cos(AMAX)), d = s - sa; return [x0 - d * Math.cos(AMAX) + ox, y0 + d * Math.sin(AMAX) + oy, -AMAX];
 }
-function ribbon(mat, u0, u1, n, thick, z0, z1, parent) {
+function ribbon(mat, u0, u1, n, thick, z0, z1, parent, matU = null) {
   const pos = new Float32Array(n * 8 * 3), uv = new Float32Array(n * 8 * 2), idx = [];
-  for (let i = 0; i < n - 1; i++) for (let f = 0; f < 4; f++) { const a = i * 8 + f * 2, b = a + 1, c = a + 8, d = a + 9; idx.push(a, c, b, b, c, d); }
+  for (let f = 0; f < 4; f++) for (let i = 0; i < n - 1; i++) { const a = i * 8 + f * 2, b = a + 1, c = a + 8, d = a + 9; idx.push(a, c, b, b, c, d); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
-  const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; parent.add(m);
+  const PF = (n - 1) * 6; g.addGroup(0, PF, matU ? 1 : 0); g.addGroup(PF, PF * 3, 0);
+  const m = new THREE.Mesh(g, matU ? [mat, matU] : mat); m.castShadow = m.receiveShadow = true; parent.add(m);
   const caps = [new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat), new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat)]; caps.forEach(c => { c.castShadow = true; parent.add(c); });
   return { mesh: m, update(P) {
     for (let i = 0; i < n; i++) { const u = u0 + (u1 - u0) * i / (n - 1); const [x, y, r] = P(u); const nx = -Math.sin(r), ny = Math.cos(r);
       const B = [x, y], Tp = [x + nx * thick, y + ny * thick];
       const ring = [[B, z1], [B, z0], [B, z0], [Tp, z0], [Tp, z0], [Tp, z1], [Tp, z1], [B, z1]];   // bottom, back side, top, front side (pairs)
-      ring.forEach(([p, z], k) => { const o = (i * 8 + k) * 3; pos[o] = p[0]; pos[o + 1] = p[1]; pos[o + 2] = z; const q = (i * 8 + k) * 2; uv[q] = (u - u0) / 40; uv[q + 1] = (z - z0) / 40; });
+      ring.forEach(([p, z], k) => { const o = (i * 8 + k) * 3; pos[o] = p[0]; pos[o + 1] = p[1]; pos[o + 2] = z; const q = (i * 8 + k) * 2; uv[q] = (u - u0); uv[q + 1] = (z - z0); });
       if (i === 0 || i === n - 1) { const c = caps[i ? 1 : 0]; c.position.set(x + nx * thick / 2, y + ny * thick / 2, (z0 + z1) / 2); c.rotation.set(0, 0, r); c.scale.set(0.6, thick, z1 - z0); } }
     g.attributes.position.needsUpdate = true; g.attributes.uv.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere(); } };
 }
@@ -69,7 +79,7 @@ const footGeo = new THREE.CylinderGeometry(0.42, 0.8, 1.0, 12); footGeo.translat
 const tipGeo = new THREE.SphereGeometry(G.RT, 12, 8);
 const HOOKS = []; // [col][row]
 for (let i = 0; i < NC; i++) { const col = []; for (const z of ZR) { const g = new THREE.Group(); const m = new THREE.Mesh(hookGeo(1), M.nylon); m.castShadow = true; g.add(m);
-  const f = new THREE.Mesh(footGeo, M.nylon); g.add(f); const tp = new THREE.Mesh(tipGeo, M.nylon); g.add(tp); g.userData = { m, tp, z }; g.position.z = z; MAC.add(g); col.push(g); } HOOKS.push(col); }
+  const f = new THREE.Mesh(footGeo, M.nylon); g.add(f); const tp = new THREE.Mesh(tipGeo, M.nylon); g.add(tp); g.userData = { m, tp, z, jit: (Math.sin(i * 12.9898 + z * 78.233) * 43758.5453) % 1 }; g.position.z = z; MAC.add(g); col.push(g); } HOOKS.push(col); }
 const ARCN = 28; const arch = (ax, ay, xe, z, w) => { const p = []; for (let k = 0; k <= ARCN; k++) { const zz = -w + 2 * w * k / ARCN; const f = Math.pow(Math.max(0, 1 - Math.pow(Math.abs(zz) / w, 4)), 0.25);
   p.push(V(xe + (ax - xe) * f, ay * f - 0.3 * (1 - f) * 0, z + zz)); } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p), 40, G.RF, 7, false); };
 const LOOPS = []; for (let i = 0; i < NC; i++) { const col = []; for (const z of ZR) { const m = new THREE.Mesh(arch(XS[i] + 1.6, G.H0, XS[i] + 1.6, z, G.WLOOP), M.loopF); m.castShadow = true; m.userData = { key: '', z }; MAC.add(m); col.push(m); } LOOPS.push(col); }
@@ -79,27 +89,31 @@ S.shadowAll(MAC);
 // ---------- OUTSIDE (x = 5000, mm) ----------
 const OUT = new THREE.Group(); OUT.position.set(5000, 0, 0); scene.add(OUT);
 { const p = new THREE.Mesh(new RoundedBoxGeometry(520, 24, 330, 4, 10), M.canvas); p.position.set(0, -12, 0); p.receiveShadow = true; OUT.add(p);
-  const lp = new THREE.Mesh(new RoundedBoxGeometry(170, 3, 36, 2, 1.2), M.patchB); lp.position.set(0, 1.5, 0); lp.receiveShadow = lp.castShadow = true; OUT.add(lp);
-  for (const z of [-15.5, 15.5]) for (let x = -82; x < 82; x += 5) { const s = new THREE.Mesh(new THREE.BoxGeometry(3, 0.6, 0.9), M.stitch); s.position.set(x, 3.05, z); OUT.add(s); }
+  const lp = new THREE.Mesh(new RoundedBoxGeometry(176, 3, 58, 3, 1.4), M.patchB); lp.position.set(0, 1.5, 0); lp.receiveShadow = lp.castShadow = true; OUT.add(lp);
+  for (const z of [-26.5, 26.5]) for (let x = -84; x < 84; x += 5) { const s = new THREE.Mesh(new THREE.BoxGeometry(3, 0.6, 0.9), M.stitch); s.position.set(x, 3.05, z); OUT.add(s); }
   // bag seam + strap loop as context
   const seam = new THREE.Mesh(new RoundedBoxGeometry(520, 6, 8, 2, 2), M.canvas); seam.position.set(0, 1, -150); OUT.add(seam); }
-const STRAP = ribbon(M.strapW, -112, 82, 220, 2.4, -16, 16, OUT);
+const STRAP = ribbon(M.strapW, -112, 82, 220, 2.6, -25, 25, OUT, M.strapH); OUT.rotation.y = -0.55;
 const ORP = 7, OAMAX = 1.95;
-const outFront = (t) => { if (t < 0.95) return -112 + (30 + 112) * S.smooth(t / 0.95) * 0.85 + 0.15 * (30 + 112) * (t / 0.95); if (t < T.ans) return 30; return -1e9; };
+const outFront = (t) => { if (t < 0.95) return -96 + (40 + 96) * (0.85 * S.smooth(t / 0.95) + 0.15 * t / 0.95); if (t < T.ans) return 40; return -96; };   // loop: tab already lifted at the first and last frame
 // ---------- backdrop + light ----------
-K.backdrop(scene, { floorY: -800, R: 1200, zBack: -3000, h: 20000, width: 40000, wall: '#191c22', floor: '#1d2026', pool: false, catcher: 100 });
+K.backdrop(scene, { floorY: -6, R: 60, zBack: -70, h: 400, width: 800, wall: '#2b3240', floor: '#3a4150', pool: true, catcher: 300 });
+K.backdrop(scene, { floorY: -60, R: 400, zBack: -1200, h: 8000, width: 30000, wall: '#2b3240', floor: '#3a4150', pool: false, catcher: 10 }).position?.set?.(5000, 0, 0);
+const RIG2 = K.lightRig(scene, V(5000, 0, 0), 160); RIG2.key.shadow.bias = -0.0004;
 const RIG = K.lightRig(scene, V(0, 10, -6), 70); RIG.key.shadow.bias = -0.0005; RIG.rim.intensity = 3.2;
 { const f = new THREE.DirectionalLight(0xfff1e0, 1.0); f.position.set(5200, 600, 500); scene.add(f); const g = new THREE.DirectionalLight(0xdbe8ff, 0.9); g.position.set(4700, 300, -300); scene.add(g);
   const k2 = new THREE.DirectionalLight(0xffffff, 0.6); k2.position.set(-40, 80, 120); scene.add(k2); }
 // ---------- per-frame ----------
-const NH = 7; const row = (t) => KN[Math.max(0, Math.min(KN.length - 1, Math.round(t * G.FPS)))];
+const NH = 8; const ACC = new THREE.Color(0xff9a1f), DIMC = new THREE.Color(0x6d6a64);
+function tint(h, gl, dim) { const j = h.userData.jit; h.traverse(o => { if (!o.isMesh) return; if (!o.userData.own) { o.material = o.material.clone(); o.userData.own = 1; }
+  o.material.color.setRGB(0.95 + 0.05 * j, 0.93 + 0.04 * j, 0.88 + 0.03 * j).lerp(DIMC, 0.55 * dim).lerp(ACC, 0.75 * gl); o.material.emissive.copy(ACC).multiplyScalar(0.7 * gl); }); } const row = (t) => KN[Math.max(0, Math.min(KN.length - 1, Math.round(t * G.FPS)))];
 let R_ = null;
 function setScene(t) {
   const r = R_ = row(t); const [ox, oy, xf] = [r[1], r[2], r[3]];
   TAPE.update((u) => tapePoint(u, ox, oy, xf, G.RP, G.AMAX, G.G));
-  for (let i = 0; i < NC; i++) { const o = 4 + i * NH; const [rx, ry, rot, b, ax, ay, gl] = r.slice(o, o + NH);
-    for (const h of HOOKS[i]) { h.position.set(rx, ry, h.userData.z); h.rotation.z = rot; h.userData.m.geometry = hookGeo(b);
-      const p = hookPts(Math.round(b * 25) / 25); h.userData.tp.position.copy(p[p.length - 1]); K.glow(h, gl); }
+  for (let i = 0; i < NC; i++) { const o = 4 + i * NH; const [rx, ry, rot, b, ax, ay, gl, dm] = r.slice(o, o + NH);
+    for (const h of HOOKS[i]) { h.position.set(rx, ry, h.userData.z); h.rotation.set(0, 0.12 * h.userData.jit, rot, 'ZYX'); h.userData.m.geometry = hookGeo(b);
+      const p = hookPts(Math.round(b * 25) / 25); h.userData.tp.position.copy(p[p.length - 1]); tint(h, gl, dm); }
     const key = ax.toFixed(2) + ',' + ay.toFixed(2);
     for (const L of LOOPS[i]) if (L.userData.key !== key) { L.geometry.dispose(); L.geometry = arch(ax, ay, XS[i] + 1.6, L.userData.z, G.WLOOP); L.userData.key = key; } }
   const fo = outFront(t); STRAP.update((u) => tapePoint(u, 0, 0, fo, ORP, OAMAX, 3.35));
