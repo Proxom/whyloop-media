@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does your blinker know to turn itself off?",
+  "dur": 2.005
+ },
+ {
+  "i": 1,
+  "text": "Flick the lever up, and a notch holds it there.",
+  "dur": 2.347
+ },
+ {
+  "i": 2,
+  "text": "Inside, a hinged finger drops next to a bumpy ring on the steering shaft.",
+  "dur": 4.011
+ },
+ {
+  "i": 3,
+  "text": "Turn right, and the bump just folds the finger out of the way.",
+  "dur": 2.965
+ },
+ {
+  "i": 4,
+  "text": "Turn back, and the bump hits it from the other side, where it can't fold.",
+  "dur": 3.392
+ },
+ {
+  "i": 5,
+  "text": "So it shoves the lever out of its notch, and the blinker stops.",
+  "dur": 2.987
+ },
+ {
+  "i": 6,
+  "text": "Turning the wheel back knocks the lever home.",
+  "dur": 2.133
+ }
+]

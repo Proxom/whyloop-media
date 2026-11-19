@@ -1,0 +1,47 @@
+{
+ "id": "p082",
+ "track": "A",
+ "group": "V",
+ "slot": "",
+ "topicKey": "turn signal cancel",
+ "outlier": "scorecard rule: everyday object you touch + one \"why it clicks back\"; our own model, script, words and sound",
+ "topic": "Self-cancelling turn signal: a detent holds the stalk; a hinged finger meets the cancel cam on the steering shaft; it folds when the wheel turns into the turn and is rigid when the wheel turns back, so the cam knocks the stalk out of its detent.",
+ "hook": "WHO TURNS / THE BLINKER OFF?",
+ "title": "How Does Your Blinker Turn Itself Off? 🚗",
+ "principle": "The turn-signal stalk is held in a detent; a spring-biased pawl on the switch actuator projects next to a cancel cam fixed to the steering shaft. Turning into the signalled direction, the cam lobes tip the pawl aside without moving the stalk; turning back, a lobe drives the pawl against its stop, pushing the actuator out of its detent so the centering spring returns the stalk to neutral.",
+ "caption": "How Does Your Blinker Turn Itself Off? 🚗\nGuess: what knocks the lever back? 👇\nFollow @whyloop.hq for a new machine every day\n#cars #howitworks #mechanism #engineering #driving",
+ "firstComment": "Answer: the steering wheel itself 🚗\n\nWhen you flick the turn signal lever, a spring-loaded detent (a little notch) holds it in place, and a small hinged finger (often called a pawl) moves next to a cancel cam: a ring with bumps that is fixed to the steering shaft and turns with the wheel.\n\nTurning into the corner, the bumps sweep past the finger and it simply folds out of the way, so the lever stays on.\n\nTurning the wheel back, a bump hits the finger from the other side. Now it can't fold, so the push knocks the lever out of its notch and a spring returns it to the middle. The blinker stops.\n\nThat's also why a very gentle turn sometimes leaves the blinker on: the wheel never turns far enough for a bump to reach the finger.\n\n(Simplified 3D model; real switches differ in detail.)\n\nSources:\nUS Patent 5,385,067, Turn signal cancellation mechanism (handle held in a detent position until the turn is completed; cancel cam with raised formations fixed to the steering shaft; the pawl is tipped aside on the way into the turn and pushed by the cam on the way back, returning the handle to neutral; a cancel return spring centers the handle): https://patents.google.com/patent/US5385067\nYourMechanic, How does the turn signal switch know to reset (a cancel cam on the steering column presses the signal lever off as the wheel returns to center; gentle turns may need a manual cancel): https://www.yourmechanic.com/article/how-does-the-turn-signal-switch-know-to-reset-when-my-car-stops-turning",
+ "altText": "3D animation of a car steering wheel and the turn signal lever, with a voiceover. Under the question Who turns the blinker off? the lever snaps back to the middle. 1, a notch holds the lever: the lever is flicked up and a green arrow lamp starts blinking. The wheel turns see-through and shows the steering shaft. 2, a finger meets a bumpy ring: a small brass hinged finger sits next to a cream ring with two bumps on the shaft. 3, turn in, the finger folds: the wheel turns right and a bump swings past, folding the finger aside while the lever stays up. 4, turn back, it can't fold: the wheel turns back and the bump pushes the finger from the other side against its stop. 5, the lever gets knocked home: the lever is pushed out of its notch, snaps to the middle and the arrow lamp goes out. The payoff reads Turning back knocks the lever home, a follow line appears and the video loops.",
+ "onScreen": [
+  "INSIDE IT",
+  "WHO TURNS",
+  "THE BLINKER OFF?",
+  "A NOTCH HOLDS THE LEVER",
+  "LEVER UP",
+  "NOTCH",
+  "A FINGER MEETS A BUMPY RING",
+  "FINGER",
+  "BUMP",
+  "TURN IN: THE FINGER FOLDS",
+  "FOLDS",
+  "TURN BACK: IT CAN'T FOLD",
+  "STOP: NO FOLD",
+  "THE LEVER GETS KNOCKED HOME",
+  "TURNING BACK",
+  "KNOCKS THE LEVER HOME",
+  "FOLLOW → A NEW MACHINE EVERY DAY"
+ ],
+ "voiceover": [
+  "How does your blinker know to turn itself off?",
+  "Flick the lever up, and a notch holds it there.",
+  "Inside, a hinged finger drops next to a bumpy ring on the steering shaft.",
+  "Turn right, and the bump just folds the finger out of the way.",
+  "Turn back, and the bump hits it from the other side, where it can't fold.",
+  "So it shoves the lever out of its notch, and the blinker stops.",
+  "Turning the wheel back knocks the lever home."
+ ],
+ "sources": [
+  "https://patents.google.com/patent/US5385067",
+  "https://www.yourmechanic.com/article/how-does-the-turn-signal-switch-know-to-reset-when-my-car-stops-turning"
+ ]
+}
