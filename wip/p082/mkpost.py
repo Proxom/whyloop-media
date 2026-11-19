@@ -17,13 +17,13 @@ US Patent 5,385,067, Turn signal cancellation mechanism (handle held in a detent
 YourMechanic, How does the turn signal switch know to reset (a cancel cam on the steering column presses the signal lever off as the wheel returns to center; gentle turns may need a manual cancel): https://www.yourmechanic.com/article/how-does-the-turn-signal-switch-know-to-reset-when-my-car-stops-turning"""
 alt = ("3D animation of a car steering wheel and the turn signal lever, with a voiceover. Under the question Who turns the blinker off? the lever snaps back to the middle. "
        "1, a notch holds the lever: the lever is flicked up and a green arrow lamp starts blinking. The wheel turns see-through and shows the steering shaft. "
-       "2, a finger meets a bumpy ring: a small brass hinged finger sits next to a cream ring with two bumps on the shaft. "
-       "3, turn in, the finger folds: the wheel turns right and a bump swings past, folding the finger aside while the lever stays up. "
-       "4, turn back, it can't fold: the wheel turns back and the bump pushes the finger from the other side against its stop. "
-       "5, the lever gets knocked home: the lever is pushed out of its notch, snaps to the middle and the arrow lamp goes out. "
+       "2, a finger meets a bumpy ring: a small brass hinged finger sits next to a steel ring with two bumps on the shaft. "
+       "3, turn right, the finger folds: the wheel turns right and a bump swings past, folding the finger aside while the lever stays up. "
+       "4, turn back, it can't fold: the wheel turns back and the bump pushes the finger from the other side against an orange stop block. "
+       "5, the lever gets knocked home: the lever is pushed out of its notch, snaps to the middle and the arrow lamp shows OFF. "
        "The payoff reads Turning back knocks the lever home, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'WHO TURNS', 'THE BLINKER OFF?', 'A NOTCH HOLDS THE LEVER', 'LEVER UP', 'NOTCH', 'A FINGER MEETS A BUMPY RING', 'FINGER', 'BUMP',
-      'TURN IN: THE FINGER FOLDS', 'FOLDS', "TURN BACK: IT CAN'T FOLD", 'STOP: NO FOLD', 'THE LEVER GETS KNOCKED HOME', 'TURNING BACK', 'KNOCKS THE LEVER HOME', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'TURN RIGHT: THE FINGER FOLDS', 'FOLDS', "TURN BACK: IT CAN'T FOLD", 'STOP BLOCKS IT', 'OFF', 'THE LEVER GETS KNOCKED HOME', 'TURNING BACK', 'KNOCKS THE LEVER HOME', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p082', track='A', group='V', slot='', topicKey='turn signal cancel',
   outlier='scorecard rule: everyday object you touch + one "why it clicks back"; our own model, script, words and sound',

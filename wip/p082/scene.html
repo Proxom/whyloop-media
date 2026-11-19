@@ -147,7 +147,7 @@ function overlay(t) {
   S.tag(g2, H(T.vo1 + 0.3, T.vo1 + 2.9), 'LEVER UP', ...wpt(ACT, -150, 0, 0), 40, -170, 50, '#ffffff');
   S.tag(g2, H(T.vo1 + 1.9, T.vo2 + 1.6), 'NOTCH', ...wpt(ACT, -15, 0, 5), 170, 190, 52, '#ffd21f');
   S.tag(g2, H(T.vo2 + 1.4, T.vo3 + 0.6), 'FINGER', ...wpt(FG, 0, -6, 4), 150, -120, 52, '#ffd21f');
-  S.tag(g2, H(T.vo2 + 1.9, T.vo3 + 0.6), 'BUMP', ...wpt(ROT, 31 * Math.cos(210 * D2R), 31 * Math.sin(210 * D2R), 6), 120, 260, 52, '#ffffff');
+  S.tag(g2, H(T.vo2 + 1.9, T.vo3 + 0.6), 'BUMP', ...wpt(ROT, 31 * Math.cos(210 * D2R), 31 * Math.sin(210 * D2R), 6), -30, 150, 52, '#ffffff');
   // while turning right: the bump that meets the finger + the fold angle
   { const lob = 210 * D2R + th; const [bx, by] = scr(31 * Math.cos(lob), 31 * Math.sin(lob), 6);
     S.tag(g2, H(T.turn_a + 1.0, T.vo4 + 0.2) * (Math.sin(lob) > 0.2 ? 1 : 0), 'BUMP', bx, by, -200, 230, 50, '#ffffff'); }

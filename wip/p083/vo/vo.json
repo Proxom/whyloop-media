@@ -6,8 +6,8 @@
  },
  {
   "i": 1,
-  "text": "It's really two caps. The inner one is screwed on. The outer one is loose.",
-  "dur": 3.541
+  "text": "It's really two caps. The inner one is screwed on. The outer one is loose, held up by a spring.",
+  "dur": 4.736
  },
  {
   "i": 2,
@@ -21,12 +21,17 @@
  },
  {
   "i": 4,
-  "text": "Push down, and they can't ride up. Now they grip, and both caps turn together.",
-  "dur": 4.139
+  "text": "Push down, and flat lugs drop into place. Now they lock, and both caps turn together.",
+  "dur": 4.949
  },
  {
   "i": 5,
-  "text": "Turning alone just slips. Push and turn, and it opens.",
-  "dur": 3.072
+  "text": "So small kids can't easily open it. Turning alone just slips.",
+  "dur": 3.563
+ },
+ {
+  "i": 6,
+  "text": "Closing needs no push. The steep sides catch.",
+  "dur": 2.667
  }
 ]
