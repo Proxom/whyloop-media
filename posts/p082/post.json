@@ -2,7 +2,7 @@
  "id": "p082",
  "track": "A",
  "group": "V",
- "slot": "",
+ "slot": "2026-11-22T17:00:00 Europe/London",
  "topicKey": "turn signal cancel",
  "outlier": "scorecard rule: everyday object you touch + one \"why it clicks back\"; our own model, script, words and sound",
  "topic": "Self-cancelling turn signal: a detent holds the stalk; a hinged finger meets the cancel cam on the steering shaft; it folds when the wheel turns into the turn and is rigid when the wheel turns back, so the cam knocks the stalk out of its detent.",
@@ -44,5 +44,9 @@
  "sources": [
   "https://patents.google.com/patent/US5385067",
   "https://www.yourmechanic.com/article/how-does-the-turn-signal-switch-know-to-reset-when-my-car-stops-turning"
- ]
+ ],
+ "status": "scheduled",
+ "metricoolPostId": 434389350,
+ "visualScore": 5,
+ "clarity": "PASS (14yo YES)"
 }

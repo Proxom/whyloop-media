@@ -145,7 +145,7 @@ function setScene(t) {
   STREAM.scale.set(r, 250 - 17, r); STREAM.position.set(0, (250 + 17) / 2, 156); SPL.position.set(0, 17.5, 156); SPL.scale.set(r * 2.2, r * 2.2, r * 2.2);
   const col = mixCol(ah, ac); M.water.color.copy(col); M.water.emissive.copy(col).multiplyScalar(0.35);
   // interior: holder turns, disc slides along the holder, stem tilts
-  HOLD.rotation.y = th * D2R; UP.position.set(0, upLift(t), -s * SC); LH.position.set(0, 4 * SC + upLift(t), -s * SC); STEM.rotation.x = -(-14 + 26 * s / G.S_OPEN) * D2R;
+  HOLD.rotation.y = th * D2R; UP.position.set(0, upLift(t), -s * SC); LH.position.set(0, 4 * SC + upLift(t), -s * SC); STEM.rotation.x = (38 + 22 * s / G.S_OPEN) * D2R;
   const ga = ghostA(t); M.ghost.opacity = ga; M.ghost.depthWrite = ga > 0.98; UP.userData.ed.material.opacity = (1 - ga) * 1.4;
   const pkA = Math.max(H(t, T.vo3 + 0.2, T.vo6), 0.0); UP.userData.pk.material.opacity = pkA; UP.userData.pk.visible = pkA > 0.01;
   K.glow(STEM, H(t, T.vo4 + 0.1, T.vo6 - 0.2) * 0.6);
@@ -154,11 +154,11 @@ function setScene(t) {
 }
 // ---------------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------------
 const k_ = (t, a) => [t, ...a];
-const HOOK = [0, 250, 60, 820, 8, 0], HOOK2 = [0, 248, 60, 790, 8, 0], EXTW = [0, 180, 40, 1500, 10, 0], EXTW2 = [0, 182, 40, 1420, 10, 0];
+const HOOK = [0, 350, 60, 860, 8, 0], HOOK2 = [0, 348, 60, 830, 8, 0], EXTW = [0, 230, 40, 1180, 10, 0], EXTW2 = [0, 232, 40, 1120, 10, 0];
 const SIDE = [0, 80, 20, 1250, 20, 0], SIDE2 = [0, 95, 20, 1320, 22, 0], TOP = [0, 60, 55, 1260, 60, 0], TOP2 = [0, 60, 50, 1200, 64, 0];
 const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, HOOK2), k_(T.hookEnd, EXTW), k_(T.inside - 0.01, EXTW2),
   k_(T.inside, SIDE), k_(T.vo2 - 0.2, SIDE2), k_(T.vo2 + 0.9, TOP), k_(T.vo4, TOP2), k_(T.outside - 0.01, [0, 60, 50, 1160, 64, 0]),
-  k_(T.outside, EXTW), k_(LOOP - 1.0, [0, 245, 60, 840, 8, 0]), k_(LOOP, HOOK)];
+  k_(T.outside, EXTW), k_(LOOP - 1.0, [0, 345, 60, 880, 8, 0]), k_(LOOP, HOOK)];
 // ---------------- overlay ----------------
 const scr = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
 const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
@@ -189,10 +189,10 @@ function overlay(t) {
     S.tag(g2, H(t, T.vo2 + 1.1, T.vo3 + 0.3), 'HOT', ...dpt(G.HOT[0], G.HOT[1]), -170, -150, 54, '#ff5a3a');
     S.tag(g2, H(t, T.vo2 + 1.7, T.vo3 + 0.3), 'COLD', ...dpt(G.COLD[0], G.COLD[1]), 150, -150, 54, '#5aa8ff');
     S.tag(g2, H(t, T.vo2 + 2.5, T.vo3 + 0.3), 'WAY OUT', ...dpt(0, -7), 160, 200, 54, '#ffffff');
-    { const c = Math.cos(th * D2R), sn = Math.sin(th * D2R), u = 0, v = -8 + s; S.tag(g2, H(t, T.vo3 + 0.5, T.vo4 + 0.4), 'POCKET', ...dpt(u * c - v * sn, u * sn + v * c, YI + 2), -190, 230, 54, '#ffd21f'); }
+    { const c = Math.cos(th * D2R), sn = Math.sin(th * D2R), u = 0, v = -8 + s; S.tag(g2, H(t, T.vo3 + 0.5, T.vo4 + 0.4), 'POCKET', ...dpt(u * c - v * sn, u * sn + v * c, YI + 2), -260, -20, 54, '#ffd21f'); }
     S.tag(g2, H(t, T.vo3 + 2.0, T.vo4 - 0.05), 'HOLES COVERED: NO WATER', ...dpt(G.COLD[0], G.COLD[1]), -60, -210, 48, '#ffffff');
-    { const a = H(t, T.vo4 + 0.2, T.lift_b + 0.3); if (a > 0) { const [x0, y0] = wpt(STEM, 0, 26 * SC, 0); S.forceArrow(g2, a, x0 + 120, y0 + 60, x0 + 120, y0 - 70, 16); } }
-    S.tag(g2, H(t, T.vo4 + 0.2, T.vo5 - 0.05), 'LEVER', ...wpt(STEM, 0, 24 * SC, 0), -200, -40, 50, '#ffd21f');
+    { const a = H(t, T.vo4 + 0.2, T.lift_b + 0.3); if (a > 0) { const [x0, y0] = wpt(STEM, 0, 15 * SC, 0); S.forceArrow(g2, a, x0 + 110, y0 + 70, x0 + 110, y0 - 60, 16); } }
+    S.tag(g2, H(t, T.vo4 + 0.2, T.vo5 - 0.05), 'LEVER', ...wpt(STEM, 0, 15 * SC, 0), -220, 30, 50, '#ffd21f');
     S.tag(g2, H(t, T.hot_a + 0.6, T.cold_a + 0.3), 'MORE HOT', ...dpt(G.HOT[0], G.HOT[1]), -150, -170, 54, '#ff5a3a');
     S.tag(g2, H(t, T.cold_a + 0.9, T.outside), 'MORE COLD', ...dpt(G.COLD[0], G.COLD[1]), 140, -170, 54, '#5aa8ff');
     spoutInset(g2, H(t, T.vo3 + 0.3, T.outside), ah, ac);
