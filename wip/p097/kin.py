@@ -36,8 +36,10 @@ for t in np.arange(0, LOOP, 1 / 120):
             if sp + r > 0.49 * gap(y, d): ok = False; print('piece overlaps', t, i, y, sp + r, gap(y, d))
 # static corns in the chamber above the ring (back half only), no overlap with each other / wall (r 14) / cone top / shaft
 rng = np.random.default_rng(97); corns = []; RC = 2.4
-while len(corns) < 46:
-    r = rng.uniform(4.0, 14 - RC - 0.4); y = rng.uniform(33.0, 47.0); ph = rng.uniform(math.pi * 0.52, math.pi * 1.48)
+tries = 0
+while len(corns) < 34 and tries < 200000:
+    tries += 1
+    r = rng.uniform(4.0, 14 - RC - 0.4); y = rng.uniform(33.0, 50.0); ph = rng.uniform(math.pi * 0.52, math.pi * 1.48)
     x, z = r * math.sin(ph), r * math.cos(ph)
     coneTop = 34 + DZMAX
     if y - RC < coneTop + 0.5 and r - RC < rC(min(y, coneTop), DZMAX) + 0.5: continue

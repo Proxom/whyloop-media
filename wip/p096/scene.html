@@ -27,7 +27,7 @@ const PL = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 400); const CLIP = [PL];
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t; }
 // materials (all clipped by the section plane)
 const acr = (op, col = 0xdcefff) => phys({ color: col, roughness: 0.04, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03, transparent: true, opacity: op, envMapIntensity: 2.2, clippingPlanes: CLIP, side: THREE.DoubleSide, depthWrite: false });
-M.outer = acr(0.30, 0xcfe6ff); M.middle = acr(0.26, 0xe6f2ff); M.inner = acr(0.20, 0xf2f7ff);
+M.outer = acr(0.22, 0xcfe6ff); M.middle = acr(0.19, 0xe6f2ff); M.inner = acr(0.13, 0xf2f7ff);
 M.panel = phys({ color: 0xe9e1d2, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5, clippingPlanes: CLIP, bumpMap: M.alu.roughnessMap, bumpScale: 0.15 });
 M.bezel = phys({ color: 0xdcd3c2, roughness: 0.45, clearcoat: 0.3, clippingPlanes: CLIP });
 M.skin = phys({ color: 0xc4c9cf, metalness: 0.85, roughness: 0.32, clippingPlanes: CLIP });
@@ -78,7 +78,7 @@ function cutAt(t) { if (t < T.orbA + 0.15) return 400; if (t < T.orbB) return 40
   if (t < T.backB) return 400 * S.smooth((t - T.back) / (T.backB - T.back - 0.1)); return 400; }
 // camera keys [t, tx, ty, tz, dist, elev, azim]
 const FRONT0 = [0, -10, -60, 1500, 6, 0], FRONT1 = [0, -40, -60, 1220, 5, 0];
-const SIDE = (ty, tz, d, el = 4, az = 90) => [0, ty, tz, d * 0.74, el + 4, az - 16];
+const SIDE = (ty, tz, d, el = 4, az = 90) => [0, ty + 10, tz, d * 0.9, el + 4, az - 16];
 const k_ = (t, a) => [t, ...a];
 const CAMK = [k_(0, FRONT0), k_(T.orbA, FRONT1), k_(T.orbB, SIDE(-10, -45, 1450, 5, 88)), k_(T.vo2 - 0.01, SIDE(-10, -40, 1420, 4, 90)),
   k_(T.vo3 - 0.1, SIDE(-10, -20, 1340, 4, 92)), k_(T.fill + 1.0, SIDE(-105, -50, 760, 4, 90)), k_(T.vo4, SIDE(-95, -50, 820, 4, 89)),
@@ -129,7 +129,7 @@ function overlay(t) {
       S.tag(g2, a(T.vo1 + 1.8), 'OUTER', ...sp(-90, (G.OUT[0] + G.OUT[1]) / 2), -150, 120, 48, '#ffffff'); }
     // cabin air (from step 2 on): dots on the cabin side of the middle pane
     if (t >= T.vo2 && t < T.back) { for (const [y, z] of CAB) { const jz = z + 3 * Math.sin(t * 2.3 + y), jy = y + 3 * Math.cos(t * 1.9 + z); const [x2, y2] = sp(jy, jz); dot(g2, x2, y2, 7, '#e8f6ff', 0.9); } }
-    if (s2) { for (const y of [-90, 20, 120]) { const [x0, y0] = sp(y, 160), [x1] = sp(y, 40); arrowC(g2, 1, x0, y0, x1, y0, 22, '#ffd21f'); } }
+    if (s2) { for (const y of [-90, 20, 120]) { const [x0, y0] = sp(y, 110), [x1] = sp(y, 30); arrowC(g2, 1, x0, y0, x1, y0, 22, '#ffd21f'); } }
     // step 3: air streams through the hole into the gap and stays there
     if (t >= T.fill && t < T.back) for (const p of GJ.P) { const u = (t - p.t0) / 0.9; if (u < 0) continue; let y, z; if (u >= 1) { y = p.end[0] + 3 * Math.sin(t * 2 + p.end[1]); z = p.end[1] + 2 * Math.cos(t * 2.4 + p.end[0]); } else [y, z] = pathAt(p, u);
       const [x2, y2] = sp(y, z); dot(g2, x2, y2, 7, '#e8f6ff', 0.95); }
