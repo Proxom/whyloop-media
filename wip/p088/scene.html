@@ -1,0 +1,147 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p088 trunk gas strut "WHAT HOLDS / THE TRUNK OPEN?" (group V, track A voice). Built from kit/kit.js.
+// Outside: simple car rear (side view, x = rearward, y up), hatch lid hinged at H, strut from body mount B to lid mount P.
+// Cut view: the strut stood up (rod down, as mounted), back half only, cut at z = 0; radius drawn larger than scale so the inside is readable.
+// kin.json rows: [t, lid angle, strut length, exposed rod, piston depth above the seal]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.05, near: 1, far: 40000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const box = (w, h, d, m, x, y, z, r = 0) => { const g = r > 0 ? new K.RBox(w, h, d, 3, r) : new THREE.BoxGeometry(w, h, d); const o = new THREE.Mesh(g, m); o.position.set(x, y, z); return o; };
+M.car = phys({ color: 0x2a5d9c, metalness: 0.55, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.2 });
+M.glassD = phys({ color: 0x0b0f14, metalness: 0.2, roughness: 0.08, clearcoat: 1 });
+M.tube = phys({ color: 0x15161a, metalness: 0.35, roughness: 0.42, clearcoat: 0.6 });
+M.tyre = M.rubber;
+M.cutS = phys({ color: 0xb8241c, roughness: 0.55, side: THREE.DoubleSide });
+M.inner = phys({ color: 0x8b929b, metalness: 0.8, roughness: 0.35, side: THREE.BackSide });
+M.lamp = phys({ color: 0x8a1010, roughness: 0.2, clearcoat: 1, emissive: 0x500000, emissiveIntensity: 0.6 });
+
+K.backdrop(scene, { floorY: 0, R: 600, zBack: -2500, h: 8000, width: 20000, wall: '#1b1e24', floor: '#2c2f36', pool: false, catcher: 4 });
+const RIG = K.lightRig(scene, V(-300, 600, 0), 900);
+RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.1; RIG.rim.intensity = 3.0;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.6); f.position.set(-300, 600, 2500); scene.add(f);
+  const g = new THREE.DirectionalLight(0xdbe8ff, 1.6); g.position.set(2500, 900, -600); scene.add(g); }
+// ---------- OUTSIDE: car rear ----------
+const EXT = new THREE.Group(); scene.add(EXT);
+K.contactBlob(EXT, -700, 0, 0, 900, 0.8);
+{ EXT.add(box(1500, 520, 900, M.car, -750, 430, 0, 60));               // lower body (rear quarter)
+  EXT.add(box(1300, 300, 860, M.car, -900, 840, 0, 70));               // cabin side
+  EXT.add(box(1250, 40, 840, M.car, -760, 1000, 0, 18));               // roof
+  EXT.add(box(900, 220, 10, M.glassD, -820, 850, 432, 6));             // side window
+  for (const x of [-1150, -250]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(190, 190, 120, 48), M.tyre); w.rotation.x = Math.PI / 2; w.position.set(x, 190, 400); EXT.add(w);
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(120, 120, 124, 40), M.chrome); r.rotation.x = Math.PI / 2; r.position.set(x, 190, 400); EXT.add(r); }
+  EXT.add(box(30, 120, 160, M.lamp, 6, 560, 380, 8));                  // tail lamp
+  EXT.add(box(60, 90, 900, M.plastic, 10, 210, 0, 20)); }              // bumper
+const LID = new THREE.Group(); LID.position.set(G.H[0], G.H[1], 0); EXT.add(LID);
+{ LID.add(box(28, 820, 880, M.car, 6, -410, 0, 12)); LID.add(box(6, 330, 760, M.glassD, 22, -200, 0, 4)); LID.add(box(10, 60, 120, M.chrome, 24, -640, 0, 4)); }
+// strut (outside): tube from B, rod to P, at z = 470 (near-side edge of the opening)
+const ZS = 470;
+const sTube = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, G.TUBE, 32), M.tube); EXT.add(sTube);
+const sRod = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 1, 24), M.chrome); EXT.add(sRod);
+const ball1 = new THREE.Mesh(new THREE.SphereGeometry(13, 24, 16), M.machined); ball1.position.set(G.B[0], G.B[1], ZS); EXT.add(ball1);
+const ball2 = new THREE.Mesh(new THREE.SphereGeometry(13, 24, 16), M.machined); EXT.add(ball2);
+function place(mesh, a, b, len) { const d = b.clone().sub(a); const L = d.length(); mesh.position.copy(a).addScaledVector(d, 0.5 * (len ?? L) / L); mesh.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); }
+// ---------- CUT VIEW: the strut stood up, rod down ----------
+const CUT = new THREE.Group(); CUT.position.y = 500; scene.add(CUT);
+const R = 150, WALL = 9, RR = 40, PR = R - WALL - 1, PH = 26;
+const half = (r, h, m, open = true) => new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 72, 1, open, Math.PI / 2, Math.PI), m);
+{ const o = half(R, G.TUBE, M.tube); o.position.y = G.TUBE / 2; CUT.add(o);
+  const i = half(R - WALL, G.TUBE, M.inner); i.position.y = G.TUBE / 2; CUT.add(i);
+  const capT = half(R, 16, M.tube, false); capT.position.y = G.TUBE + 8; CUT.add(capT);
+  for (const s of [-1, 1]) { CUT.add(box(WALL, G.TUBE, 2, M.cutS, s * (R - WALL / 2), G.TUBE / 2, 0.6)); }
+  CUT.add(box(2 * R, 16, 2, M.cutS, 0, G.TUBE + 8, 0.6));
+  // seal + rod guide at the bottom (rod passes through)
+  for (const s of [-1, 1]) { CUT.add(box(R - RR - 2, 26, 2, M.cutS, s * (RR + 2 + (R - RR - 2) / 2), -13, 0.6)); }
+  const sg = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 26, 72, 1, false, Math.PI / 2, Math.PI), M.tube); sg.position.y = -13; CUT.add(sg);
+  const mt = new THREE.Mesh(new THREE.CylinderGeometry(22, 22, 40, 32), M.machined); mt.position.y = G.TUBE + 36; CUT.add(mt); }
+const PIS = new THREE.Group(); CUT.add(PIS);
+{ PIS.add(half(PR, PH, M.machined, false));
+  PIS.add(box(PR - 70, PH, 2, M.cutS, -(PR + 70) / 2 + 0, 0, 0.6)); PIS.add(box(PR - 70 - 16, PH, 2, M.cutS, (70 + 16 + PR) / 2 - 0, 0, 0.6));  // cut face with the hole at x 70..86
+  PIS.add(box(70 * 2, PH, 2, M.cutS, 0, 0, 0.6));
+  PIS.add(box(16, PH + 1, 3, phys({ color: 0x050607, roughness: 0.9 }), 78, 0, 0.9)); }   // the tiny hole (drawn wider than scale)
+const RODC = new THREE.Group(); CUT.add(RODC);
+{ const r = half(RR, G.ROD, M.chrome, false); r.position.y = -G.ROD / 2; RODC.add(r); RODC.add(box(2 * RR, G.ROD, 2, phys({ color: 0x9aa3ad, metalness: 0.9, roughness: 0.3 }), 0, -G.ROD / 2, 0.6)); }
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const cutOn = (t) => t >= T.cut && t < T.ext;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const a = k[1]; LID.rotation.z = a;
+  const c = cutOn(t); EXT.visible = !c; CUT.visible = c;
+  const Bv = V(G.B[0], G.B[1], ZS), Pv = V(G.H[0] + G.LM * Math.sin(a), G.H[1] - G.LM * Math.cos(a), ZS);
+  place(sTube, Bv, Pv, G.TUBE); const dir = Pv.clone().sub(Bv).normalize(); const seal = Bv.clone().addScaledVector(dir, G.TUBE);
+  sRod.scale.y = Math.max(1, k[3]); place(sRod, seal, Pv); ball2.position.copy(Pv);
+  PIS.position.y = k[4]; RODC.position.y = k[4] - PH / 2;
+  K.glow(sTube, fade(t, T.vo0 + 0.3, T.cut, 0.2) * 0.7); K.glow(sRod, fade(t, T.vo0 + 0.3, T.cut, 0.2) * 0.7);
+  K.glow(RODC.children[0], fade(t, T.vo3, T.ext, 0.2) * 0.6);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const EXTV = [-330, 640, 200, 3900, 8, 34], EXT2 = [-260, 640, 200, 3650, 8, 30];
+const CUTA = [0, 640, 0, 2200, 6, 12], CUTB = [0, 620, 0, 2080, 5, 8], CUTC = [0, 600, 0, 2020, 4, 4];
+const CAMK = [k_(0, EXTV), k_(T.cut - 0.01, EXT2), k_(T.cut, CUTA), k_(T.vo2, CUTB), k_(T.vo3, CUTB), k_(T.ext - 0.01, CUTC), k_(T.ext, EXT2), k_(LOOP, EXTV)];
+// ---------- overlay ----------
+const scrC = (x, y, z = 0) => S.toScreen(camera, V(x, y + 500, z));
+let rnd = 88; const rng = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+const DOTS = []; for (let i = 0; i < 260; i++) DOTS.push([rng() * 2 - 1, rng(), rng() * 6.28]);
+function gasDots(g2, a, t, dep) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = '#7fd0ff'; g2.shadowColor = '#4fb3ff'; g2.shadowBlur = 8;
+  for (const [u, v, ph] of DOTS) { const x = u * (R - WALL - 12), y = 8 + v * (G.TUBE - 16) + 3 * Math.sin(t * 7 + ph);
+    if (Math.abs(y - dep) < PH / 2 + 8) continue; if (y < dep && Math.abs(x) < RR + 8) continue;
+    const [sx, sy] = scrC(x + 3 * Math.cos(t * 6 + ph), y, -30); g2.beginPath(); g2.arc(sx, sy, 6, 0, 7); g2.fill(); } g2.restore(); }
+function flowDots(g2, a, t, dep) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = '#ffffff'; g2.shadowColor = '#4fb3ff'; g2.shadowBlur = 14;
+  for (let i = 0; i < 4; i++) { const f = ((t * 0.9 + i / 4) % 1); const y = dep + PH / 2 + 50 - f * (PH + 100); const [sx, sy] = scrC(78, y, 2); g2.beginPath(); g2.arc(sx, sy, 8, 0, 7); g2.fill(); } g2.restore(); }
+function badge(g2, a, text, x, y, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = '50px Anton'; const w = g2.measureText(text).width + 40; S.rrect(g2, x - w / 2, y - 38, w, 76, 16); g2.fillStyle = 'rgba(8,10,14,0.9)'; g2.fill(); g2.strokeStyle = color; g2.lineWidth = 5; g2.stroke(); S.outlined(g2, text, x, y + 18, 50, color); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const H = (a, b) => fade(t, a, b, 0.08);
+  { const fx = Math.max(0, 1 - Math.abs(t - T.cut) / 0.12) + Math.max(0, 1 - Math.abs(t - T.ext) / 0.12); K.TXT.flash(g2, 0.75 * Math.min(1, fx)); }
+  const a = k[1]; const mid = V(G.B[0] + 0.55 * (G.H[0] + G.LM * Math.sin(a) - G.B[0]), G.B[1] + 0.55 * (G.H[1] - G.LM * Math.cos(a) - G.B[1]), ZS);
+  const hk = t < T.cut ? 1 - S.smooth((t - (T.cut - 0.25)) / 0.2) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHAT HOLDS', 'THE TRUNK OPEN?', 100); if (t < T.hookEnd) { const [cx0, cy0] = S.toScreen(camera, mid); K.TXT.circle(g2, hk, cx0, cy0, 80, [-230, 220]); } }
+  if (!cutOn(t)) { const [mx, my] = S.toScreen(camera, mid); S.tag(g2, H(T.vo0 + 0.3, T.cut - 0.05), 'GAS STRUT', mx, my, -260, 150, 54, '#ffd21f'); }
+  const s1 = H(T.vo1 - 0.1, T.vo2 - 0.02), s2 = H(T.vo2, T.vo3 - 0.02), s3 = H(T.vo3, T.vo4 - 0.02), s4 = H(T.vo4, T.ext - 0.02);
+  K.TXT.step(g2, s1, 1, 'NITROGEN, SQUEEZED HARD', 58);
+  K.TXT.step(g2, s2, 2, 'A HOLE: GAS ON BOTH SIDES', 58);
+  K.TXT.step(g2, s3, 3, 'THE ROD TAKES UP ROOM', 58);
+  K.TXT.step(g2, s4, 4, 'THE PUSH OUT WINS', 60);
+  if (cutOn(t)) { const dep = k[4];
+    gasDots(g2, H(T.cut + 0.2, T.ext + 1), t, dep); flowDots(g2, H(T.vo2 + 0.3, T.vo3 + 0.2), t, dep);
+    badge(g2, H(T.vo1 + 0.6, T.vo2 - 0.05), 'HIGH PRESSURE', 540, 1380, '#7fd0ff');
+    S.tag(g2, H(T.vo1 + 0.3, T.vo2 - 0.05), 'NITROGEN GAS', ...scrC(-60, 300, -30), -170, -120, 54, '#7fd0ff');
+    S.tag(g2, H(T.vo2 + 0.2, T.vo4 - 0.05), 'PISTON', ...scrC(-90, dep, 2), -160, 150, 52, '#ffffff');
+    S.tag(g2, H(T.vo2 + 0.5, T.vo3 - 0.05), 'TINY HOLE', ...scrC(78, dep, 2), 170, -150, 52, '#ffd21f');
+    S.tag(g2, H(T.vo3 + 0.3, T.ext - 0.05), 'ROD', ...scrC(-RR, dep - 200, 2), -220, 40, 54, '#ffd21f');
+    // pressure arrows: full area on top of the piston (5), only the ring beside the rod underneath (2 + 2, shorter)
+    const ar = H(T.vo3 + 1.0, T.ext - 0.05);
+    if (ar > 0) { for (const x of [-110, -55, 0, 55, 110]) { const [x0, y0] = scrC(x, dep + PH / 2 + 110, 2), [x1, y1] = scrC(x, dep + PH / 2 + 8, 2); S.forceArrow(g2, ar, x0, y0, x1, y1, 10); }
+      for (const x of [-105, -70, 70, 105]) { const [x0, y0] = scrC(x, dep - PH / 2 - 60, 2), [x1, y1] = scrC(x, dep - PH / 2 - 6, 2); S.forceArrow(g2, ar, x0, y0, x1, y1, 10); } }
+    const po = H(T.vo4 + 0.2, T.ext - 0.05); if (po > 0) { const [x0, y0] = scrC(RR + 70, dep - 150, 2), [x1, y1] = scrC(RR + 70, dep - 360, 2); S.forceArrow(g2, po, x0, y0, x1, y1, 18); }
+    S.tag(g2, H(T.vo4 + 0.4, T.ext - 0.05), 'PUSH OUT', ...scrC(RR + 90, dep - 260, 2), 130, 20, 56, '#ffd21f');
+  }
+  // closing at the end: a hand push on the lid (the only cause of the lid going down)
+  { const ca = H(T.close_a - 0.3, T.close_b); if (ca > 0 && !cutOn(t)) { const lp = V(G.H[0] + 700 * Math.sin(a), G.H[1] - 700 * Math.cos(a), 0); const [lx, ly] = S.toScreen(camera, lp); S.forceArrow(g2, ca, lx + 40, ly - 220, lx + 10, ly - 30, 16); } }
+  K.TXT.answer(g2, H(T.vo5 + 0.05, LOOP - 1.4), 'SQUEEZED GAS', 'PUSHES THE ROD OUT', 452);
+  K.TXT.follow(g2, H(LOOP - 1.35, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
