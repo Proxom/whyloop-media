@@ -1,4 +1,4 @@
-# p085 Schrader tire valve "WHY DOESN'T / THE AIR ESCAPE?" - track A (Kokoro af_heart) - group V - v2 FINAL (HARD GATE PASS, CLARITY PASS, visual 5 -> rule B top 3 fixed once, no re-score) (19 Nov 15:10 run)
+# p085 Schrader tire valve "WHY DOESN'T / THE AIR ESCAPE?" - track A (Kokoro af_heart) - group V - v2 FINAL (HARD GATE PASS, CLARITY PASS, visual 5 -> rule B top 3 fixed once, no re-score) (19 Nov 15:10 run) - SCHEDULED 23 Nov 2026 01:00 (Metricool 434410795, 19 Nov 15:10 run)
 topic key: schrader valve (synonyms: tire valve, tyre valve, valve core) - not in learnings/topics-used.md (checked 70 rows + mechanism: no check valve / poppet / tire valve row; p078 bike pump in wip is the pump, unpublished; p072 toilet fill valve is a float-lever valve, different mechanism).
 Principle: a Schrader valve core is a spring-loaded poppet (check) valve; the spring AND the tire's internal pressure hold the seal against the barrel seat; the pump fitting presses the pin, lifting the seal off the seat so the higher-pressure pump air flows in; when the fitting comes off, spring + tire pressure close it.
 One idea: "the tire's own air holds the door shut".

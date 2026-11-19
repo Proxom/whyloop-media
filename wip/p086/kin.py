@@ -18,7 +18,7 @@ T['push_a'] = 3.0; T['push_b'] = 3.7; T['touch'] = T['push_b']
 T['vo2'] = T['vo1'] + dur[1] + 0.5
 T['vo3'] = T['vo2'] + dur[2] + 0.4
 T['vo4'] = T['vo3'] + dur[3] + 0.35
-T['off'] = T['vo4'] + dur[4] - 0.15           # timer reaches zero -> magnet current cut
+T['off'] = T['vo4'] + dur[4] - 0.05           # timer reaches zero -> magnet current cut
 T['vo5'] = T['off'] + 0.15
 T['rise_b'] = T['off'] + 0.05 + 0.9          # rise shown in slow motion (0.9 s)
 T['vo6'] = T['vo5'] + dur[5] + 0.45

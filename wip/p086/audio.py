@@ -1,7 +1,7 @@
-# p082 audio (blinker cancel, track A): Kokoro VO + soft music bed + soft LOW thumps/tocks on the real events (lever seats, lobe meets the finger, lever snaps home)
-# and a low rumble while the wheel turns. No blinker tick, no high clicks, squeaks or hiss. All SFX are low-passed by the master chain.
+# p086 audio (pop-up toaster, track A): Kokoro VO + soft music bed + soft LOW thumps/tocks on the real events (lever down onto the magnet, magnet lets go, carriage pops to the stop)
+# and a warm low rumble while the element heats. No bell/ding, no high clicks, squeaks or hiss. All SFX are low-passed by the master chain.
 import json, wave, numpy as np, soundfile as sf
-G = json.load(open('geom.json')); SR = 48000; DUR = G['LOOP']; N = int(SR * DUR); rng = np.random.default_rng(820)
+G = json.load(open('geom.json')); SR = 48000; DUR = G['LOOP']; N = int(SR * DUR); rng = np.random.default_rng(860)
 T = G['T']; VO_AT = [T[f'vo{i}'] for i in range(7)]
 L = np.zeros(N); R = np.zeros(N); V = np.zeros(N)
 def put(sig, t, pan=0.0, gain=1.0, dst=None):
@@ -24,18 +24,17 @@ ends = [t + d['dur'] for d, t in zip(vj, VO_AT)]; assert all(e < s2 for e, s2 in
 def tock(f0=300, g=1.0): return modal([f0, f0 * 1.52, f0 * 0.5], [1.0, 0.3, 0.4], [0.03, 0.014, 0.05], dur=0.16, att=0.0015) * g
 def thump(f0=110, g=1.0): return modal([f0, f0 * 1.5, f0 * 2.1], [1.0, 0.35, 0.15], [0.09, 0.04, 0.02], dur=0.35, att=0.002) * g
 KN = json.load(open('kin.json'))
-kt = np.array([r[0] for r in KN]); kb = np.array([r[3] for r in KN])
-# lever flicked up and seated in its notch: soft low thump
-put(thump(120), T['flick_b'], pan=-0.3, gain=0.55)
-# finger starts folding (lobe meets it while turning in): soft low tock
-i0 = next(i for i in range(1, len(kb)) if kb[i] > 0.5 and kb[i - 1] <= 0.5 and kt[i] > T['hookEnd']); put(tock(230), kt[i0], pan=0.1, gain=0.3)
-# lobe meets the rigid finger on the way back: tock; lever knocked out of the notch and snapped home: thump
-put(tock(210), T['touch'], pan=0.1, gain=0.35); put(thump(105), T['snap'] + 0.1, pan=-0.3, gain=0.6)
-# hook replays the snap
-put(thump(105), 0.62 + 0.1, pan=-0.3, gain=0.45)
-# steering: soft low rumble while the wheel turns (band 90-500 Hz) following the wheel speed
-tt = np.arange(N) / SR; th = np.array([r[1] for r in KN]); w = np.abs(np.gradient(th, kt)); w = np.interp(tt, kt, np.clip(w / 120.0, 0, 1)) * (tt > T['hookEnd'])
-rum = bandnoise(N, 90, 500); L += 0.05 * rum * w; R += 0.05 * np.roll(rum, 211) * w
+kt = np.array([r[0] for r in KN]); kh = np.array([r[3] for r in KN])
+# lever pushed down, plate lands on the magnet: soft low thump (both pushes)
+put(thump(115), T['touch'], pan=-0.3, gain=0.55); put(thump(115), T['repush_b'], pan=-0.3, gain=0.45)
+# pop: spring yanks the carriage up (hook flash + main cycle): low thump + soft low tock when it hits the top stop
+put(thump(95), T['pop0'] + 0.08, pan=-0.2, gain=0.55); put(tock(240), 0.6, pan=-0.2, gain=0.3)
+put(thump(95), T['off'] + 0.08, pan=-0.2, gain=0.6); put(tock(240), T['rise_b'], pan=-0.2, gain=0.3)
+# magnet lets go: soft low tock
+put(tock(200), T['off'], pan=-0.3, gain=0.3)
+# heating: warm low rumble (band 70-380 Hz) following the element glow
+tt = np.arange(N) / SR; w = np.interp(tt, kt, kh)
+rum = bandnoise(N, 70, 380); L += 0.06 * rum * w; R += 0.06 * np.roll(rum, 211) * w
 def note(m): return 440 * 2 ** ((m - 69) / 12)
 chords = [[45, 52, 57, 60], [41, 48, 53, 57], [48, 55, 60, 64], [43, 50, 55, 59]] * 2; seg = DUR / 8; mus = np.zeros(N)
 for ci, ch in enumerate(chords):

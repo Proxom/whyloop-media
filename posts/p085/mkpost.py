@@ -8,7 +8,7 @@ The air inside the tire pushes on the seal from below too, so the higher the pre
 
 When you put a pump on, a small pusher in the pump head presses the pin down and opens the seal. The pump's air is at a higher pressure than the tire, so it flows in.
 
-Take the pump off, and the spring and the tire pressure close the valve again. That's the short puff of air you hear when you pull the pump off.
+Take the pump off, and the spring and the tire pressure close the valve again.
 
 (Simplified 3D model; real valve cores differ in detail.)
 

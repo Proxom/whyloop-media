@@ -1,0 +1,165 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p086 pop-up toaster "WHAT MAKES / THE TOAST POP?" (group E, track A voice). Built from kit/kit.js.
+// mm, y up, x right, camera in front (+z). Outside view = whole toaster; cut view = back half only (cut at z = 0, red cut faces).
+// kin.json rows: [t, Ycar (tray height), magnet on, heater glow 0..1, timer fraction left]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.05, near: 1, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const box = (w, h, d, m, x, y, z, r = 0) => { const g = r > 0 ? new K.RBox(w, h, d, 3, r) : new THREE.BoxGeometry(w, h, d); const o = new THREE.Mesh(g, m); o.position.set(x, y, z); return o; };
+M.body = M.steel;
+M.dark = phys({ color: 0x0c0d10, roughness: 0.8 });
+M.copper = phys({ color: 0xc8753e, metalness: 1, roughness: 0.32, envMapIntensity: 1.2 });
+M.core = phys({ color: 0x5d636b, metalness: 1, roughness: 0.42 });
+M.mica = phys({ color: 0xcfc5ab, roughness: 0.62, sheen: 0.3 });
+M.pcb = phys({ color: 0x1f6b3a, roughness: 0.5, clearcoat: 0.4 });
+M.crumb = phys({ color: 0xd9a660, roughness: 0.92 });
+M.crust = phys({ color: 0x9a5a22, roughness: 0.8 });
+M.wire = phys({ color: 0x8a8f96, metalness: 1, roughness: 0.35, emissive: 0xff5a10, emissiveIntensity: 0 });
+
+K.backdrop(scene, { floorY: -10, R: 300, zBack: -900, h: 4000, width: 8000, wall: '#1b1e24', floor: '#24272d', pool: false, catcher: 4 });
+K.contactBlob(scene, 0, -10, 0, 190, 0.65);
+const RIG = K.lightRig(scene, V(0, 100, 0), 150);
+RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.1; RIG.rim.intensity = 3.0;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.55); f.position.set(-300, 400, 900); scene.add(f);
+  const g = new THREE.DirectionalLight(0xdbe8ff, 1.8); g.position.set(500, 250, -200); scene.add(g); }
+// ---------- feet ----------
+for (const [x, z] of [[-115, -60], [115, -60], [-115, 60], [115, 60]]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(9, 10, 10, 32), M.rubber); f.position.set(x, -5, z); scene.add(f); }
+// ---------- OUTSIDE (whole toaster) ----------
+const EXT = new THREE.Group(); scene.add(EXT);
+{ EXT.add(box(280, 190, 160, M.body, 0, 95, 0, 22));
+  for (const z of [-32, 32]) { EXT.add(box(212, 3, 18, M.dark, 15, 189.6, z, 1.2)); EXT.add(box(216, 2, 22, M.chrome, 15, 189.2, z)); }
+  EXT.add(box(3, 124, 14, M.dark, -140.6, 82, -20, 1));                       // lever slot (left side)
+  const k = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 6, 48), M.plastic); k.rotation.z = Math.PI / 2; k.position.set(-141.5, 40, 40); EXT.add(k); // browning dial
+  const kp = box(6, 4, 3, M.chrome, -145, 50, 40); EXT.add(kp); }
+// ---------- CUT VIEW (back half, cut at z = 0) ----------
+const CUT = new THREE.Group(); scene.add(CUT);
+{ CUT.add(box(280, 190, 3, M.body, 0, 95, -78.5));                             // back wall
+  CUT.add(box(3, 190, 80, M.body, -138.5, 95, -40)); CUT.add(box(3, 190, 80, M.body, 138.5, 95, -40));
+  CUT.add(box(280, 3, 38, M.body, 0, 188.5, -59)); CUT.add(box(280, 3, 22, M.body, 0, 188.5, -11)); // top (slot gap z -40..-22)
+  CUT.add(box(280, 3, 80, M.body, 0, 1.5, -40));
+  const inner = box(272, 182, 1, M.innerWall, 0, 95, -76.6); CUT.add(inner);
+  // red cut faces along the cut plane (z = 0)
+  for (const [w, h, x, y] of [[4, 190, -138.5, 95], [4, 190, 138.5, 95], [280, 4, 0, 188.5], [280, 4, 0, 1.5]]) CUT.add(box(w, h, 1.2, M.cut, x, y, 0.4));
+  // guide rod + spring anchor bracket
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 182, 24), M.chrome); rod.position.set(-124, 95, -20); CUT.add(rod);
+  CUT.add(box(26, 5, 16, M.machined, -110, 184, -20, 1));
+  // electromagnet: iron core + copper coil (top face at y = YM)
+  CUT.add(box(34, 6, 24, M.core, -116, 6, -20, 1));
+  const core = box(16, 20, 16, M.core, -116, G.YM - 10, -20, 1); CUT.add(core);
+  const coil = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 13, 48), M.copper); coil.position.set(-116, G.YM - 10, -20); CUT.add(coil); CUT.userData.coil = coil;
+  for (let i = 0; i < 6; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(14.2, 0.7, 8, 48), M.copper); r.rotation.x = Math.PI / 2; r.position.set(-116, G.YM - 15.5 + i * 2.2, -20); CUT.add(r); }
+  // heater: mica sheet + nichrome zigzag (glows with the power)
+  CUT.add(box(206, 160, 2, M.mica, 18, 100, -54));
+  const pts = []; for (let i = 0; i <= 14; i++) { const x = -80 + i * 14; pts.push(V(x, i % 2 ? 30 : 172, -52.4)); }
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.02); const w = new THREE.Mesh(new THREE.TubeGeometry(curve, 400, 1.3, 8), M.wire); CUT.add(w);
+  // timer board (bottom right) + chip + browning dial on the side
+  CUT.add(box(74, 3, 34, M.pcb, 80, 7, -30)); CUT.add(box(18, 4, 14, M.plastic, 70, 10.5, -30, 1)); CUT.add(box(10, 6, 8, M.copper, 98, 11, -32, 1));
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 10, 24), phys({ color: 0x2440a0, roughness: 0.4 })); cap.position.set(108, 14, -24); CUT.add(cap); }
+// ---------- CARRIAGE (moves with Ycar): slider + armature + lever + tray + toast ----------
+const CAR = new THREE.Group(); scene.add(CAR);
+const TOAST = [];
+{ CAR.add(box(30, 20, 8, M.machined, -116, 10, -20, 1.5));                     // slider plate (y 0..20 above the tray height)
+  const arm = box(32, 4, 22, M.core, -116, -2, -20, 0.8); CAR.add(arm); CAR.userData.arm = arm;   // steel armature plate (bottom at Ycar - 4)
+  const sl = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 22, 24), M.chrome); sl.position.set(-124, 10, -20); CAR.add(sl);
+  CAR.add(box(18, 8, 8, M.plastic, -137, 10, -20, 1.5));                       // lever arm through the side slot
+  const knob = box(36, 18, 44, M.plastic, -160, 10, -20, 6); CAR.add(knob); CAR.userData.knob = knob;
+  CAR.add(box(10, 3, 14, M.machined, -101, 1.5, -26));
+  for (const z of [-32, 32]) { CAR.add(box(196, 3, 20, M.chrome, -2, 1.5, z, 1));
+    const crust = box(124, 128, 11, M.crust, 15, 64, z, 10); const crumb = box(114, 118, 12, M.crumb.clone(), 15, 63, z, 9); CAR.add(crust); CAR.add(crumb); TOAST.push(crumb, crust); } }
+const SPR = K.spring(M.steel, { R: 5, wire: G.WIRE, turns: G.TURNS, len: 100 }); SPR.position.set(-108, 0, -20); scene.add(SPR);
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j === 2 ? a[2] : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const cutOn = (t) => t >= T.cut && t < T.ext;
+let KK = null;
+const brownA = new THREE.Color(0xe2b46d), brownB = new THREE.Color(0xa8632a);
+function setScene(t) {
+  const k = KK = kin(t); const y = k[1]; CAR.position.y = y;
+  const c = cutOn(t); EXT.visible = !c; CUT.visible = c; for (const o of CAR.children) if (o.position.z > 0) o.visible = !c;
+  SPR.position.y = y + G.SP_OFF; SPR.setLength(G.YA - y - G.SP_OFF);
+  M.wire.emissiveIntensity = 2.4 * k[3];
+  // toast browns while it heats (only in the main cycle; back to light for the loop)
+  const done = t < T.touch ? (t < T.pop0 + 0.3 ? 1 : 0) : (t < T.off ? (t - T.touch) / (T.off - T.touch) : (t < T.repush_a ? 1 : 0));
+  for (const m of TOAST) if (m.material !== M.crust) m.material.color.copy(brownA).lerp(brownB, Math.min(1, Math.max(0, done)));
+  if (c) K.glow(CUT.userData.coil, k[2] ? 0.9 + 0.1 * Math.sin(t * 12) : 0, 0x4fb3ff);
+  K.glow(SPR, Math.max(fade(t, T.push_a, T.vo2, 0.2), fade(t, T.off, T.vo6, 0.2)) * 0.8);
+  K.glow(CAR.userData.arm, fade(t, T.vo2 + 0.6, T.vo3, 0.2) * 0.8);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const EXTV = [-12, 112, 0, 1330, 13, -24], CUTV = [-12, 100, -30, 1180, 9, 6], MAG = [-95, 55, -20, 640, 8, 6], MIDV = [-20, 95, -30, 1080, 9, 6], POPV = [-40, 105, -30, 1000, 9, 6];
+const CAMK = [k_(0, EXTV), k_(T.cut - 0.01, [-12, 112, 0, 1260, 13, -20]),
+  k_(T.cut, CUTV), k_(T.vo2 + 0.3, [-12, 100, -30, 1120, 9, 6]), k_(T.vo2 + 1.3, MAG), k_(T.vo3 - 0.2, [-95, 55, -20, 610, 8, 6]),
+  k_(T.vo3 + 0.6, MIDV), k_(T.vo4 - 0.1, [-20, 95, -30, 1040, 9, 6]), k_(T.vo4 + 0.7, POPV), k_(T.vo6 - 0.01, [-40, 105, -30, 960, 9, 6]),
+  k_(T.vo6, [-12, 112, 0, 1360, 13, -26]), k_(LOOP, EXTV)];
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
+function fieldLines(g2, a, x, y, s) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#4fb3ff'; g2.lineWidth = 6; g2.shadowColor = '#4fb3ff'; g2.shadowBlur = 18;
+  for (const r of [1, 1.6, 2.2]) { g2.beginPath(); g2.ellipse(x - s * r * 0.55, y, s * r * 0.55, s * r * 0.42, 0, 0, Math.PI * 2); g2.stroke(); g2.beginPath(); g2.ellipse(x + s * r * 0.55, y, s * r * 0.55, s * r * 0.42, 0, 0, Math.PI * 2); g2.stroke(); } g2.restore(); }
+function timerRing(g2, a, x, y, R, frac, off) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.88)'; g2.beginPath(); g2.arc(x, y, R + 18, 0, 7); g2.fill(); g2.strokeStyle = '#4a5059'; g2.lineWidth = 3; g2.stroke();
+  g2.strokeStyle = '#2b3038'; g2.lineWidth = 16; g2.beginPath(); g2.arc(x, y, R, 0, 7); g2.stroke();
+  if (frac > 0) { g2.strokeStyle = '#ffd21f'; g2.lineCap = 'round'; g2.beginPath(); g2.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); g2.stroke(); }
+  S.outlined(g2, off ? '0' : String(Math.ceil(frac * 9)), x, y + 22, 64, off ? '#ff7a1a' : '#ffffff'); g2.restore(); }
+function badge(g2, a, text, x, y, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = '50px Anton'; const w = g2.measureText(text).width + 40; S.rrect(g2, x - w / 2, y - 38, w, 76, 16); g2.fillStyle = 'rgba(8,10,14,0.9)'; g2.fill(); g2.strokeStyle = color; g2.lineWidth = 5; g2.stroke(); S.outlined(g2, text, x, y + 18, 50, color); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const H = (a, b) => fade(t, a, b, 0.08);
+  { const fx = Math.max(0, 1 - Math.abs(t - T.cut) / 0.12) + Math.max(0, 1 - Math.abs(t - T.ext) / 0.12); K.TXT.flash(g2, 0.75 * Math.min(1, fx)); }
+  const hk = t < 4 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.2) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHAT MAKES', 'THE TOAST POP?', 104); const [cx0, cy0] = wpt(CAR, 15, 118, 32); K.TXT.circle(g2, hk * (t < T.hookEnd ? 1 : 0), cx0, cy0, 80, [-230, -170]); }
+  const s1 = H(T.vo1 - 0.1, T.vo2 - 0.02), s2 = H(T.vo2, T.vo3 - 0.02), s3 = H(T.vo3, T.vo4 - 0.02), s4 = H(T.vo4, T.vo5 - 0.02), s5 = H(T.vo5, T.vo6 - 0.02);
+  K.TXT.step(g2, s1, 1, 'PUSH: A SPRING STRETCHES', 58);
+  K.TXT.step(g2, s2, 2, 'A MAGNET HOLDS IT DOWN', 60);
+  K.TXT.step(g2, s3, 3, 'IT HEATS, A TIMER COUNTS', 60);
+  K.TXT.step(g2, s4, 4, 'TIME UP: MAGNET OFF', 60);
+  K.TXT.step(g2, s5, 5, 'THE SPRING YANKS IT UP', 60);
+  // push arrows on the knob (both pushes)
+  for (const [a0, b0] of [[T.push_a - 0.5, T.push_b + 0.3], [T.repush_a - 0.4, LOOP + 1]]) { const a = H(a0, b0); if (a > 0) { const [kx, ky] = wpt(CAR.userData.knob, 0, 9, 0); S.forceArrow(g2, a, kx, ky - 170, kx, ky - 20, 16); } }
+  const c = cutOn(t);
+  if (c) {
+    const [sx, sy] = scr(-108, k[1] + G.SP_OFF, -20), [ax, ay] = scr(-108, G.YA, -20);
+    // spring stretch: double arrow beside the spring (step 1) / pull-up arrow (step 5)
+    { const a = H(T.push_a + 0.1, T.vo2 + 0.6); if (a > 0) { g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.fillStyle = '#ffd21f'; g2.lineWidth = 8; const x = ax + 70;
+        g2.beginPath(); g2.moveTo(x, ay); g2.lineTo(x, sy); g2.stroke(); for (const [yy, d] of [[ay, 1], [sy, -1]]) { g2.beginPath(); g2.moveTo(x, yy); g2.lineTo(x - 16, yy + 26 * d); g2.lineTo(x + 16, yy + 26 * d); g2.closePath(); g2.fill(); } g2.restore(); } }
+    S.tag(g2, H(T.vo1 + 0.4, T.vo2 + 0.6), 'SPRING', sx + 8, (sy + ay) / 2, 150, -40, 52, '#ffd21f');
+    { const a = H(T.off + 0.05, T.vo6 - 0.05); if (a > 0) S.forceArrow(g2, a, ax + 80, sy + 120, ax + 80, sy - 60, 16); }
+    S.tag(g2, H(T.vo5, T.vo6 - 0.05), 'PULLS UP', ax + 80, sy - 40, 120, -60, 52, '#ffd21f');
+    // magnet: field lines while on, labels
+    const [mx, my] = scr(-116, G.YM - 10, -20), [mx2] = scr(-100, G.YM - 10, -20); const ms = Math.abs(mx2 - mx) * 1.6;
+    fieldLines(g2, (k[2] ? 1 : 0) * (0.75 + 0.25 * Math.sin(t * 10)) * H(T.touch, T.off + 0.02), mx, my, ms);
+    S.tag(g2, H(T.vo2 + 0.5, T.vo3 + 0.2), 'STEEL PLATE', ...wpt(CAR.userData.arm, 10, 0, 0), 190, -170, 52, '#ffffff');
+    S.tag(g2, H(T.vo2 + 1.4, T.vo3 + 0.2), 'ELECTROMAGNET', mx + 10, my + 10, 160, 140, 52, '#4fb3ff');
+    badge(g2, H(T.touch + 0.1, T.off) * (t > T.vo2 ? 1 : 0), 'MAGNET ON', 300, 1340, '#4fb3ff');
+    badge(g2, H(T.off, T.vo6 - 0.05), 'MAGNET OFF', 300, 1340, '#ff7a1a');
+    // timer ring above the board
+    const [tx, ty] = scr(80, 9, -30); timerRing(g2, H(T.vo3 - 0.05, T.vo6 - 0.05), Math.min(800, tx + 40), Math.min(1290, ty - 170), 62, k[4], t >= T.off);
+    S.tag(g2, H(T.vo3 + 0.2, T.vo4 + 1.2), 'TIMER', tx - 10, ty - 6, -150, -40, 52, '#ffd21f');
+    S.tag(g2, H(T.vo3 + 0.6, T.vo4), 'HEATER', ...scr(30, 150, -52), -190, -130, 50, '#ff9a4a');
+    badge(g2, H(T.off + 0.05, T.rise_b + 0.6), 'SLOW MOTION', 680, 1340, '#ffffff');
+  }
+  K.TXT.answer(g2, H(T.vo6 + 0.05, LOOP - 1.6), 'A MAGNET HOLDS IT DOWN', 'THE TIMER LETS GO', 560);
+  K.TXT.follow(g2, H(LOOP - 1.55, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
