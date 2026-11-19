@@ -57,7 +57,7 @@ const rel = (x, y) => [x - G.P[0], y - G.P[1]];
   const boss = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 12, 48), M.acetal); boss.rotation.x = Math.PI / 2; ACT.add(boss);
   const pin = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 16, 32), M.chrome); pin.rotation.x = Math.PI / 2; ACT.add(pin);
   const ball = new THREE.Mesh(new THREE.SphereGeometry(2.6, 32, 16), M.chrome); ball.position.set(-15, 0, 5); ACT.add(ball);
-  const stop = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 9, 20), M.steel); stop.rotation.x = Math.PI / 2; const [sx, sy] = rel(-2.6, 41.5); stop.position.set(sx, sy, 2); ACT.add(stop);
+  const stop = new THREE.Mesh(new K.RBox(2.6, 4.2, 9, 2, 0.6), phys({ color: 0xff6a1a, roughness: 0.4, clearcoat: 0.6 })); const [sx, sy] = rel(-3.0, 41.5); stop.position.set(sx, sy, 8.4); ACT.add(stop);
   // stalk: from the pivot out to the left, slightly toward the driver, black gloss with a chrome ring and a rubber end
   const STK = new THREE.Group(); ACT.add(STK);
   const L = 250; const prof = [[0, 0], [8.5, 0], [8, 40], [7.2, 170], [8.6, 196], [10.5, 232], [10.5, 245], [0, L]];
@@ -71,9 +71,9 @@ const rel = (x, y) => [x - G.P[0], y - G.P[1]];
   for (let i = N; i >= 0; i--) { const a = 150 + 60 * i / N; ring.push([9.6 * Math.cos(a * D2R), 9.6 * Math.sin(a * D2R)]); }
   const dp = S.extrude(S.shapeOf(ring), 2, 7, M.brass, 0.3, 2); dp.position.set(G.P[0], G.P[1], 0); scene.add(dp); }
 // finger (brass blade) hinged on the actuator
-const FG = new THREE.Group(); { const [hx, hy] = rel(G.HNG0[0], G.HNG0[1]); FG.position.set(hx, hy, 0); ACT.add(FG);
+const FG = new THREE.Group(); { const [hx, hy] = rel(G.HNG0[0], G.HNG0[1]); FG.position.set(hx, hy, 8.4); ACT.add(FG);
   const blade = new THREE.Mesh(new K.RBox(3.4, G.LF + 2, 7, 3, 0.8), M.brass); blade.position.y = -(G.LF + 2) / 2 + 1; FG.add(blade);
-  const hp = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 10, 24), M.chrome); hp.rotation.x = Math.PI / 2; FG.add(hp); }
+  const hp = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 22, 24), M.chrome); hp.position.z = -4; hp.rotation.x = Math.PI / 2; FG.add(hp); }
 // ---------- steering wheel (in front, turns with theta) ----------
 const WH = new THREE.Group(); WH.position.z = 70; scene.add(WH);
 const WM = [];
@@ -103,54 +103,66 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const MAC = [-3, -4, 0, 405, 8, 10], MID = [-6, -10, 0, 600, 8, 10], WIDE = [-22, -45, 20, 2000, 9, 10];
-const CAMK = [k_(0, MID), k_(T.hookEnd - 0.01, [-6, -8, 0, 585, 8, 10]),
-  k_(T.hookEnd, WIDE), k_(T.vo1 + 1.0, [-22, -45, 20, 1940, 9, 10]), k_(T.vo1 + 2.0, MID), k_(T.vo2 + 0.4, [-6, -8, 0, 585, 8, 10]),
-  k_(T.vo2 + 1.7, MAC), k_(T.vo3, [-3, -4, 0, 400, 8, 10]), k_(T.vo5 + 1.2, [-3, -4, 0, 415, 8, 11]),
-  k_(T.vo5 + 1.6, MID), k_(T.vo6 + 0.2, [-6, -10, 0, 620, 8, 10]), k_(T.vo6 + 1.4, WIDE), k_(LOOP, [-22, -45, 20, 1960, 9, 10])];
+const MAC = [-3, 6, 0, 405, 8, 10], MID = [-6, 3, 0, 600, 8, 10], WIDE = [-22, -45, 20, 2000, 9, 10];
+const CAMK = [k_(0, MID), k_(T.hookEnd - 0.01, [-6, 5, 0, 585, 8, 10]),
+  k_(T.hookEnd, WIDE), k_(T.vo1 + 1.0, [-22, -45, 20, 1940, 9, 10]), k_(T.vo1 + 2.0, MID), k_(T.vo2 + 0.4, [-6, 5, 0, 585, 8, 10]),
+  k_(T.vo2 + 1.7, MAC), k_(T.vo3, [-3, 6, 0, 400, 8, 10]), k_(T.vo5 + 1.2, [-3, 6, 0, 415, 8, 11]),
+  k_(T.vo5 + 1.6, MID), k_(T.vo6 + 0.2, [-6, 3, 0, 620, 8, 10]), k_(T.vo6 + 1.4, WIDE), k_(LOOP, [-22, -45, 20, 1960, 9, 10])];
 // ---------- overlay ----------
 const scr = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
 const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
 function arcArrow(g2, a, cx, cy, R, a0, a1, ccwDir, color = '#ff7a1a', w = 13) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = color; g2.lineWidth = w; g2.lineCap = 'round';
   g2.beginPath(); g2.arc(cx, cy, R, a0, a1, ccwDir); g2.stroke(); const ex = cx + R * Math.cos(a1), ey = cy + R * Math.sin(a1), tg = a1 + (ccwDir ? -1 : 1) * Math.PI / 2;
   g2.fillStyle = color; g2.beginPath(); g2.moveTo(ex + 30 * Math.cos(tg), ey + 30 * Math.sin(tg)); g2.lineTo(ex + 20 * Math.cos(tg + 2.2), ey + 20 * Math.sin(tg + 2.2)); g2.lineTo(ex + 20 * Math.cos(tg - 2.2), ey + 20 * Math.sin(tg - 2.2)); g2.closePath(); g2.fill(); g2.restore(); }
-function blinker(g2, a, on, x, y) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.88)'; S.rrect(g2, x - 120, y - 52, 240, 104, 22); g2.fill(); g2.strokeStyle = '#3a3f47'; g2.lineWidth = 4; g2.stroke();
-  g2.translate(x, y); g2.fillStyle = on ? '#3dff6e' : '#2a3a2e'; if (on) { g2.shadowColor = '#3dff6e'; g2.shadowBlur = 30; }
-  g2.beginPath(); g2.moveTo(58, 0); g2.lineTo(8, -38); g2.lineTo(8, -16); g2.lineTo(-58, -16); g2.lineTo(-58, 16); g2.lineTo(8, 16); g2.lineTo(8, 38); g2.closePath(); g2.fill(); g2.restore(); }
-function wheelIcon(g2, a, x, y, R, th) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.8)'; g2.beginPath(); g2.arc(x, y, R + 22, 0, 7); g2.fill(); g2.translate(x, y); g2.rotate(-th);
-  g2.strokeStyle = '#e8e8e8'; g2.lineWidth = 14; g2.beginPath(); g2.arc(0, 0, R, 0, 7); g2.stroke(); g2.lineWidth = 12; for (const s of [0, Math.PI, Math.PI / 2]) { g2.beginPath(); g2.moveTo(0, 0); g2.lineTo(R * Math.cos(s), R * Math.sin(s)); g2.stroke(); }
-  g2.fillStyle = '#e8e8e8'; g2.beginPath(); g2.arc(0, 0, 18, 0, 7); g2.fill(); g2.strokeStyle = '#d8261c'; g2.lineWidth = 15; g2.beginPath(); g2.arc(0, 0, R, -Math.PI / 2 - 0.15, -Math.PI / 2 + 0.15); g2.stroke(); g2.restore(); }
+function blinker(g2, a, on, off, x, y) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.9)'; S.rrect(g2, x - 120, y - 52, 240, 104, 22); g2.fill(); g2.strokeStyle = on ? '#3dff6e' : '#4a5059'; g2.lineWidth = 4; g2.stroke();
+  g2.save(); g2.translate(x - (off > 0 ? 40 : 0), y); g2.fillStyle = on ? '#3dff6e' : '#26332a'; if (on) { g2.shadowColor = '#3dff6e'; g2.shadowBlur = 30; }
+  const k = off > 0 ? 0.7 : 1; g2.scale(k, k); g2.beginPath(); g2.moveTo(58, 0); g2.lineTo(8, -38); g2.lineTo(8, -16); g2.lineTo(-58, -16); g2.lineTo(-58, 16); g2.lineTo(8, 16); g2.lineTo(8, 38); g2.closePath(); g2.fill(); g2.restore();
+  if (off > 0) { g2.globalAlpha = a * off; S.outlined(g2, 'OFF', x + 58, y + 2, 54, '#ffffff'); } g2.restore(); }
+function wheelIcon(g2, a, x, y, R, th, dir) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = 'rgba(8,10,14,0.85)'; g2.beginPath(); g2.arc(x, y, R + 22, 0, 7); g2.fill(); g2.strokeStyle = '#4a5059'; g2.lineWidth = 3; g2.stroke();
+  g2.save(); g2.translate(x, y); g2.rotate(-th);
+  g2.strokeStyle = '#e8e8e8'; g2.lineWidth = 12; g2.beginPath(); g2.arc(0, 0, R, 0, 7); g2.stroke(); g2.lineWidth = 10; for (const s of [-0.35, Math.PI + 0.35, Math.PI / 2]) { g2.beginPath(); g2.moveTo(0, 0); g2.lineTo(R * Math.cos(s), R * Math.sin(s)); g2.stroke(); }
+  g2.fillStyle = '#e8e8e8'; g2.beginPath(); g2.arc(0, 0, 14, 0, 7); g2.fill(); g2.strokeStyle = '#d8261c'; g2.lineWidth = 13; g2.beginPath(); g2.arc(0, 0, R, -Math.PI / 2 - 0.16, -Math.PI / 2 + 0.16); g2.stroke(); g2.restore();
+  if (dir) arcArrow(g2, 1, x, y, R + 34, dir > 0 ? -2.3 : -0.84, dir > 0 ? -0.84 : -2.3, dir < 0, dir > 0 ? '#ffd21f' : '#ff7a1a', 9);
+  g2.restore(); }
 function overlay(t) {
-  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const th = k[1] * D2R, sig = k[4] > 0.5;
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const th = k[1] * D2R, sig = k[4] > 0.5, beta = k[3];
+  const H = (a, b) => fade(t, a, b, 0.08);                      // hard cuts for captions and tags (no see-through ghosts)
   { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.75 * fx); }
-  const hk = t < 4 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.3) : 0;
+  const hk = t < 4 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.2) : 0;
   const blinkOn = sig && ((t * 1.6) % 1) < 0.55;
   if (hk > 0) { K.TXT.hook(g2, hk, 'WHO TURNS', 'THE BLINKER OFF?', 104); const [cx0, cy0] = wpt(FG, 0, -4, 0); K.TXT.circle(g2, hk * (t < T.hookEnd ? 1 : 0), cx0, cy0, 70, [-230, 230]); }
-  // dash blinker lamp (always on screen until the payoff)
-  blinker(g2, fade(t, -1, T.vo6 + 0.2, 0.3), blinkOn, 540, 1330);
-  const s1 = fade(t, T.vo1 - 0.1, T.vo2 - 0.05), s2 = fade(t, T.vo2, T.vo3 - 0.05), s3 = fade(t, T.vo3, T.vo4 - 0.05), s4 = fade(t, T.vo4, T.vo5 - 0.05), s5 = fade(t, T.vo5, T.vo6 - 0.05);
+  // bottom row (y 1300-1440): dash blinker lamp (+ OFF once the lever is home) and the steering-wheel inset
+  const offA = t > T.snap && t < T.vo6 + 4 ? 1 : (t < T.hookEnd && t > 0.62 ? 1 : 0);
+  blinker(g2, H(-1, LOOP - 1.6), blinkOn, offA * (sig ? 0 : 1), 400, 1376);
+  const dir = (t > T.turn_a && t < T.turn_b) ? 1 : ((t > T.back_a && t < T.home) ? -1 : 0);
+  wheelIcon(g2, H(T.vo2 + 1.6, T.vo6 + 0.1), 690, 1364, 46, th, dir);
+  const s1 = H(T.vo1 - 0.1, T.vo2 - 0.02), s2 = H(T.vo2, T.vo3 - 0.02), s3 = H(T.vo3, T.vo4 - 0.02), s4 = H(T.vo4, T.vo5 - 0.02), s5 = H(T.vo5, T.vo6 - 0.02);
   K.TXT.step(g2, s1, 1, 'A NOTCH HOLDS THE LEVER', 58);
   K.TXT.step(g2, s2, 2, 'A FINGER MEETS A BUMPY RING', 58);
-  K.TXT.step(g2, s3, 3, 'TURN IN: THE FINGER FOLDS', 58);
+  K.TXT.step(g2, s3, 3, 'TURN RIGHT: THE FINGER FOLDS', 56);
   K.TXT.step(g2, s4, 4, "TURN BACK: IT CAN'T FOLD", 58);
   K.TXT.step(g2, s5, 5, 'THE LEVER GETS KNOCKED HOME', 56);
-  // stalk up arrow during the flick
-  { const a = fade(t, T.vo1 + 0.2, T.vo2 - 0.1, 0.25); if (a > 0) { const [sx, sy] = wpt(ACT, -205, 0, 0); S.forceArrow(g2, a, sx, sy + 70, sx, sy - 90, 16);
-      S.tag(g2, fade(t, T.flick_b, T.vo1 + 1.1, 0.2), 'LEVER UP', ...wpt(ACT, -235, 0, 0), 60, 170, 50, '#ffffff');
-      S.tag(g2, fade(t, T.vo1 + 1.8, T.vo2 + 0.6, 0.25), 'NOTCH', ...wpt(ACT, -15, 0, 5), 170, 190, 52, '#ffd21f'); } }
-  { const a = fade(t, T.vo2 + 1.9, T.vo3 + 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'FINGER', ...wpt(FG, 0, -6, 4), -330, -70, 52, '#ffd21f');
-      S.tag(g2, fade(t, T.vo2 + 2.5, T.vo3 + 0.1, 0.25), 'BUMP', ...wpt(ROT, 33 * Math.cos(210 * D2R), 33 * Math.sin(210 * D2R), 6), -150, 170, 52, '#ffffff'); } }
-  // wheel icon (what the steering wheel is doing) during the macro
-  wheelIcon(g2, fade(t, T.vo2 + 1.7, T.vo5 + 1.5, 0.3), 200, 1170, 66, th);
-  // direction arrows around the cam: CW (turn in), CCW (turn back), push arrow on the lever
+  // stalk up arrow + tags (each >= 2.5 s at full opacity)
+  { const a = H(T.vo1 + 0.2, T.vo1 + 1.9); if (a > 0) { const [sx, sy] = wpt(ACT, -205, 0, 0); S.forceArrow(g2, a, sx, sy + 70, sx, sy - 90, 16); } }
+  S.tag(g2, H(T.vo1 + 0.3, T.vo1 + 2.9), 'LEVER UP', ...wpt(ACT, -150, 0, 0), 40, -170, 50, '#ffffff');
+  S.tag(g2, H(T.vo1 + 1.9, T.vo2 + 1.6), 'NOTCH', ...wpt(ACT, -15, 0, 5), 170, 190, 52, '#ffd21f');
+  S.tag(g2, H(T.vo2 + 1.4, T.vo3 + 0.6), 'FINGER', ...wpt(FG, 0, -6, 4), 150, -120, 52, '#ffd21f');
+  S.tag(g2, H(T.vo2 + 1.9, T.vo3 + 0.6), 'BUMP', ...wpt(ROT, 31 * Math.cos(210 * D2R), 31 * Math.sin(210 * D2R), 6), 120, 260, 52, '#ffffff');
+  // while turning right: the bump that meets the finger + the fold angle
+  { const lob = 210 * D2R + th; const [bx, by] = scr(31 * Math.cos(lob), 31 * Math.sin(lob), 6);
+    S.tag(g2, H(T.turn_a + 1.0, T.vo4 + 0.2) * (Math.sin(lob) > 0.2 ? 1 : 0), 'BUMP', bx, by, -200, 230, 50, '#ffffff'); }
+  S.tag(g2, H(T.turn_a + 0.2, T.vo4 + 0.1), 'FOLDS', ...wpt(FG, 0, -8, 4), 170, -125, 52, '#ffd21f');
+  { const a = H(T.turn_a + 0.2, T.vo4 + 0.1); if (a > 0 && beta > 1) { const [hx, hy] = wpt(FG, 0, 0, 4), [tx, ty] = wpt(ACT, ...rel(G.HNG0[0], G.HNG0[1] - G.LF), 4);
+      const R0 = Math.hypot(tx - hx, ty - hy) * 1.1, a0 = Math.atan2(ty - hy, tx - hx); g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 7; g2.setLineDash([12, 8]);
+      g2.beginPath(); g2.moveTo(hx, hy); g2.lineTo(hx + R0 * Math.cos(a0), hy + R0 * Math.sin(a0)); g2.stroke(); g2.setLineDash([]); g2.beginPath(); g2.arc(hx, hy, R0 * 0.8, a0, a0 - beta * D2R, true); g2.stroke(); g2.restore(); } }
+  // direction arrows around the cam: CW (turn right), CCW (turn back), push arrow on the finger, the stop that blocks folding back
   const [cx, cy] = scr(0, 0, 0), [ex] = scr(40, 0, 0); const RR = Math.abs(ex - cx);
-  arcArrow(g2, fade(t, T.turn_a, T.turn_b, 0.2), cx, cy, RR * 1.05, -Math.PI * 0.95, -Math.PI * 0.25, false, '#ffd21f', 12);
-  arcArrow(g2, fade(t, T.back_a, T.snap + 0.25, 0.2), cx, cy, RR * 1.05, -Math.PI * 0.2, -Math.PI * 0.8, true, '#ff7a1a', 12);
-  { const a = fade(t, T.touch - 0.1, T.snap + 0.2, 0.2); if (a > 0) { const [fx, fy] = wpt(FG, 0, -9, 4); S.forceArrow(g2, a, fx + 120, fy + 10, fx + 12, fy - 4, 15);
-      S.tag(g2, fade(t, T.touch + 0.3, T.snap + 0.2, 0.2), 'STOP: NO FOLD', ...wpt(FG, -2.6, -3.5, 4), -300, -150, 48, '#ffffff'); } }
-  { const a = fade(t, T.turn_a + 0.6, T.turn_b, 0.25); if (a > 0) S.tag(g2, a, 'FOLDS', ...wpt(FG, 0, -8, 4), -320, -110, 52, '#ffd21f'); }
-  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'TURNING BACK', 'KNOCKS THE LEVER HOME', 560);
-  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.15, 0.25));
+  arcArrow(g2, H(T.turn_a, T.turn_b), cx, cy, RR * 1.05, -Math.PI * 0.95, -Math.PI * 0.25, false, '#ffd21f', 12);
+  arcArrow(g2, H(T.back_a, T.snap + 0.25), cx, cy, RR * 1.05, -Math.PI * 0.2, -Math.PI * 0.8, true, '#ff7a1a', 12);
+  { const a = H(T.touch - 0.1, T.snap + 0.2); if (a > 0) { const [fx, fy] = wpt(FG, 0, -9, 4); S.forceArrow(g2, a, fx + 120, fy + 10, fx + 12, fy - 4, 15); } }
+  S.tag(g2, H(T.vo4 + 0.2, T.snap + 0.3), 'STOP BLOCKS IT', ...wpt(ACT, ...rel(-3.0, 41.5), 10), -260, -110, 48, '#ff7a1a');
+  K.TXT.answer(g2, H(T.vo6 + 0.05, LOOP - 1.6), 'TURNING BACK', 'KNOCKS THE LEVER HOME', 560);
+  K.TXT.follow(g2, H(LOOP - 1.55, LOOP + 1));
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;
