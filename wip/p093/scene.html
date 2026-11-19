@@ -100,6 +100,7 @@ wbox(-70, 12, -20, -6); wbox(-9, 9, -6, -2); wbox(-9, 9, -2, 0, M.waterD); wbox(
 IN.add(halfLathe(HEAD_PROF, M.white)); IN.add(capShape(HEAD_PROF, M.cut));
 // moving parts
 const DISC = shad(new THREE.Mesh(new THREE.CylinderGeometry(11, 11, G.DISC_T, 40), M.disc)); IN.add(DISC);
+const DOUT = new THREE.Mesh(new THREE.CylinderGeometry(12.4, 12.4, G.DISC_T + 1.6, 40), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide })); IN.add(DOUT); DOUT.visible = false;
 const STEM = shad(new THREE.Mesh(new THREE.CylinderGeometry(3, 3, G.STEM_TOP0 - (G.GAP0 + G.DISC_T), 24), M.steel)); IN.add(STEM);
 const COL = shad(new THREE.Mesh(new THREE.CylinderGeometry(8.2, 8.2, G.COLLAR_T, 32), M.machined)); IN.add(COL);
 const PUSH = new THREE.Group(); IN.add(PUSH); { const r = shad(new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, G.PUSH_T - 3, 24), M.steel)); r.position.y = -1.5; PUSH.add(r); const pl = shad(new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 3, 40), M.machined)); pl.position.y = G.PUSH_T / 2 - 1.5; PUSH.add(pl); }
@@ -142,7 +143,7 @@ function setScene(t) {
   SPR.position.set(0, G.SPR_FLOOR, 0); SPR.setLength(G.COLLAR0 - s - G.SPR_FLOOR);
   CAPG.scale.y = (G.CAP_TOP - (G.STEM_TOP0 - s + G.PUSH_T)) / L0; const sw = 1 + 0.11 * s / G.GAP0; CAPG.scale.x = CAPG.scale.z = sw;
   const wc = Math.min(1, 0.35 * tp + 0.75 * s / G.GAP0); M.waxM.emissive.setRGB(0.95 * wc, 0.22 * wc, 0.0); M.waxM.color.setRGB(0.95 - 0.1 * wc, 0.88 - 0.72 * wc, 0.6 - 0.56 * wc);
-  const k2 = kin(t + 0.05); K.glow(DISC, Math.min(1, Math.abs(k2[1] - s) * 12) * (s > 0.02 || k2[1] > 0.02 ? 1 : 0));
+  const k2 = kin(t + 0.05); const mv = Math.min(1, Math.abs(k2[1] - s) * 12) * (s > 0.02 || k2[1] > 0.02 ? 1 : 0); K.glow(DISC, mv, 0x55c8ff); DOUT.visible = mv > 0.01; DOUT.position.copy(DISC.position);
   const fl = k[2]; M.waterD.color.setRGB(1.0 * fl + 0.12 * (1 - fl), 0.7 * fl + 0.13 * (1 - fl), 0.12 * fl + 0.16 * (1 - fl)); M.waterD.emissiveIntensity = 0.9 * fl;
   const io = inF(t); setRoom(io); setVO(1 - xf(t)); IN.visible = io > 0.01 || xf(t) > 0.01;
   K.shoot(st, CAMK, t);
@@ -186,7 +187,7 @@ function overlay(t) {
       g2.strokeStyle = '#ffe9b0'; g2.lineWidth = Math.max(2, w * 0.38); g2.setLineDash([w * 1.1, w * 0.9]); g2.lineDashOffset = -ph * 2200 * ppm / 6; g2.stroke(); g2.restore(); };
     const W = 5.2 * ppm; seg(0, U_SEAT, W); const fw = Math.max(0, Math.min(1, (flow - 0.02) / 0.98)); seg(U_SEAT, 1, W * Math.sqrt(fw)); }
   // big valve-state tag at the seat
-  if ((xa > 0.6 || t < T.hookEnd) && t < T.vo6) { const shut = s > G.GAP0 - 0.15; S.tag(g2, 1, shut ? 'SHUT' : 'OPEN', ...ip(9, G.GAP0 - s - 1, 8), 200, 120, 64, shut ? '#ff4a3a' : '#4ade6a'); }
+  if ((xa > 0.6 || t < T.hookEnd) && t < T.vo6) { const gap = G.GAP0 - s, shut = gap <= 0.1; if (shut || gap > 1.5) S.tag(g2, 1, shut ? 'SHUT' : 'OPEN', ...ip(9, G.GAP0 - s - 1, 8), 200, 120, 64, shut ? '#ff4a3a' : '#4ade6a'); }
   if (t >= T.cutIn && t < T.vo6) thermo(g2, 1, tp, t);
   // warm room air -> into the knob (with the 'warms' line)
   const ha = hard(t, T.vo3, T.vo4 + 0.6); if (ha) { const [hx, hy] = ip(-24, 120, 10); for (let j = 0; j < 3; j++) { const y0 = hy - 90 + j * 90, x1 = hx - 14, x0 = Math.max(80, x1 - 230);
@@ -209,11 +210,11 @@ function overlay(t) {
   K.TXT.step(g2, s5, 5, 'ROOM COOLS: SPRING OPENS IT', 50);
   if (s1) { S.tag(g2, 1, 'HOT WATER', ...ip(-55, -13, 2), -10, 160, 48, '#ff8a5a'); S.tag(g2, hard(t, T.cutIn + 0.6, T.vo2), 'VALVE', ...ip(-8, G.GAP0 - s + 2, 6), -150, -40, 48, '#ffffff');
     S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'TO RADIATOR', ...ip(62, 7, 2), 10, 170, 44, '#ff8a5a'); }
-  if (s2) { S.tag(g2, 1, 'WAX', ...ip(-6, 122, 1), -170, -40, 52, '#ffd21f'); S.tag(g2, hard(t, T.vo2 + 0.8, T.vo3), 'PIN', ...ip(-3, 36 - s, 3), -190, 30, 48, '#ffffff'); }
+  if (s2) { S.tag(g2, 1, 'WAX', ...ip(-6, 122, 1), -170, -40, 52, '#ffd21f'); S.tag(g2, hard(t, T.vo2 + 0.8, T.vo3), 'PIN', ...ip(-2, 59 - 0.4 * s, 3), -190, -40, 48, '#ffffff'); }
   if (s3) { S.tag(g2, 1, 'WAX GROWS', ...ip(-6, 104, 1), -120, 250, 50, '#ff8a4a');
     const [ax, ay0] = ip(30, 104 - s, 10), [, ay1] = ip(30, 84 - s, 10); arrowC(g2, hard(t, T.pushA, T.vo4), ax, ay0, ax, ay1, 22, '#ffd21f'); }
   if (s4) { const [ax, ay0] = ip(-24, 48 - s), [, ay1] = ip(-24, 26 - s); arrowC(g2, s < G.GAP0 - 0.05 ? 1 : 0, ax, ay0, ax, ay1, 22, '#ffd21f');
-    S.tag(g2, 1, 'PIN', ...ip(-3, 36 - s, 3), -190, 30, 48, '#ffffff'); }
+    S.tag(g2, 1, 'PIN', ...ip(-2, 59 - 0.4 * s, 3), -190, -40, 48, '#ffffff'); }
   if (s5) { S.tag(g2, 1, 'SPRING', ...ip(-6, G.SPR_FLOOR + 6, 6), -200, 20, 48, '#ffd21f'); S.tag(g2, 1, 'WAX SHRINKS', ...ip(-6, 112, 1), -130, 60, 50, '#ffe9b0');
     const [ax, ay0] = ip(24, 26 - s, 8), [, ay1] = ip(24, 48 - s, 8); arrowC(g2, hard(t, T.openA, T.openB), ax, ay0, ax, ay1, 22, '#ffd21f'); }
   K.TXT.answer(g2, hard(t, T.vo6, LOOP + 1), 'WARM WAX GROWS', 'AND SHUTS THE VALVE', 560);
