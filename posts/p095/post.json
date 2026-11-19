@@ -56,9 +56,11 @@
   "https://patents.google.com/patent/US7370501",
   "https://patents.google.com/patent/US8978429"
  ],
- "status": "scheduling",
+ "status": "scheduled",
  "version": "v2",
  "qualityAudit": "HARD GATE v2 PASS: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz, 24.50 s; first/last luma 36.3/35.3; -15.0 LUFS, -3.1 dBTP, HP4k gap 20.4 dB; kin.py PASS (unchanged); text and key action in safe zones (safe_0.5s checked); 6 stills looked at, no defects.",
  "clarity": "fresh reviewer 19 Nov 20:45 (v1 frames + VO): correct, 14yo YES (minor: button turns with blade only implied)",
- "visualScore": "5/10 (v1) -> rule B: 3 fixes once, no re-score: (1) outside shots closer + centred on the whole fob, (2) hard cut into the top view (v1 camera flew through the housing = grey frame at 14.5 s), (3) CTA clear of the key ring / labels inside the frame"
+ "visualScore": "5/10 (v1) -> rule B: 3 fixes once, no re-score: (1) outside shots closer + centred on the whole fob, (2) hard cut into the top view (v1 camera flew through the housing = grey frame at 14.5 s), (3) CTA clear of the key ring / labels inside the frame",
+ "metricoolPostId": 434744800,
+ "scheduledAt": "2026-11-21T21:00 Europe/London"
 }

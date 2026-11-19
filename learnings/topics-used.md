@@ -80,6 +80,7 @@ Update this file every time a video is scheduled.
 | 2026-11-23 21:00 | p092 | How does the needle know your speed | speedometer | eddy current speedometer, speed cup, analog speedometer (needle + hairspring like p068 scale, but the idea = magnet drags the cup without touching; scheduled 19 Nov 18:13 run) |
 | 2026-11-22 21:00 | p091 | Why doesn't the blind fall | blind cord lock | venetian blind cord lock, roman blind cord lock, cord lock roller (scheduled 19 Nov 18:13 run) |
 | 2026-11-24 21:00 | p083 | Why does this cap just click | child-proof cap | child-resistant closure, push-and-turn cap, safety cap (sloped one-way teeth = ratchet family, but Erkan approved a-042: object counts, not mechanism; scheduled 19 Nov 18:13 run, resumed; Metricool 434737743) |
+| 2026-11-21 21:00 | p095 | What flips the key out | flip key | folding car key, switchblade key, flip key fob (torsion spring + button teeth in case notches; scheduled 19 Nov 18:13 run, resumed; Metricool 434744800) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
