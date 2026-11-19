@@ -21,11 +21,10 @@ alt = ("3D animation of a stainless steel pop-up toaster with a voiceover. Under
        "1, push: a spring stretches. The lever goes down, the tray with the bread goes down, and a spring above it stretches. "
        "2, a magnet holds it down: a steel plate on the lever lands on a copper-wound electromagnet, which glows blue with field lines and holds it. "
        "3, it heats, a timer counts: the heating wires glow orange, the toast browns and a timer ring counts down. "
-       "4, timer ends, magnet off: the ring reaches zero and the magnet turns off. "
-       "5, the spring yanks it up: in slow motion the spring pulls the tray and toast up out of the slot. "
+       "4, magnet off, the spring yanks: the ring reaches zero, the magnet turns off and in slow motion the spring pulls the tray and toast up out of the slot. "
        "The payoff reads A magnet holds it down, the timer lets go, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'WHAT MAKES', 'THE TOAST POP?', 'PUSH: A SPRING STRETCHES', 'SPRING', 'A MAGNET HOLDS IT DOWN', 'STEEL PLATE', 'ELECTROMAGNET', 'MAGNET ON',
-      'IT HEATS, A TIMER COUNTS', 'TIMER', 'HEATER', 'TIMER ENDS: MAGNET OFF', 'MAGNET OFF', 'THE SPRING YANKS IT UP', 'PULLS UP', 'SLOW MOTION', 'THE TIMER LETS GO', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'IT HEATS, A TIMER COUNTS', 'TIMER', 'HEATER', 'MAGNET OFF: THE SPRING YANKS', 'MAGNET OFF', 'PULLS UP', 'SLOW MOTION', 'THE TIMER LETS GO', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p086', track='A', group='E', slot='', topicKey='toaster pop-up',
   outlier='scorecard rule: everyday object you touch every day + one "why it pops / what holds it"; our own model, script, words and sound',

@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "Why doesn't the door slam?",
+  "dur": 1.365
+ },
+ {
+  "i": 1,
+  "text": "Opening the door pushes a piston and squeezes a strong spring.",
+  "dur": 3.243
+ },
+ {
+  "i": 2,
+  "text": "Let go, and the spring pushes the piston back. That closes the door.",
+  "dur": 3.669
+ },
+ {
+  "i": 3,
+  "text": "With nothing to slow it, the spring would slam it shut.",
+  "dur": 2.56
+ },
+ {
+  "i": 4,
+  "text": "But the piston has to push oil through a tiny hole.",
+  "dur": 2.539
+ },
+ {
+  "i": 5,
+  "text": "Oil can't rush through a tiny hole, so the door closes gently.",
+  "dur": 3.264
+ },
+ {
+  "i": 6,
+  "text": "A tiny hole full of oil stops the slam.",
+  "dur": 2.112
+ }
+]
