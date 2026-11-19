@@ -6,7 +6,7 @@ const fs = require('fs');
   const [page, outdir, fps, sub, start, end, scale = '1', ao = '1', worker = '0', nworkers = '1', w = '1080', h = '1920', aa = '0'] = process.argv.slice(2);
   fs.mkdirSync(outdir, { recursive: true });
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const p = await b.newPage({ viewport: { width: +w, height: +h } });
+  const p = await b.newPage({ viewport: { width: +w, height: +h } }); await require('./lib/localfs.js')(p);
   p.setDefaultTimeout(180000);
   p.on('console', m => { if (m.type() === 'error') console.log('PAGE', m.text()); });
   p.on('pageerror', e => console.log('PAGEERR', e.message));

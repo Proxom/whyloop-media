@@ -1,0 +1,203 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p076 flint lighter "WHERE DOES THE / SPARK COME FROM?" (group E, track A voice). Built from kit/kit.js.
+// mm. x to the back of the lighter (wheel side), y up, z toward the camera; the cut removes z > 0.
+// kin.json rows: [t, tau (scene s), wheel angle (rad), lever 0..1, flame 0..1, time stretch]; sparks.json: [tau_emit, p0, v, life, hot 0/1, glowDelay, size]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const SPK = await (await fetch('sparks.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.0, near: 1, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);
+const cm = (m) => { const c = m.clone(); c.clippingPlanes = [CUT]; c.side = THREE.DoubleSide; return c; };
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.body = cm(phys({ color: 0xc8201c, metalness: 0, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.15 }));
+M.cap = cm(phys({ color: 0x1b1c20, metalness: 0, roughness: 0.4, clearcoat: 0.3 }));
+M.hood = cm(phys({ color: 0xd9dde2, metalness: 1, roughness: 0.2, envMapIntensity: 1.3 }));
+M.tube = cm(M.brass);
+M.inner = cm(M.innerWall);
+M.fuel = phys({ color: 0x8fc8ff, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.flint = phys({ color: 0x55585e, metalness: 0.85, roughness: 0.5, envMapIntensity: 1.0, emissive: 0xff5a00, emissiveIntensity: 0 });
+M.striker = phys({ color: 0xaeb4bb, metalness: 1, roughness: 0.3, envMapIntensity: 1.3 });
+M.disc = phys({ color: 0x8a9098, metalness: 1, roughness: 0.38, envMapIntensity: 1.2 });
+K.backdrop(scene, { floorY: 0, R: 300, zBack: -900, h: 4000, width: 8000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 3 });
+const RIG = K.lightRig(scene, V(0, 60, 0), 90);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.2;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.6); f.position.set(-200, 300, 900); f.target.position.set(0, 70, 0); scene.add(f, f.target); }
+// ---------- body (fuel tank), top cap, hood ----------
+{ const b = new THREE.Mesh(new K.RBox(25, 64, 12.5, 4, 4), M.body); b.position.set(0, 32, 0); scene.add(b);
+  const bi = new THREE.Mesh(new THREE.BoxGeometry(22.4, 60.5, 10), M.inner); bi.position.set(0, 32, 0); bi.material = cm(phys({ color: 0x7a2020, metalness: 0, roughness: 0.6, side: THREE.BackSide })); scene.add(bi);
+  const fu = new THREE.Mesh(new THREE.BoxGeometry(22, 40, 9.6), M.fuel); fu.position.set(0, 22, 0); scene.add(fu);
+  const cap = new THREE.Mesh(new K.RBox(25, 8, 12.5, 2, 3), M.cap); cap.position.set(0, 67, 0); scene.add(cap);
+  // hood: two side plates (low, the wheel stays visible), a back plate and a short front lip
+  for (const z of [-6.35, 6.35]) { const p = new THREE.Mesh(new K.RBox(23.5, 9.5, 0.5, 0.2, 2), M.hood); p.position.set(0, 70.6, z); scene.add(p); }
+  const bk = new THREE.Mesh(new K.RBox(0.5, 15, 12.6, 0.2, 2), M.hood); bk.position.set(11.6, 74, 0); scene.add(bk);
+  const fr = new THREE.Mesh(new K.RBox(0.5, 6, 12.6, 0.2, 2), M.hood); fr.position.set(-11.6, 69.5, 0); scene.add(fr);
+  const wing = new THREE.Mesh(new K.RBox(5, 0.5, 12.6, 0.2, 2), M.hood); wing.position.set(9.3, 81.4, 0); scene.add(wing); }
+// ---------- flint tube, spring, flint ----------
+const tube = new THREE.Mesh(new THREE.CylinderGeometry(G.TUBE_RO, G.TUBE_RO, G.TUBE_Y1 - G.TUBE_Y0, 32, 1, true), M.tube); tube.position.set(G.WX, (G.TUBE_Y0 + G.TUBE_Y1) / 2, 0); scene.add(tube);
+{ const ti = new THREE.Mesh(new THREE.CylinderGeometry(G.TUBE_RI, G.TUBE_RI, G.TUBE_Y1 - G.TUBE_Y0, 32, 1, true), cm(phys({ color: 0x6b5a32, metalness: 0.8, roughness: 0.5 }))); ti.position.copy(tube.position); scene.add(ti);
+  const fl = new THREE.Mesh(new THREE.CylinderGeometry(G.TUBE_RO, G.TUBE_RO, 1, 32), M.tube); fl.position.set(G.WX, G.TUBE_Y0 + 0.5, 0); scene.add(fl);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry((G.TUBE_RO + G.TUBE_RI) / 2, (G.TUBE_RO - G.TUBE_RI) / 2, 8, 32), M.tube); rim.rotation.x = Math.PI / 2; rim.position.set(G.WX, G.TUBE_Y1, 0); scene.add(rim); }
+const FL_Y0 = G.FL_TOP - G.FL_L;
+const spr = K.spring(M.steel, { R: 1.0, wire: 0.2, turns: 10, len: FL_Y0 - G.SPR_Y0 }); spr.position.set(G.WX, G.SPR_Y0, 0); scene.add(spr);
+const flint = new THREE.Mesh(new THREE.CylinderGeometry(G.FL_R, G.FL_R, G.FL_L, 32), M.flint); flint.position.set(G.WX, FL_Y0 + G.FL_L / 2, 0); scene.add(flint);
+// ---------- wheel: knurled hardened-steel striker between two ribbed thumb discs, on an axle (axis z) ----------
+const WH = new THREE.Group(); WH.position.set(G.WX, G.WY, 0); scene.add(WH);
+{ const s = K.spurGear(M.striker, { z: G.STR_Z, m: G.STR_M, w: G.STR_W, bore: 0, chamfer: 0.05 }); WH.add(s);
+  for (const sg of [-1, 1]) { const d = K.spurGear(M.disc, { z: G.DISC_Z, m: G.DISC_M, w: G.DISC_W, bore: 0, chamfer: 0.12 }); d.position.z = sg * (G.DISC_Z0 + G.DISC_W / 2); WH.add(d); }
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 13.2, 20), M.chrome); ax.rotation.x = Math.PI / 2; WH.add(ax); }
+// ---------- gas: nozzle (valve stem) + lever ----------
+const NOZ = new THREE.Group(); NOZ.position.set(G.NOZ_X, 0, 0); scene.add(NOZ);
+{ const n = new THREE.Mesh(new THREE.CylinderGeometry(G.NOZ_R, G.NOZ_R * 1.05, 5, 28), M.chrome); n.position.y = G.NOZ_TOP - 2.5; NOZ.add(n);
+  const bore = new THREE.Mesh(new THREE.CircleGeometry(0.55, 20), new THREE.MeshBasicMaterial({ color: 0x050505 })); bore.rotation.x = -Math.PI / 2; bore.position.y = G.NOZ_TOP + 0.01; NOZ.add(bore);
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 0.8, 28), M.chrome); col.position.y = 72.8; NOZ.add(col);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 5, 16), cm(M.chrome)); stem.position.y = 69.5; NOZ.add(stem); }
+const LEV = new THREE.Group(); LEV.position.set(G.PIV[0], G.PIV[1], 0); scene.add(LEV);
+{ const lb = new THREE.Mesh(new K.RBox(10.6, 1.4, 9, 0.5, 2), cm(M.plastic)); lb.position.set(0.25, 0.9, 0); LEV.add(lb);
+  const pad = new THREE.Mesh(new K.RBox(4, 1.8, 10.5, 0.7, 3), cm(M.plastic)); pad.position.set(-3.6, 2.0, 0); LEV.add(pad);
+  for (let i = 0; i < 3; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 10), M.plastic); r.position.set(-4.9 + i * 1.2, 3.0, 0); LEV.add(r); }
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 9.4, 12), M.chrome); pin.rotation.x = Math.PI / 2; LEV.add(pin); }
+const ARM_F = G.NOZ_X - G.PIV[0], TH_MAX = Math.asin(G.LIFT / ARM_F);
+// ---------- flame (additive layers) + its light ----------
+const FLM = new THREE.Group(); scene.add(FLM);
+const addm = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, side: THREE.DoubleSide });
+const tear = (H, R, n = 40) => { const p = []; for (let i = 0; i <= n; i++) { const u = i / n; p.push(new THREE.Vector2(Math.max(0.01, R * Math.sin(Math.PI * Math.pow(u, 0.5)) * (1 - 0.3 * u)), H * u)); } return new THREE.LatheGeometry(p, 40); };
+const F1 = new THREE.Mesh(tear(20, 4.2), addm(0xff6a14, 0.32)), F2 = new THREE.Mesh(tear(14, 2.8), addm(0xffc24a, 0.5)), F3 = new THREE.Mesh(tear(4.5, 1.9), addm(0x3f7bff, 0.55)), F4 = new THREE.Mesh(tear(8, 1.4), addm(0xfff1c8, 0.55));
+FLM.add(F1, F2, F3, F4);
+const FLIGHT = new THREE.PointLight(0xff9a3a, 0, 120, 1.6); scene.add(FLIGHT);
+// ---------- sparks: streaks (instanced cylinders) + glow points + cold chips ----------
+const NI = 260;
+const strk = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), NI);
+strk.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(NI * 3), 3); strk.frustumCulled = false; scene.add(strk);
+const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.25, 'rgba(255,255,255,0.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t; })();
+const gpos = new Float32Array(NI * 3), gcol = new Float32Array(NI * 3); const gg = new THREE.BufferGeometry();
+gg.setAttribute('position', new THREE.BufferAttribute(gpos, 3)); gg.setAttribute('color', new THREE.BufferAttribute(gcol, 3));
+const glowP = new THREE.Points(gg, new THREE.PointsMaterial({ size: 3.2, map: glowTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, sizeAttenuation: true }));
+glowP.frustumCulled = false; scene.add(glowP);
+const chips = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.6, 0.8), phys({ color: 0xb4b8bf, metalness: 0.9, roughness: 0.35, envMapIntensity: 1.5 }), NI); chips.frustumCulled = false; scene.add(chips);
+S.shadowAll(scene); strk.castShadow = false; chips.castShadow = false; for (const f of [F1, F2, F3, F4]) { f.castShadow = false; f.receiveShadow = false; }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const O = new THREE.Object3D(), C = new THREE.Color(), UP = V(0, 1, 0), tmpV = V(0, 0, 0);
+function sparkState(s, age) { const L = s[3], k = 1.6 / L; const e = (1 - Math.exp(-k * age)) / k, ev = Math.exp(-k * age);
+  return [s[1][0] + s[2][0] * e, s[1][1] + s[2][1] * e - 0.5 * 240 * age * age, s[1][2] + s[2][2] * e, s[2][0] * ev, s[2][1] * ev - 240 * age, s[2][2] * ev]; }
+function heatCol(h) { // h 0..1 over the glowing life: white-yellow -> orange -> deep red
+  if (h < 0.25) return C.setRGB(1, 0.95, 0.75); if (h < 0.6) return C.setRGB(1, 0.95 - (h - 0.25) * 1.3, 0.75 - (h - 0.25) * 1.9); return C.setRGB(1, 0.5 - (h - 0.6) * 0.8, 0.08); }
+let KK = null, VIS = [];
+function setScene(t) {
+  const k = KK = kin(t); const tau = k[1], phi = k[2], lv = k[3], fl = k[4], sf = k[5];
+  WH.rotation.z = phi;
+  const th = TH_MAX * lv; LEV.rotation.z = th; NOZ.position.y = ARM_F * Math.sin(th);
+  // flame
+  const fz = fl > 0.001 ? fl : 0; FLM.visible = fz > 0.001; FLM.position.set(G.NOZ_X, G.NOZ_TOP + NOZ.position.y + 0.6, 0);
+  const fk = 1 + 0.06 * Math.sin(t * 23.1) + 0.04 * Math.sin(t * 37.7 + 1);
+  FLM.scale.set(fz * (1 + 0.03 * Math.sin(t * 29)), fz * fk, fz); FLM.rotation.z = 0.04 * Math.sin(t * 7.3);
+  FLIGHT.position.set(G.NOZ_X, G.NOZ_TOP + 8, 2); FLIGHT.intensity = 2200 * fz * fk;
+  // sparks
+  let n = 0, nc = 0; VIS = [];
+  const cand = []; for (const s of SPK) { const a = tau - s[0]; if (a >= 0 && a < s[3]) cand.push([s, a]); }
+  if (t < T.hookEnd + 0.3) for (const s of SPK) { if (s[0] < G.TAU_END - 0.6) continue; const a = tau + G.TAU_END - s[0]; if (a >= 0 && a < s[3]) cand.push([s, a]); }
+  for (const [s, a] of cand) { const p = sparkState(s, a); const hotA = a - s[5];
+    if (s[4] === 0 || hotA < 0) { if (nc >= NI) continue; const sz = 0.34 * s[6]; O.position.set(p[0], p[1], p[2]); O.rotation.set(a * 9 + s[6] * 5, a * 13, a * 7); O.scale.set(sz, sz, sz); O.updateMatrix(); chips.setMatrixAt(nc++, O.matrix); VIS.push([p, 0]); continue; }
+    if (n >= NI) continue; const h = hotA / (s[3] - s[5]); const b = Math.min(1, hotA / 0.006) * (h > 0.7 ? 1 - (h - 0.7) / 0.3 : 1);
+    const col = heatCol(h * 0.85).multiplyScalar(b * 2.2);
+    const sp = Math.hypot(p[3], p[4], p[5]); const len = Math.max(0.35, sp * sf / 30 * 1.0); const r = 0.12 * s[6];
+    tmpV.set(p[3], p[4], p[5]).normalize(); O.position.set(p[0] - tmpV.x * len / 2, p[1] - tmpV.y * len / 2, p[2] - tmpV.z * len / 2); O.quaternion.setFromUnitVectors(UP, tmpV); O.scale.set(r, len, r); O.updateMatrix();
+    strk.setMatrixAt(n, O.matrix); strk.setColorAt(n, col); gpos.set([p[0], p[1], p[2]], n * 3); gcol.set([col.r * 0.85, col.g * 0.42, col.b * 0.12], n * 3); n++; if (h < 0.5) VIS.push([p, 1]); }
+  strk.count = n; strk.instanceMatrix.needsUpdate = true; if (strk.instanceColor) strk.instanceColor.needsUpdate = true;
+  chips.count = nc; chips.instanceMatrix.needsUpdate = true;
+  gg.setDrawRange(0, n); gg.attributes.position.needsUpdate = true; gg.attributes.color.needsUpdate = true;
+  // flint glow in step 3 (the flint metal), cut-away from step 1 to the payoff
+  M.flint.emissiveIntensity = 0.55 * fade(t, T.vo4 + 0.2, T.vo5 - 0.1, 0.35);
+  const cw = S.smooth((t - (T.vo2 - 0.15)) / 0.7) * (1 - S.smooth((t - (T.vo6 + 0.1)) / 0.6));
+  CUT.constant = cw > 0.001 ? 0 + 40 * (1 - Math.min(1, cw)) : 1e5;
+  K.glow(spr, fade(t, T.vo2 + 0.3, T.vo3 - 0.1, 0.3) * 0.7);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, -0.5, 87, 0, 112, 7, 24];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, -0.5, 86.5, 0, 108, 7, 26]),
+  k_(T.hookEnd, [0, 0, 60, 0, 195, 10, 30]), k_(T.vo2 - 0.35, [0, 0, 63, 0, 182, 10, 26]),
+  k_(T.vo2 + 0.6, [0, 1.5, 70.5, 0, 98, 4, 8]), k_(T.vo3 - 0.3, [0, 1.5, 71, 0, 94, 4, 6]),
+  k_(T.vo3 + 0.5, [0, 1.6, 73.6, 0, 54, 4, 8]), k_(T.vo4 - 0.3, [0, 1.4, 73.6, 0, 51, 4, 10]),
+  k_(T.vo4 + 0.5, [0, 1.0, 72.5, 0, 72, 5, 10]), k_(T.vo5 - 0.3, [0, 1.0, 72.5, 0, 70, 5, 12]),
+  k_(T.vo5 + 0.5, [0, -0.5, 78.5, 0, 56, 5, 12]), k_(T.lit2 - 0.1, [0, -0.5, 79, 0, 54, 5, 14]),
+  k_(T.vo6 + 0.7, [0, -0.5, 86, 0, 118, 7, 22]), k_(LOOP - 0.6, [0, -0.5, 86.8, 0, 114, 7, 24]), k_(LOOP, HOOK)];
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function curvedArrow(g2, a, cx, cy, R, a0, a1) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ff7a1a'; g2.lineWidth = 14; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10;
+  g2.beginPath(); g2.arc(cx, cy, R, a0, a1, false); g2.stroke(); const ex = cx + R * Math.cos(a1), ey = cy + R * Math.sin(a1), tg = a1 + Math.PI / 2;
+  g2.fillStyle = '#ff7a1a'; g2.beginPath(); g2.moveTo(ex + 30 * Math.cos(tg), ey + 30 * Math.sin(tg)); g2.lineTo(ex + 22 * Math.cos(tg + 2.3), ey + 22 * Math.sin(tg + 2.3)); g2.lineTo(ex + 22 * Math.cos(tg - 2.3), ey + 22 * Math.sin(tg - 2.3)); g2.closePath(); g2.fill(); g2.restore(); }
+const panel = (g2, Y0, Y1) => { g2.fillStyle = 'rgba(8,10,14,0.9)'; S.rrect(g2, 70, Y0, 860, Y1 - Y0, 26); g2.fill(); g2.strokeStyle = 'rgba(255,255,255,0.25)'; g2.lineWidth = 3; g2.stroke(); };
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t);
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.7 * fx); }
+  const [cx0, cy0] = scr(G.WX - 0.4, G.FL_TOP, 1.5);
+  const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHERE DOES THE', 'SPARK COME FROM?', 92); K.TXT.circle(g2, hk, cx0, cy0, 95, [200, 250]); }
+  // step 0: roll the wheel
+  { const a = fade(t, T.vo1 + 0.1, T.vo2 - 0.2, 0.2); if (a > 0) { const [wx, wy] = scr(G.WX, G.WY, 6); curvedArrow(g2, a, wx, wy, 70, -2.6, -0.5); pill(g2, a, 'ROLL', wx + 150, wy - 90, 54, '#ffd21f');
+      const [nx, ny] = scr(G.NOZ_X, G.NOZ_TOP + 6, 0); S.tag(g2, fade(t, T.lit1 + 0.2, T.vo2 - 0.2, 0.2), 'GAS LIGHTS', nx, ny, -150, -170, 50, '#ffffff'); } }
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo2, T.vo3 - 0.05), s2 = fade(t, T.vo3, T.vo4 - 0.05), s3 = fade(t, T.vo4, T.vo5 - 0.05), s4 = fade(t, T.vo5, T.vo6 - 0.05);
+  stepPlate(Math.max(s1, s2, s3, s4));
+  K.TXT.step(g2, s1, 1, 'A SPRING PUSHES THE FLINT UP', 56);
+  K.TXT.step(g2, s2, 2, 'ROUGH WHEEL SCRAPES BITS OFF', 56);
+  K.TXT.step(g2, s3, 3, 'FLINT IS A METAL, NOT STONE', 56);
+  K.TXT.step(g2, s4, 4, 'HOT BITS BURN IN AIR: SPARKS', 56);
+  // step 1 tags + push arrow
+  { const a = fade(t, T.vo2 + 0.7, T.vo3 - 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'WHEEL', ...scr(G.WX + 3.0, G.WY + 1.0, 3), 150, 60, 50, '#ffd21f');
+      S.tag(g2, fade(t, T.vo2 + 1.3, T.vo3 - 0.1, 0.25), 'FLINT', ...scr(G.WX + 1.2, G.FL_TOP - 2.5, 0.5), 160, 40, 52, '#ffffff');
+      S.tag(g2, fade(t, T.vo2 + 0.9, T.vo3 - 0.1, 0.25), 'SPRING', ...scr(G.WX + 1.0, 64, 0.5), 160, 60, 50, '#ffa15a');
+      const [ax, ay] = scr(G.WX - 2.6, 63, 0); S.forceArrow(g2, fade(t, T.vo2 + 1.6, T.vo3 - 0.1, 0.2), ax - 30, ay + 90, ax - 30, ay - 120, 18); } }
+  // step 2: macro tags + flat strip (teeth sliding over the flint top, bits torn off)
+  { const a = fade(t, T.vo3 + 0.6, T.vo4 - 0.05, 0.25); if (a > 0) { S.tag(g2, a, 'ROUGH STEEL EDGE', ...scr(G.WX + 2.2, G.WY - 3.1, 1.6), 60, -200, 48, '#ffd21f');
+      const ch = VIS.find(v => v[0][0] < G.WX - 2.5); if (ch) S.tag(g2, fade(t, T.vo3 + 1.0, T.vo4 - 0.05, 0.25), 'TINY BITS', ...scr(ch[0][0], ch[0][1], ch[0][2]), -80, -170, 48, '#ffffff'); }
+    const b = fade(t, T.vo3 + 1.3, T.vo4 + 0.05, 0.3); if (b > 0) { g2.save(); g2.globalAlpha = b; const Y0 = 1080, Y1 = 1435; panel(g2, Y0, Y1);
+      const yT = 1270, off = ((t - T.vo3) * 140) % 60; g2.save(); S.rrect(g2, 72, Y0 + 2, 856, Y1 - Y0 - 4, 24); g2.clip();
+      g2.fillStyle = '#9aa1a9'; g2.beginPath(); g2.moveTo(80, yT - 70); for (let x = 80 - off; x < 960; x += 60) { g2.lineTo(x, yT - 10); g2.lineTo(x + 40, yT - 52); g2.lineTo(x + 60, yT - 10); } g2.lineTo(930, yT - 70); g2.lineTo(930, yT - 120); g2.lineTo(80, yT - 120); g2.closePath(); g2.fill();
+      g2.fillStyle = '#4f5359'; g2.fillRect(360, yT - 8, 300, 150); g2.restore();
+      for (let i = 0; i < 9; i++) { const u = ((t - T.vo3) * 0.9 + i / 9) % 1; const x = 355 - u * 260, y = yT + 6 + u * 40 + 60 * u * u; g2.save(); g2.translate(x, y); g2.rotate(u * 6 + i); g2.fillStyle = '#10141c'; g2.fillRect(-11, -7, 22, 14); g2.fillStyle = '#e8ecf0'; g2.fillRect(-8, -4, 16, 8); g2.restore(); }
+      g2.font = '46px Anton'; g2.textBaseline = 'middle'; g2.textAlign = 'left'; g2.fillStyle = '#ffd21f'; g2.fillText('← WHEEL EDGE MOVES', 110, Y0 + 50); g2.fillStyle = '#ffffff'; g2.fillText('FLINT', 680, yT + 80);
+      g2.textAlign = 'left'; g2.fillStyle = '#e6ebf0'; g2.fillText('BITS', 110, yT + 140); g2.restore(); } }
+  // step 3: what the flint is
+  { const a = fade(t, T.vo4 + 0.3, T.vo5 + 0.05, 0.3); if (a > 0) { S.tag(g2, a, 'FLINT', ...scr(G.WX + 1.2, G.FL_TOP - 2, 1), 160, 30, 52, '#ffa15a');
+      const b = fade(t, T.vo4 + 0.9, T.vo5 + 0.05, 0.3); if (b > 0) { g2.save(); g2.globalAlpha = b; const Y0 = 1080, Y1 = 1435; panel(g2, Y0, Y1);
+        g2.font = '52px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('A MIX OF CERIUM, IRON & MORE', 500, Y0 + 62);
+        const p = S.smooth((t - T.vo4 - 1.4) / 1.6); const x0 = 140, x1 = 860, yb = Y0 + 175; g2.fillStyle = '#2a2e36'; S.rrect(g2, x0, yb - 22, x1 - x0, 44, 22); g2.fill();
+        const xm = x0 + (x1 - x0) * 0.42; const gr = g2.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, '#3f7bff'); gr.addColorStop(0.45, '#ff7a1a'); gr.addColorStop(1, '#ff2a1a');
+        g2.fillStyle = gr; S.rrect(g2, x0, yb - 22, Math.max(44, (xm - x0) * p), 44, 22); g2.fill();
+        g2.globalAlpha = b * S.smooth((p - 0.85) / 0.15); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.beginPath(); g2.moveTo(xm, yb - 40); g2.lineTo(xm, yb + 40); g2.stroke();
+        g2.font = '54px Anton'; g2.fillStyle = '#ffd21f'; g2.fillText('CERIUM CATCHES FIRE AT ~300 °F', 500, yb + 95); g2.font = '44px Anton'; g2.fillStyle = '#c9d3e3'; g2.fillText('(150-180 °C)', 500, yb + 150); g2.restore(); } } }
+  // step 4: hot bits
+  { const a = fade(t, T.vo5 + 0.9, T.lit2 + 0.1, 0.25); if (a > 0) { const hv = VIS.find(v => v[1] === 1 && v[0][0] < G.WX - 3); if (hv) S.tag(g2, a, 'HOT!', ...scr(hv[0][0], hv[0][1], hv[0][2]), -60, 200, 54, '#ff9a3a');
+      const cv = VIS.find(v => v[1] === 0); if (cv) S.tag(g2, fade(t, T.vo5 + 0.3, T.vo5 + 2.2, 0.25), 'SCRAPED BIT', ...scr(cv[0][0], cv[0][1], cv[0][2]), 80, 230, 48, '#ffffff'); }
+    const [nx, ny] = scr(G.NOZ_X, G.NOZ_TOP + 6, 0); S.tag(g2, fade(t, T.lit2 + 0.15, T.vo6 + 0.1, 0.2), 'GAS LIGHTS', nx, ny, -150, -170, 50, '#ffffff'); }
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'WHEEL SCRAPES FLINT', 'THE BITS CATCH FIRE', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
