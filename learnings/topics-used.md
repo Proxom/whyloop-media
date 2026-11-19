@@ -73,4 +73,4 @@ Not published (never count as used, but do not re-pitch without a new concept): 
 
 BLOCKED from the 1M+ list: #7 pin tumbler lock (= p010, 29 Oct). #8 spring scale = p068 (17 Nov). #9 car clutch = p069 (18 Nov). The 1M+ list is finished: next topics come from the scorecard list (learnings/reel-scorecard-2026-11-16.md: retractable pen click next) and new 1M+ finds in reports/outliers.md.
 
-IN PROGRESS (not published, keys reserved): p074 nail clipper (wip/p074, visual 4 + clarity NO, NOT scheduled - 19 Nov 01:09 run).
+IN PROGRESS (not published, keys reserved): p074 nail clipper (wip/p074, visual 4 + clarity NO, NOT scheduled - 19 Nov 01:09 run). p076 lighter flint (wip/p076, HARD GATE + clarity PASS, visual 4, NOT scheduled - 19 Nov 05:09 run).

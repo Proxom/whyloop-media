@@ -25,7 +25,7 @@ const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
 M.body = cm(phys({ color: 0x2f9a4a, metalness: 0.2, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.2 }));   // green handle cover
 M.alu2 = cm(M.alu); M.chr = cm(M.chrome); M.br = cm(M.brass); M.rub = cm(M.rubber); M.pl = cm(M.plastic);
 M.fuel = phys({ color: 0xf2b632, metalness: 0, roughness: 0.08, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT] });
-M.cap = new THREE.MeshPhysicalMaterial({ color: 0x9aa1aa, metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 });   // section face (cut aluminium)
+M.cap = new THREE.MeshPhysicalMaterial({ color: 0xb02a22, metalness: 0.0, roughness: 0.55, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 });   // section face (cut aluminium)
 M.pipe = cm(phys({ color: 0x3a3d44, metalness: 0.6, roughness: 0.45 }));
 M.dia = phys({ color: 0x1c1c1e, metalness: 0, roughness: 0.7, emissive: 0xff7a1a, emissiveIntensity: 0 });
 K.backdrop(scene, { floorY: -260, R: 600, zBack: -1800, h: 8000, width: 14000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 6 });
@@ -93,8 +93,8 @@ for (let i = 1; i <= 20; i++) FUELP.push(SPC.getPointAt(0.1 + 0.9 * i / 20).setZ
 FUELP.push(V(G.TIPX, G.TIPY - 20, -3));
 const FUC = new THREE.CatmullRomCurve3(FUELP);
 const NF = 60, NA = 34;
-const FP = new THREE.InstancedMesh(new THREE.SphereGeometry(1.6, 10, 8), phys({ color: 0xffb21f, metalness: 0, roughness: 0.3, emissive: 0x6a3a00, emissiveIntensity: 0.6 }), NF); scene.add(FP);
-const AP = new THREE.InstancedMesh(new THREE.SphereGeometry(1.25, 12, 10), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, toneMapped: false }), NA); scene.add(AP);
+const FP = new THREE.InstancedMesh(new THREE.CapsuleGeometry(1.1, 7, 4, 10), phys({ color: 0xffb21f, metalness: 0, roughness: 0.2, transparent: true, opacity: 0.8, emissive: 0x6a3a00, emissiveIntensity: 0.7 }), NF); scene.add(FP);
+const AP = new THREE.InstancedMesh(new THREE.SphereGeometry(2.1, 14, 12), new THREE.MeshBasicMaterial({ color: 0xd8f1ff, toneMapped: false }), NA); scene.add(AP);
 FP.frustumCulled = false; AP.frustumCulled = false;
 S.shadowAll(scene);
 // ---------- kinematics ----------
@@ -116,7 +116,7 @@ function setScene(t) {
   // fuel in the filler pipe + falling stream
   const yb = PIPE_TOP - 250; FUEL.scale.y = lv - yb; FUEL.position.set(G.TIPX, (lv + yb) / 2, 0);
   STREAM.visible = fs > 0.02; const sl = Math.max(0.1, G.TIPY - lv); STREAM.scale.set(Math.max(0.05, fs), sl, Math.max(0.05, fs)); STREAM.position.set(G.TIPX, G.TIPY - sl / 2, 0);
-  for (let i = 0; i < NF; i++) { const u = ((t * 0.55) + i / NF) % 1; const p = FUC.getPointAt(u); O.position.copy(p); O.scale.setScalar(fs > 0.03 ? fs : 0.001); O.updateMatrix(); FP.setMatrixAt(i, O.matrix); }
+  for (let i = 0; i < NF; i++) { const u = ((t * 0.55) + i / NF) % 1; const p = FUC.getPointAt(u), tg = FUC.getTangentAt(u); O.position.copy(p); O.quaternion.setFromUnitVectors(V(0, 1, 0), tg); O.scale.setScalar(fs > 0.03 ? fs : 0.001); O.updateMatrix(); FP.setMatrixAt(i, O.matrix); }
   FP.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < NA; i++) { const u = ((t * 0.16) + i / NA) % 1; const p = AIRC.getPointAt(u); O.position.copy(p); O.scale.setScalar(as > 0.03 ? as : 0.001); O.updateMatrix(); AP.setMatrixAt(i, O.matrix); }
   AP.instanceMatrix.needsUpdate = true;
