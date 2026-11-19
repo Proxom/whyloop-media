@@ -16,3 +16,8 @@ Audio PASS: -15.0 LUFS, -3.1 dBTP, HP4k gap 21.4 dB; 20 soft low ticks on the 20
 Technical: see qualityAudit below. Render: node tools/render/render.js wip/p083/scene.html <frames> 30 1 0 860 0.75 0 0 1 1080 1920 1 (~0.45 s/frame, ~7 min); tools/render/encode.sh <frames> wip/p083/mix.wav childcap_reel_v2.mp4 28.66 30
 Rebuild: venv python kin.py; venv python vo.py <ttsdir> vo; venv python audio.py; bash master_p083.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; python3 mkpost.py
 Open for the kit: sawRing() (saw-tooth face ring), lugs() (annular sector lugs), clip-plane wedge cutaway with world-fixed section faces.
+qualityAudit v2: technical PASS (1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 28.67 s = planned 28.66, first/last frame luma 75/69, not black); mechanism PASS (kin.py); facts PASS; text PASS (all >= 44 px, nothing in the right 150 px, safe 0.5 s frame checked: hook cap above the bottom 480 px);
+audio PASS (-15.0 LUFS, -3.1 dBTP, gap 21.4 dB); look PASS (6 stills in scratchpad p083/review_stills_v2 + 2-fps sheet checked: no garbled patch, no stripe sliver, no arrow ghost, no black gaps).
+v1 reviews (coordinator): clarity PASS (14yo YES), visual 6/10. v2 not re-scored (rule B: one re-render). Cover: childcap_cover_v2.jpg (0.6 s hook frame).
+
+HOLD (19 Nov 15:10 run): NOT scheduled - possible ratchet repeat, approval a-042 pending. v2 changed the story (flat lugs, closing beat, 28.7 s): run a fresh CLARITY GATE on v2 before scheduling if Erkan approves (a).

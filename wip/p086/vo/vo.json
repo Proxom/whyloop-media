@@ -21,13 +21,13 @@
  },
  {
   "i": 4,
-  "text": "Time's up: the timer cuts the magnet's power, so it lets go.",
-  "dur": 3.349
+  "text": "When time's up, the timer cuts the magnet's power.",
+  "dur": 2.688
  },
  {
   "i": 5,
-  "text": "Now the stretched spring yanks the toast up.",
-  "dur": 2.091
+  "text": "It lets go, so the stretched spring yanks the toast up.",
+  "dur": 2.773
  },
  {
   "i": 6,

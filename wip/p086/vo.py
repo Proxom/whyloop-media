@@ -7,8 +7,8 @@ LINES = [
  "Push the lever down, and a spring stretches.",
  "At the bottom, a steel plate meets an electromagnet. It holds the plate down.",
  "The toast heats while a timer counts down.",
- "Time's up: the timer cuts the magnet's power, so it lets go.",
- "Now the stretched spring yanks the toast up.",
+ "When time's up, the timer cuts the magnet's power.",
+ "It lets go, so the stretched spring yanks the toast up.",
  "A magnet holds it down. The timer lets it go.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
