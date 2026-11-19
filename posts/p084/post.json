@@ -2,7 +2,7 @@
  "id": "p084",
  "track": "A",
  "group": "E",
- "slot": "",
+ "slot": "2026-11-23T17:00:00 Europe/London",
  "topicKey": "mixer tap cartridge",
  "outlier": "scorecard rule: everyday object you touch + one \"why\" question; our own model, script, words and sound",
  "topic": "Single-lever mixer tap ceramic disc cartridge: a fixed inlet disc (hot inlet, cold inlet, outlet) and a control disc with a pocket moved by the lever; lift slides it (flow), swing turns it (hot/cold share).",
@@ -55,5 +55,9 @@
   "https://patents.google.com/patent/US8109292B2",
   "https://patents.google.com/patent/US9115819B2",
   "https://builderssquad.co.uk/blog/ceramic-disc-technology-in-bathrooms"
- ]
+ ],
+ "status": "scheduled",
+ "metricoolPostId": 434425904,
+ "visualScore": 5,
+ "clarity": "PASS (14yo YES)"
 }

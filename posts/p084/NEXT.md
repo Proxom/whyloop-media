@@ -1,4 +1,4 @@
-# p084 v2 single-lever mixer tap "ONE LEVER: / HOT OR COLD?" - track A (Kokoro af_heart, speed 1.15) - group E - NOT YET SCHEDULED (19 Nov 15:10 run, fork)
+# p084 v2 single-lever mixer tap "ONE LEVER: / HOT OR COLD?" - track A (Kokoro af_heart, speed 1.15) - group E - NOT YET SCHEDULED (19 Nov 15:10 run, fork) - SCHEDULED 23 Nov 2026 17:00 (Metricool 434425904, 19 Nov 15:10 run)
 topic key: mixer tap cartridge - not in learnings/topics-used.md (checked 70 rows + mechanism: no ceramic disc / sliding-port valve row; toilet fill valve p072 = float valve, kettle p075 = bimetal switch: different mechanisms).
 Built from kit/kit.js (backdrop, lightRig, materials chrome/black, contactBlob, TXT) + scene-local: lathe chrome mixer tap (body, tube spout, aerator, cap with red/blue dots, lever arm) over a lathe vessel basin;
 water stream whose radius follows the flow and whose colour follows the hot share; cartridge (x6): black base, fixed ceramic inlet disc (extruded, hot + cold holes + outlet slot),

@@ -20,7 +20,7 @@ T['vo3'] = T['vo2'] + dur[2] + 0.4
 T['vo4'] = T['vo3'] + dur[3] + 0.35
 T['off'] = T['vo4'] + dur[4] - 0.05           # timer reaches zero -> magnet current cut
 T['vo5'] = T['off'] + 0.15
-T['rise_b'] = T['off'] + 0.05 + 0.9          # rise shown in slow motion (0.9 s)
+T['rise_b'] = T['off'] + 0.05 + 1.4          # rise shown in slow motion (1.4 s)
 T['vo6'] = T['vo5'] + dur[5] + 0.45
 T['ext'] = T['vo6']                          # back to the outside view
 LOOP = round(T['vo6'] + dur[6] + 2.3, 2); T['LOOP'] = LOOP
@@ -32,7 +32,7 @@ def ycar(t):
     if t < T['push_a']: return YU
     if t < T['push_b']: return YU - (YU - YD) * sm((t - T['push_a']) / (T['push_b'] - T['push_a']))
     if t < T['off'] + 0.05: return YD
-    if t < T['rise_b']: u = (t - T['off'] - 0.05) / 0.9; return YD + (YU - YD) * (1 - (1 - u) ** 2.2)
+    if t < T['rise_b']: u = (t - T['off'] - 0.05) / 1.4; return YD + (YU - YD) * (1 - (1 - u) ** 1.6)
     if t < T['repush_a']: return YU
     if t < T['repush_b']: return YU - (YU - YD) * sm((t - T['repush_a']) / (T['repush_b'] - T['repush_a']))
     return YD
