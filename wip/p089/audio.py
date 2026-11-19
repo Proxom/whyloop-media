@@ -2,7 +2,7 @@
 # a soft press thump when the hooks catch, quick low tocks on the opening peel. No rip/hiss noise, no clicks, no bells, no tones above ~1.5 kHz.
 import json, wave, numpy as np, soundfile as sf
 G = json.load(open('geom.json')); SR = 48000; DUR = G['LOOP']; N = int(SR * DUR); rng = np.random.default_rng(890)
-T = G['T']; VO_AT = [T[f'vo{i}'] for i in range(7)]
+T = G['T']; VO_AT = [T[f'vo{i}'] for i in range(8)]
 L = np.zeros(N); R = np.zeros(N); V = np.zeros(N)
 def put(sig, t, pan=0.0, gain=1.0, dst=None):
     i0 = int(round(t * SR)); idx = (np.arange(len(sig)) + i0) % N

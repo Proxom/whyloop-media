@@ -106,7 +106,7 @@ const RIG = K.lightRig(scene, V(0, 10, -6), 70); RIG.key.shadow.bias = -0.0005; 
 // ---------- per-frame ----------
 const NH = 8; const ACC = new THREE.Color(0xff9a1f), DIMC = new THREE.Color(0x6d6a64);
 function tint(h, gl, dim) { const j = h.userData.jit; h.traverse(o => { if (!o.isMesh) return; if (!o.userData.own) { o.material = o.material.clone(); o.userData.own = 1; }
-  o.material.color.setRGB(0.95 + 0.05 * j, 0.93 + 0.04 * j, 0.88 + 0.03 * j).lerp(DIMC, 0.55 * dim).lerp(ACC, 0.75 * gl); o.material.emissive.copy(ACC).multiplyScalar(0.7 * gl); }); } const row = (t) => KN[Math.max(0, Math.min(KN.length - 1, Math.round(t * G.FPS)))];
+  o.material.color.setRGB(0.95 + 0.05 * j, 0.93 + 0.04 * j, 0.88 + 0.03 * j).lerp(DIMC, 0.7 * dim).lerp(ACC, 0.95 * Math.min(1, gl * 1.25)); o.material.emissive.copy(ACC).multiplyScalar(1.1 * gl); }); } const row = (t) => KN[Math.max(0, Math.min(KN.length - 1, Math.round(t * G.FPS)))];
 let R_ = null;
 function setScene(t) {
   const r = R_ = row(t); const [ox, oy, xf] = [r[1], r[2], r[3]];
@@ -121,13 +121,13 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OK_ = (d = 230, az = 18, el = 42, tx = -10) => [5000 + tx, 4, 0, d, el, az];
+const OK_ = (d = 230, az = 18, el = 42, tx = -38) => [5000 + tx, 4, 0, d, el, az];
 const MK = (tx, ty, d, az = 22, el = 9, tz = -6) => [tx, ty, tz, d, el, az];
 const CAMK = [k_(0, OK_(215, 16, 44)), k_(T.cutIn - 0.01, OK_(200, 20, 46)),
   k_(T.cutIn, MK(-6, 30, 92, 26, 9)), k_(T.vo2 - 0.1, MK(-5, 31, 74, 22, 8)),
   k_(T.vo2 + 0.5, MK(-4, 9, 80, 20, 11)), k_(T.p0 + 0.3, MK(-4, 13, 92, 22, 9)), k_(T.p1, MK(-5, 10, 70, 24, 8)),
   k_(T.p3 + 0.1, MK(-4.6, 7.5, 40, 28, 6, -1)), k_(T.vo4 - 0.05, MK(-4.6, 7.5, 38, 28, 6, -1)), k_(T.vo4 + 0.4, MK(-2, 12, 90, 22, 8)), k_(T.vo5 - 0.1, MK(-1, 12, 94, 18, 8)),
-  k_(T.vo5 + 0.2, MK(-26, 12, 98, 20, 8)), k_(T.f1, MK(-6, 12, 100, 22, 8)), k_(T.ans - 0.01, MK(-5, 12, 100, 22, 8)),
+  k_(T.vo5 + 0.2, MK(-33, 13, 92, 20, 8)), k_((T.f0 + T.f1) / 2, MK(-16, 13, 92, 21, 8)), k_(T.f1, MK(2, 13, 94, 22, 8)), k_(T.ans - 0.01, MK(3, 13, 94, 22, 8)),
   k_(T.ans, OK_(225, 14, 42)), k_(LOOP, OK_(215, 16, 44))];
 // ---------- overlay ----------
 const ms = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
@@ -157,7 +157,7 @@ function overlay(t) {
     if (t > T.s1 && t < T.s3) { const [lx, ly] = ms(XS[10] + 1.6 + 0.7, G.H0 - 1, 0); below(lx, ly, 'EVERY HOOK HOLDS', '#ffd21f', -20, 330); } }
   if (s4) { let best = -1; for (let i = 0; i < NC; i++) if (r[4 + i * NH + 6] > 0.5) best = i;
     if (best >= 0) { const [hx, hy] = hookCup(best); below(hx, hy, 'ONE ROW AT A TIME', '#ff9a1f', 60, 330); }
-    const xf = r[3]; const [ax0, ay0] = ms(xf - 9, 30, 5), [ax1, ay1] = ms(xf - 17, 44, 5); arrowC(g2, hard(t, T.f0, T.f1), ax0, ay0, ax1, ay1, 30, '#ffd21f'); }
+    const xf = r[3]; const [ax0, ay0] = ms(xf - 7, 21, 5), [ax1, ay1] = ms(xf - 13, 29, 5); arrowC(g2, hard(t, T.f0, T.f1), ax0, ay0, ax1, ay1, 30, '#ffd21f'); }
   K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'THOUSANDS OF TINY HOOKS', 'ONE ROW AT A TIME', 600);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

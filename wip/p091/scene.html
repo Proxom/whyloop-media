@@ -75,11 +75,11 @@ const back = new THREE.Mesh(new THREE.BoxGeometry(120, 110, 2.5), M.lockBody); b
   const slot = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), M.slotDark); slot.position.set(B[0], B[1], -6.9); slot.rotation.z = ang; IN.add(slot); }
 // section walls (red caps face the camera): top, right, bottom with the exit hole, left lower
 wallBox(110, 1.6, 14, -30, 13); wallBox(1.6, 42, 14, 25, -8); wallBox(64, 1.6, 14, -40, -28); wallBox(8, 1.6, 14, 23, -28);
-{ const gr = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.8, 10, 24), M.plastic); gr.rotation.x = Math.PI / 2; gr.position.set(G.EV[0], -28, 0); IN.add(gr); }
+
 // headrail section the cord comes along (left), drawn as a thin cut channel
 
 // guide pin (chrome) + toothed roller (brass, knurled) on an axle in the slot
-const GP = new THREE.Mesh(new THREE.CylinderGeometry(G.RG, G.RG, 16, 40), M.steel); GP.rotation.x = Math.PI / 2; GP.castShadow = GP.receiveShadow = true; IN.add(GP);
+const GP = new THREE.Mesh(new THREE.CylinderGeometry(G.RG, G.RG, 16, 40), phys({ color: 0x8d939b, metalness: 1, roughness: 0.36, roughnessMap: M.steel.roughnessMap, envMapIntensity: 0.9 })); GP.rotation.x = Math.PI / 2; GP.castShadow = GP.receiveShadow = true; IN.add(GP);
 { const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 16.4, 16), M.steel); cap.rotation.x = Math.PI / 2; IN.add(cap); }
 const ROL = new THREE.Group(); IN.add(ROL);
 { const g = K.spurGear(M.brass, { z: 22, m: 0.44, w: 12, bore: 0 }); g.position.z = -6; ROL.add(g);
@@ -121,11 +121,11 @@ function setScene(t) {
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
 const OUTK = (d = 2500, az = 14, ty = -114, tx = 95) => [tx, ty, 0, d, 4, az];
-const INK = (dx = 4, d = 120, az = 10, el = 6, ty = -10) => [6000 + dx + 2, ty, 0, d, el, az];
+const INK = (dx = 4, d = 130, az = 10, el = 6, ty = -11.5) => [6000 + dx + 2, ty, 0, d, el, az];
 const CAMK = [k_(0, OUTK(2500, 12)), k_(1.7, OUTK(2450, 13)), k_(T.cutIn - 0.01, [LX, -15, 0, 650, 4, 8]),
-  k_(T.cutIn, INK(4, 150, 12)), k_(T.vo2 - 0.01, INK(4, 124, 8)), k_(T.vo3, INK(4, 120, 4)), k_(T.lg1 - 1.2, INK(3, 112, -2, 7)),
-  k_(T.lg1 - 0.2, [6000 + 6.5, -4.5, 0, 66, 7, 0]), k_(T.vo5 - 0.15, [6000 + 6.5, -4.5, 0, 60, 7, -3]), k_(T.vo5 + 0.25, INK(2, 122, 4)),
-  k_(T.outEnd - 0.01, INK(0, 128, 8, 6)), k_(T.outEnd, OUTK(2450, 10)), k_(LOOP, OUTK(2500, 12))];
+  k_(T.cutIn, INK(4, 146, 12)), k_(T.vo2 - 0.01, INK(4, 134, 8)), k_(T.vo3, INK(4, 130, 4)), k_(T.lg1 - 1.2, INK(4, 126, -2, 7)),
+  k_(T.lg1 - 0.2, [6000 + 3.0, -5.5, 0, 68, 7, 0]), k_(T.vo5 - 0.15, [6000 + 3.0, -5.5, 0, 62, 7, -3]), k_(T.vo5 + 0.25, INK(4, 130, 4)),
+  k_(T.outEnd - 0.01, INK(4, 134, 8, 6)), k_(T.outEnd, OUTK(2450, 10)), k_(LOOP, OUTK(2500, 12))];
 // ---------- overlay ----------
 const ip = (x, y, z = 6) => S.toScreen(camera, V(6000 + x, y, z));
 const op = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
@@ -137,20 +137,23 @@ function gapBar(g2, k, color) {   // yellow bracket across the gap between guide
   const px = k[7], py = k[8], d = Math.hypot(px, py), ux = px / d, uy = py / d; const a = ip(ux * G.RG, uy * G.RG, 9), b = ip(px - ux * G.RR, py - uy * G.RR, 9);
   g2.save(); g2.strokeStyle = color; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath(); g2.moveTo(...a); g2.lineTo(...b); g2.stroke();
   const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1; for (const p of [a, b]) { g2.beginPath(); g2.moveTo(p[0] - nx / nl * 18, p[1] - ny / nl * 18); g2.lineTo(p[0] + nx / nl * 18, p[1] + ny / nl * 18); g2.stroke(); } g2.restore(); return b; }
-function blindInset(g2, c, weight) {   // small 2D window icon: the blind's bottom rail follows c
-  const x0 = 100, y0 = 1150, w = 210, h = 250; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.72)'; S.rrect(g2, x0 - 18, y0 - 18, w + 36, h + 36, 20); g2.fill();
-  g2.fillStyle = '#bcd3e8'; g2.fillRect(x0, y0, w, h); g2.fillStyle = '#f1f2f2'; g2.fillRect(x0 - 6, y0, w + 12, 16);
-  const yb = y0 + 16 + (h - 30) * (1 - (c + 10) / 160); g2.fillStyle = '#f6f5f1'; g2.fillRect(x0, y0 + 16, w, yb - y0 - 16); g2.strokeStyle = 'rgba(120,120,120,0.6)'; g2.lineWidth = 2;
-  for (let y = y0 + 26; y < yb; y += 11) { g2.beginPath(); g2.moveTo(x0, y); g2.lineTo(x0 + w, y); g2.stroke(); } g2.fillStyle = '#d9dcde'; g2.fillRect(x0 - 4, yb, w + 8, 10);
-  g2.restore(); S.outlined(g2, 'BLIND', x0 + w / 2, y0 - 34, 46, '#ffffff'); if (weight > 0) arrowC(g2, weight, x0 + w / 2, yb + 4, x0 + w / 2, yb + 95, 20, '#ff8a3a'); }
+function blindInset(g2, c, weight, held) {   // LARGE 2D window icon: the blind's bottom rail follows c
+  const x0 = 82, y0 = 1095, w = 250, h = 300; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.8)'; S.rrect(g2, x0 - 16, y0 - 16, w + 32, h + 32, 20); g2.fill();
+  g2.strokeStyle = held ? '#5fe08a' : 'rgba(255,255,255,0.5)'; g2.lineWidth = held ? 7 : 3; g2.stroke();
+  g2.fillStyle = '#bcd3e8'; g2.fillRect(x0, y0, w, h); g2.fillStyle = '#f1f2f2'; g2.fillRect(x0 - 6, y0, w + 12, 18);
+  const yb = y0 + 18 + (h - 34) * (1 - (c + 6) / 140); g2.fillStyle = '#f6f5f1'; g2.fillRect(x0, y0 + 18, w, yb - y0 - 18); g2.strokeStyle = 'rgba(120,120,120,0.6)'; g2.lineWidth = 2;
+  for (let y = y0 + 30; y < yb; y += 12) { g2.beginPath(); g2.moveTo(x0, y); g2.lineTo(x0 + w, y); g2.stroke(); } g2.fillStyle = '#d9dcde'; g2.fillRect(x0 - 4, yb, w + 8, 12);
+  g2.restore(); S.outlined(g2, 'BLIND', x0 + w / 2, y0 - 30, 46, '#ffffff');
+  if (weight > 0 && !held) arrowC(g2, weight, x0 + w / 2, yb + 6, x0 + w / 2, yb + 100, 20, '#ff8a3a');
+  if (held) S.outlined(g2, 'STAYS UP', x0 + w / 2, Math.min(yb + 95, y0 + h - 14), 52, '#5fe08a'); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = inside(t);
   { let fx = 0; for (const c of [T.cutIn, T.outEnd]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
   // hook
-  const hk = t < T.cutIn ? 1 : 0;
-  if (hk) { K.TXT.hook(g2, 1, "WHY DOESN'T", 'THE BLIND FALL?', 100); const [cx, cy] = op(LX, 0, 8); K.TXT.circle(g2, 1, cx, cy, 85, [-230, 240]);
-    const [qx, qy] = op(LX, -120 - k[1], 6); arrowC(g2, hard(t, T.hp0, T.hp1 + 0.05), qx + 40, qy - 120, qx + 40, qy + 10, 26); }
-  if (ins) blindInset(g2, k[1], hard(t, T.vo3, T.lg1));
+  if (t < 2.1) { K.TXT.hook(g2, 1, "WHY DOESN'T", 'THE BLIND FALL?', 100); const [cx, cy] = op(LX, -2, 8); K.TXT.circle(g2, t < 2.0 ? 1 : 0, cx, cy, 70, [-230, 210]);
+    const [qx, qy] = op(LX, -150 - k[1], 6); arrowC(g2, hard(t, T.hp0, T.hp1 + 0.05), qx - 70, qy - 130, qx - 70, qy + 10, 24); }
+  const held = k[6] && ((t >= T.lg1 && t < T.vo5 + 0.1) || t < T.cutIn);
+  if (ins) blindInset(g2, k[1], hard(t, T.vo3, T.lg1), held && t >= T.lg1);
   const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outEnd);
   K.TXT.step(g2, s1, 1, 'CORD PASSES A TOOTHED ROLLER', 56);
   K.TXT.step(g2, s2, 2, 'PULL: ROLLER DROPS, GAP OPENS', 56);
@@ -158,17 +161,24 @@ function overlay(t) {
   K.TXT.step(g2, s4, 4, 'ROLLER CLIMBS: GAP CLOSES', 58);
   K.TXT.step(g2, s5, 5, 'TO LOWER: PULL TOWARD THE MIDDLE', 52);
   const P = k[10]; const cAt = (i) => ip(P[2 * i], P[2 * i + 1], 3); const NP = P.length / 2;
-  if (s1) { S.tag(g2, 1, 'TOOTHED ROLLER', ...ip(k[7] + 3, k[8] - 3, 7), 70, 250, 50, YEL); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'GUIDE', ...ip(-2, 2, 9), -150, -170, 48, '#ffffff');
-    S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'CORD', ...cAt(6), -40, 200, 48, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 1.6, T.vo2), 'SLANTED SLOT', ...ip(G.A[0] + 2.5, G.A[1] + 1.0, -6), 160, -170, 46, '#ffffff'); }
-  if (s2) { const [x, y] = cAt(NP - 6); arrowC(g2, hard(t, T.pd0 - 0.2, T.pd1), x + 60, y - 120, x + 60, y + 40, 24); gapBar(g2, k, '#5fe08a'); const g = ip(k[7] * 0.45, k[8] * 0.45, 9);
-    S.tag(g2, hard(t, T.pd0 + 1.2, T.vo3), 'WIDE GAP', ...g, -60, 250, 50, '#5fe08a'); S.tag(g2, 1, 'PULL', x + 60, y - 120, 90, -60, 48, '#ffffff'); }
-  if (s3 || s4) { const [x0, y0] = cAt(3), [x1] = cAt(0); arrowC(g2, hard(t, T.lg0, T.lg1), x0, y0 - 70, x1 - 10, y0 - 70, 24, '#ff8a3a');
-    if (t >= T.lg0) { const gp = gapBar(g2, k, k[6] ? '#ff5a3a' : YEL); void gp; } }
-  if (s3) S.tag(g2, hard(t, T.vo3 + 0.3, T.vo4), "BLIND'S WEIGHT", ...cAt(2), 30, 230, 48, '#ff8a3a');
-  if (s4) { const a = ip(G.B[0] + 5, G.B[1] - 4, 9), b = ip(G.A[0] + 5, G.A[1] - 4, 9); arrowC(g2, k[6] ? 0 : 1, a[0] + 70, a[1] + 40, b[0] + 70, b[1] + 40, 22);
-    if (!k[6]) S.outlined(g2, 'SLOW MOTION', 780, 1360, 44, '#ffffff');
-    S.tag(g2, k[6], 'PINCHED', ...ip(k[7] * 0.5, k[8] * 0.5, 9), 110, 260, 56, '#ff5a3a'); }
-  if (s5) { const [x, y] = cAt(NP - 4); arrowC(g2, hard(t, T.rm0, T.rm1 + 0.3), x + 120, y + 20, x - 70, y + 20, 24); S.tag(g2, hard(t, T.rm1, T.outEnd), 'MISSES THE ROLLER', ...cAt(NP - 12), -40, 230, 48, '#5fe08a'); }
+  const rol = ip(k[7], k[8], 7);
+  if (s1) { S.tag(g2, 1, 'TOOTHED ROLLER', ...ip(k[7] + 3.5, k[8] - 3, 7), 60, 230, 50, YEL); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'GUIDE', ...ip(-1, 1, 9), -170, -40, 48, '#ffffff');
+    S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'CORD', ...cAt(NP - 12), 150, 40, 48, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 1.6, T.vo2), 'SLANTED SLOT', ...ip(G.A[0] + 2.0, G.A[1] + 1.4, -6), 120, -160, 46, '#ffffff'); }
+  if (s2) { const [x, y] = cAt(NP - 3); arrowC(g2, hard(t, T.pd0 - 0.2, T.pd1), x + 70, y - 150, x + 70, y + 10, 24); gapBar(g2, k, '#5fe08a');
+    S.tag(g2, hard(t, T.pd0 + 1.2, T.vo3), 'WIDE GAP', ...ip(k[7] * 0.45, k[8] * 0.45, 9), 230, -30, 50, '#5fe08a'); S.tag(g2, hard(t, T.pd0 - 0.2, T.pd1), 'PULL', x + 70, y - 150, 60, 0, 48, '#ffffff'); }
+  if (s3 || s4) { const [x0, y0] = cAt(3), [x1] = cAt(0); arrowC(g2, hard(t, T.lg0, T.lg1), x0, y0 + 70, Math.max(90, x1 - 10), y0 + 70, 24, '#ff8a3a');
+    if (t >= T.lg0) gapBar(g2, k, k[6] ? '#ff5a3a' : YEL); }
+  if (s3) S.tag(g2, hard(t, T.vo3 + 0.3, T.vo4), "BLIND'S WEIGHT", ...cAt(3), 40, 130, 48, '#ff8a3a');
+  if (s4) { const climb = t < T.lg1 ? 1 : 0; const a = ip(G.B[0] + 3.5, G.B[1] - 3.5, 9), b = ip(G.A[0] + 3.5, G.A[1] - 3.5, 9); arrowC(g2, climb, a[0] + 40, a[1] + 30, b[0] + 40, b[1] + 30, 22);
+    S.tag(g2, climb, 'UP THE SLOT = TIGHTER', a[0] + 40, a[1] + 30, 40, 150, 50, YEL);
+    if (climb) S.outlined(g2, 'SLOW MOTION', 760, 420 + 80, 44, '#ffffff');
+    if (!climb && k[6]) { const n = ip(k[7] * 0.46, k[8] * 0.46, 9); g2.save(); g2.strokeStyle = '#ff5a3a'; g2.lineWidth = 9; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10; g2.beginPath(); g2.arc(n[0], n[1], 120, 0, 7); g2.stroke(); g2.restore();
+      S.tag(g2, 1, 'LOCKED', n[0] + 85, n[1] + 85, 150, 250, 72, '#ff5a3a'); } }
+  if (s5) { const e = ip(G.EV[0], -28, 3); arrowC(g2, hard(t, T.rp0, T.rm1 + 0.4), e[0] + 40, e[1] - 140, e[0] - 120, e[1] - 10, 24);
+    S.tag(g2, hard(t, T.rp0, T.rm1 + 0.4), 'PULL TO THE MIDDLE', e[0] + 40, e[1] - 140, 40, -80, 46, '#ffffff');
+    const a = ip(G.A[0] + 3.5, G.A[1] - 3.5, 9), b = ip(G.B[0] + 3.5, G.B[1] - 3.5, 9); arrowC(g2, hard(t, T.rf0 - 0.1, T.ld0 + 0.6), a[0] + 40, a[1] + 30, b[0] + 40, b[1] + 30, 22, '#5fe08a');
+    S.tag(g2, hard(t, T.rf0 - 0.1, T.ld0 + 0.6), 'ROLLER DROPS', b[0] + 40, b[1] + 30, 40, 120, 48, '#5fe08a');
+    S.tag(g2, hard(t, T.ld0 + 0.6, T.outEnd), 'MISSES THE ROLLER', ...cAt(NP - 10), 330, -60, 48, '#5fe08a'); }
   K.TXT.answer(g2, hard(t, T.outEnd, LOOP + 1), 'A TINY ROLLING WEDGE', 'HOLDS THE BLIND', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

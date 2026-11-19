@@ -18,13 +18,13 @@ US Patent 6,899,156, Headrail with reversible cord lock position (toothed roller
 US Patent 4,955,420, Cord locking mechanism (knurled roller drawn up its slots until the cords are pinched against a fixed gripping pin; to release, the cords are angled and pulled down and the roller drops to the bottom of its channels): https://patents.justia.com/patent/4955420
 Direct Online Blinds, Wood Venetian operating guide (to lower, pull the cord toward the center of the blind until the cord lock releases): https://directonlineblinds.com.au/images/uploads/images/Wood_Venetian.pdf"""
 alt = ("3D animation of a window blind cord lock, with a voiceover. Under the question Why doesn't the blind fall? a white venetian blind in a window rises as its cord is pulled, then stops and stays when the cord is let go. "
-       "Then the cord lock inside the top rail is shown cut open from the side: the cord runs over a smooth guide and past a brass toothed roller that sits in a slanted slot. "
+       "The camera pushes in to the end of the top rail, and the cord lock inside is shown cut open from the side: the cord runs over a smooth guide and past a brass toothed roller that sits in a slanted slot. A large blind icon in the corner shows the blind moving in sync. "
        "1, the cord passes a toothed roller. 2, pull: the cord rolls the roller down the slot and the gap opens, so the cord runs free and a small blind icon shows the blind going up. "
-       "3, let go: the blind's weight pulls the cord back up. 4, in slow motion the cord rolls the roller up the slot, the gap closes and the cord is pinched, so it stops. "
-       "5, to lower: the cord is pulled toward the middle, misses the roller and slides back up while the blind goes down. The payoff reads A tiny rolling wedge holds the blind, a follow line appears and the video loops.")
+       "3, let go: the blind's weight pulls the cord back up. 4, in slow motion the cord rolls the roller up the slot, labeled up the slot equals tighter, the gap closes, and in a close-up the cord is squashed between the roller teeth and the guide: locked, and the blind icon says stays up. "
+       "5, to lower: an arrow pulls the cord toward the middle, the roller drops down the slot, the cord misses the roller and slides back up while the blind icon goes down. The payoff reads A tiny rolling wedge holds the blind, a follow line appears and the video loops.")
 on = ['INSIDE IT', "WHY DOESN'T", 'THE BLIND FALL?', 'CORD PASSES A TOOTHED ROLLER', 'TOOTHED ROLLER', 'GUIDE', 'CORD', 'SLANTED SLOT', 'BLIND',
-      'PULL: ROLLER DROPS, GAP OPENS', 'WIDE GAP', 'PULL', 'LET GO: WEIGHT PULLS CORD UP', "BLIND'S WEIGHT", 'ROLLER CLIMBS: GAP CLOSES', 'SLOW MOTION', 'PINCHED',
-      'TO LOWER: PULL TOWARD THE MIDDLE', 'MISSES THE ROLLER', 'A TINY ROLLING WEDGE', 'HOLDS THE BLIND', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'PULL: ROLLER DROPS, GAP OPENS', 'WIDE GAP', 'PULL', 'LET GO: WEIGHT PULLS CORD UP', "BLIND'S WEIGHT", 'ROLLER CLIMBS: GAP CLOSES', 'SLOW MOTION', 'UP THE SLOT = TIGHTER', 'LOCKED', 'STAYS UP',
+      'TO LOWER: PULL TOWARD THE MIDDLE', 'PULL TO THE MIDDLE', 'ROLLER DROPS', 'MISSES THE ROLLER', 'A TINY ROLLING WEDGE', 'HOLDS THE BLIND', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 src = ['https://patents.justia.com/patent/4180118', 'https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/6899156', 'https://patents.justia.com/patent/4955420', 'https://directonlineblinds.com.au/images/uploads/images/Wood_Venetian.pdf']
 P = dict(id='p091', track='A', group='E', slot='2026-11-22T21:00:00 Europe/London (planned)', topicKey='blind cord lock',

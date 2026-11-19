@@ -17,14 +17,14 @@ Wikipedia, Velcro (hooks catch the loops; with a rigid or flat pull the force is
 Velcro Brand, How do VELCRO Brand fasteners work? (hooks connect to loops; peel = disengaging the loops from each row of hooks; shear = sliding apart): https://www.velcro.com/news-and-blog/2023/02/how-do-velcro-brand-fasteners-work
 HookandLoop.com, Hook and Loop 101 (peel is the disengagement of individual rows of hooks from an edge): https://www.hookandloop.com/hook-loop-101
 American Chemical Society, Hook-and-Loop Tape activity (de Mestral, burrs, stiff hooks and flexible loops): https://www.acs.org/education/celebrating-chemistry-editions/2022-ncw/hook-and-loop-tape.html"""
-alt = ("3D animation of hook-and-loop tape (Velcro), with a voiceover. Under the question Why does Velcro stick? a white strap is peeled off a blue patch on a bag. "
+alt = ("3D animation of hook-and-loop tape (Velcro), with a voiceover. Under the question Why does Velcro stick? a white strap is peeled off a fuzzy blue patch on a navy bag. "
        "Then a giant close-up: 1, one side: tiny stiff hooks, rows of white J-shaped hooks hang from a white tape. "
        "2, other side: soft loops, a blue tape covered in soft loops. Press: hooks catch loops, the hook tape comes down and each hook slips a loop into its curl, tagged Caught. "
-       "3, pull flat: every hook pulls, a yellow arrow pulls the top tape sideways, all the hooks glow and the loops lean but nothing lets go. "
-       "4, peel: one row at a time, the top tape bends up from the left and the hooks at the bending edge straighten and let go of their loops one row after another. "
+       "3, pull flat: all hooks share it, a yellow arrow pulls the top tape sideways, every hook leans a little and glows and the loops lean, tagged Every hook holds, but nothing lets go. "
+       "4, peel from the edge: the top tape bends up from the left; only the row of hooks at the bend glows orange, tagged One row at a time, straightens and lets go, then the next row; the other hooks are dimmed. "
        "The payoff reads Thousands of tiny hooks, one row at a time, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'WHY DOES', 'VELCRO STICK?', 'ONE SIDE: TINY STIFF HOOKS', 'HOOK', 'OTHER SIDE: SOFT LOOPS', 'LOOP', 'PRESS: HOOKS CATCH LOOPS', 'CAUGHT!',
-      'PULL FLAT: EVERY HOOK PULLS', 'PULL', 'ALL HOOKS HOLD', 'PEEL: ONE ROW AT A TIME', 'UNHOOKED', 'THOUSANDS OF TINY HOOKS', 'ONE ROW AT A TIME', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'PULL FLAT: ALL HOOKS SHARE IT', 'PULL', 'EVERY HOOK HOLDS', 'PEEL FROM THE EDGE', 'ONE ROW AT A TIME', 'THOUSANDS OF TINY HOOKS', 'ONE ROW AT A TIME', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p089', track='A', group='E', slot='', topicKey='hook and loop',
   outlier='scorecard rule: everyday object you touch + one "why it holds / why it opens"; our own model, script, words and sound',
