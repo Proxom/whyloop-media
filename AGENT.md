@@ -2,6 +2,11 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 19 Nov 2026 11:00): QUEUE TARGET = 20 (was 10) — overrides the queue numbers of the 18 Nov block below; everything else in that block stays (2 a day at 01:00 + 17:00, 5 runs a day, full quality gates, no repeated topics)
+- QUEUE 20 or more: short check only (max 15 min), then end.
+- QUEUE 19 or less: make videos one after another, each to the FULL hard gate and every quality/topic/no-repeat rule, scheduled into the next empty 01:00/17:00 slots, until QUEUE is 20 or the run's 2-hour cap is reached. Never lower quality to fill the queue.
+- Every rule that waits for "QUEUE full" (kit work, engine builds, long-video work) now means QUEUE 20.
+
 ## TOP OVERRIDE (Erkan, 18 Nov 2026 21:54): 2 Reels A DAY AGAIN (01:00 + 17:00) + QUEUE TARGET = 10 + 5 RUNS A DAY — overrides every older slot, schedule and queue rule in this file (incl. "1 a day at 17:00 only" of 14 Nov and "QUEUE TARGET = 2" of 15 Nov)
 - SLOTS: exactly 2 Reels a day, at 01:00 and 17:00 Europe/London (Metricool brand 7675089, Instagram, type REEL). The 01:00 slot is OPEN again from 19 Nov 01:00. 21:00 stays CLOSED. No other slot exists. Fill empty slots in date order, the nearest empty slot first (tonight/tomorrow 01:00 included if there is still time to finish it properly).
 - QUEUE = future non-draft Instagram, type REEL posts in Metricool + finished, gate-passed Reels not yet scheduled.
