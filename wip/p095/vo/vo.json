@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "What flips the key out?",
+  "dur": 1.237
+ },
+ {
+  "i": 1,
+  "text": "Around the pivot, a coiled spring is wound up. It always wants to swing the blade out.",
+  "dur": 4.459
+ },
+ {
+  "i": 2,
+  "text": "But the button has two little teeth. They sit in notches in the case, so the blade can't turn.",
+  "dur": 4.544
+ },
+ {
+  "i": 3,
+  "text": "Press the button, and the teeth drop out of the notches.",
+  "dur": 2.624
+ },
+ {
+  "i": 4,
+  "text": "Now nothing holds the spring back, so it snaps the blade out.",
+  "dur": 3.179
+ },
+ {
+  "i": 5,
+  "text": "The button pops back up into the notches, and locks it open.",
+  "dur": 3.115
+ },
+ {
+  "i": 6,
+  "text": "Fold it back, and the spring winds up again.",
+  "dur": 2.219
+ }
+]
