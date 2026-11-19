@@ -2,7 +2,7 @@
  "id": "p087",
  "track": "A",
  "group": "E",
- "slot": "",
+ "slot": "2026-11-24T17:00:00 Europe/London",
  "topicKey": "door closer",
  "outlier": "scorecard rule: everyday object you touch + one \"why it does not slam\"; our own model, script, words and sound",
  "topic": "Overhead hydraulic door closer: opening turns the pinion, the rack-piston squeezes the spring; the spring closes the door, but the piston must push oil through a tiny adjustable hole, so it closes gently.",
@@ -46,5 +46,9 @@
   "https://www.yalehome.com/in/en/documents/catalouge/Yale%20Door%20Closer.pdf",
   "https://www.lcnclosers.com/content/dam/allegion-us-2/web-files/lcn/information-documents/LCN_4040XP_Brochure_015520.pdf",
   "https://www.doorclosersusa.com/Commercial-Door-Closers-s/243.htm"
- ]
+ ],
+ "status": "scheduled",
+ "metricoolPostId": 434451417,
+ "visualScore": 5,
+ "clarity": "PASS (14yo YES)"
 }
