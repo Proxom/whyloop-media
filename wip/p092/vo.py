@@ -5,10 +5,10 @@ TTS = sys.argv[1]; OUT = sys.argv[2]; os.makedirs(OUT, exist_ok=True)
 LINES = [
  "How does the needle know your speed?",
  "Behind the dial, a cable from the wheels spins a magnet.",
- "Around it sits an aluminum cup. They never touch.",
- "The spinning magnet stirs up tiny electric currents in the cup, and they drag it along.",
- "A thin spring pulls back, so the cup only turns a little.",
- "Drive faster, the magnet spins faster, the drag gets stronger, and the needle climbs.",
+ "Around it sits the cup that holds the needle. They never touch.",
+ "The spinning magnet makes currents in the cup. They turn it into a weak magnet that gets pulled along.",
+ "A spring pulls back. The cup turns until the pull and the spring are equal, then stops.",
+ "Spin faster, and the pull gets stronger, so the needle stops higher.",
  "A spinning magnet moves the needle without ever touching it.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
