@@ -10,19 +10,19 @@ When the room cools down, the wax shrinks again. A spring in the valve pushes th
 
 Turning the knob to a higher number makes the valve close at a warmer room temperature (the numbers are settings, not exact degrees).
 
-(Simplified 3D model: the pin's movement is enlarged so you can see it; in a real valve it moves much less.)
+(Simplified 3D model: the wax's growth and the pin's movement are enlarged so you can see them; in a real valve they are much smaller.)
 
 Sources:
 Danfoss, Domestic Heating Controls Are Easy, Part 5 (no external power; a wax, liquid or gas charged capsule in the sensor head expands and contracts with room temperature, operating a piston that acts on the valve pin; a spring returns it when it cools): https://assets.danfoss.com/documents/latest/44965/AM000086447758en-010101.pdf
 Building Services Tutor, How Thermostatic Radiator Valves Work (the expansion mass pushes a transmission pin that closes the valve; when it contracts the valve opens again; the knob levels set the room temperature): https://www.buildingservicestutor.com/how-thermostatic-radiator-valves-work/
 PHPI Online, Inside a Thermostatic Radiator Valve (the sensor pushes the pin down and the disc toward the valve seat; when the room cools a spring pushes it back and the valve opens): https://phpionline.co.uk/feature-articles/inside-a-thermostatic-radiator-valve
 EUA Consumer Guide, Thermostatic Radiator Valves (the numbers on a TRV do not represent specific room temperatures): https://eua.org.uk/uploads/5E1EC0897C97B.pdf"""
-alt = ("3D animation of a radiator valve, with a voiceover. Under the question How does it know the room is warm? the knob is shown cut open: a wax capsule grows and a pin shuts the valve. "
-       "Then a white radiator with a chrome valve and a white numbered knob, circled in red. Then the valve is shown cut in half. "
+alt = ("3D animation of a radiator valve, with a voiceover. Under the question How does it know the room is warm? the knob is shown cut open: a wax capsule grows and turns orange and a pin shuts the valve. "
+       "Then a white radiator with a chrome valve and a white numbered knob, circled in red. The camera pushes in and the valve turns into a cut-in-half view in the same place. "
        "1, hot water flows in: orange hot water flows from the pipe, up through the valve and out to the radiator, and a room thermometer card reads cool. "
        "2, inside the knob: wax. A tall capsule of pale wax sits inside the knob, above a thin pin. "
-       "3, room warms, wax grows: the thermometer turns red and the wax capsule grows downward. "
-       "4, wax pushes the pin, valve shuts: the pin and a black disc move down onto the valve seat and the hot water stops flowing. "
+       "3, room warms, wax grows: wavy warm air arrows flow into the knob, the thermometer turns red, and the wax turns orange and grows past a dashed line that marks its cool size. "
+       "4, wax pushes the pin, valve shuts: the pin and a black disc move down onto the valve seat; the hot water stops at the seat and the pipe after it goes dark. "
        "5, room cools, spring opens it: the thermometer turns blue, the wax shrinks and a spring pushes the pin back up, so the water flows again. "
        "The payoff reads Warm wax grows and shuts the valve, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES IT KNOW', 'THE ROOM IS WARM?', 'HOT WATER FLOWS IN', 'HOT WATER', 'VALVE', 'TO RADIATOR', 'ROOM', 'COOL', 'WARM', 'INSIDE THE KNOB: WAX', 'WAX', 'PIN',
