@@ -21,6 +21,8 @@ T['pushA'] = T['vo3'] + 0.7; T['pushB'] = T['vo4'] + 2.0          # wax grows ->
 T['coolA'] = T['vo5'] + 0.2; T['coolB'] = T['vo5'] + 1.7          # room cools
 T['openA'] = T['vo5'] + 0.8; T['openB'] = T['vo5'] + 3.3          # wax shrinks, spring pushes the valve open
 def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
+def land(u):  # soft start, then a slow-motion landing on the seat (last ~35 % of the time covers the last ~8 % of the travel)
+    u = min(1, max(0, u)); return 0.92 * (1 - math.cos(math.pi / 2 * u / 0.65)) if u < 0.65 else 0.92 + 0.08 * (u - 0.65) / 0.35
 def temp(t):  # 0 cool .. 1 warm
     if t < 0.9: return ease(t / 0.8)
     if t < T['cutIn']: return 1.0 if t < T['hookEnd'] else 0.0
@@ -28,9 +30,9 @@ def temp(t):  # 0 cool .. 1 warm
     if t < T['coolA']: return ease((t - T['warmA']) / (T['warmB'] - T['warmA']))
     return 1 - ease((t - T['coolA']) / (T['coolB'] - T['coolA']))
 def push(t):  # stem push-down s (mm)
-    if t < T['hookEnd']: return GAP0 * ease((t - 0.1) / 0.75)
+    if t < T['hookEnd']: return GAP0 * land((t - 0.05) / 0.8)
     if t < T['pushA']: return 0.0
-    if t < T['openA']: return GAP0 * ease((t - T['pushA']) / (T['pushB'] - T['pushA']))
+    if t < T['openA']: return GAP0 * land((t - T['pushA']) / (T['pushB'] - T['pushA']))
     return GAP0 * (1 - ease((t - T['openA']) / (T['openB'] - T['openA'])))
 rows = []; n = int(round(LOOP * FPS_K)) + 1
 for i in range(n):

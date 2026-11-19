@@ -17,16 +17,16 @@ Danfoss, Domestic Heating Controls Are Easy, Part 5 (no external power; a wax, l
 Building Services Tutor, How Thermostatic Radiator Valves Work (the expansion mass pushes a transmission pin that closes the valve; when it contracts the valve opens again; the knob levels set the room temperature): https://www.buildingservicestutor.com/how-thermostatic-radiator-valves-work/
 PHPI Online, Inside a Thermostatic Radiator Valve (the sensor pushes the pin down and the disc toward the valve seat; when the room cools a spring pushes it back and the valve opens): https://phpionline.co.uk/feature-articles/inside-a-thermostatic-radiator-valve
 EUA Consumer Guide, Thermostatic Radiator Valves (the numbers on a TRV do not represent specific room temperatures): https://eua.org.uk/uploads/5E1EC0897C97B.pdf"""
-alt = ("3D animation of a radiator valve, with a voiceover. Under the question How does it know the room is warm? the knob is shown cut open: a wax capsule grows and turns orange and a pin shuts the valve. "
+alt = ("3D animation of a radiator valve, with a voiceover. Under the question How does it know the room is warm? the knob is shown cut open: a wax capsule grows and turns orange, a glowing disc lands on the seat in slow motion, the thick orange water stream stops and a tag switches from OPEN to SHUT. "
        "Then a white radiator with a chrome valve and a white numbered knob, circled in red. The camera pushes in and the valve turns into a cut-in-half view in the same place. "
-       "1, hot water flows in: orange hot water flows from the pipe, up through the valve and out to the radiator, and a room thermometer card reads cool. "
+       "1, hot water flows in: a thick orange stream of hot water flows from the pipe, up through the open valve, tagged OPEN, and out to the radiator, and a room thermometer card reads cool. "
        "2, inside the knob: wax. A tall capsule of pale wax sits inside the knob, above a thin pin. "
        "3, room warms, wax grows: wavy warm air arrows flow into the knob, the thermometer turns red, and the wax turns orange and grows past a dashed line that marks its cool size. "
-       "4, wax pushes the pin, valve shuts: the pin and a black disc move down onto the valve seat; the hot water stops at the seat and the pipe after it goes dark. "
-       "5, room cools, spring opens it: the thermometer turns blue, the wax shrinks and a spring pushes the pin back up, so the water flows again. "
+       "4, wax pushes the pin, valve shuts: the pin and the glowing disc move down and land on the valve seat in slow motion; the stream after the seat thins and stops, the pipe after it goes dark, and the tag changes to SHUT. "
+       "5, room cools, spring opens it: the thermometer turns blue, the wax shrinks back to the dashed line and turns cream again, and a spring pushes the pin and disc back up, so the tag reads OPEN and the water flows again. "
        "The payoff reads Warm wax grows and shuts the valve, a follow line appears and the video loops.")
-on = ['INSIDE IT', 'HOW DOES IT KNOW', 'THE ROOM IS WARM?', 'HOT WATER FLOWS IN', 'HOT WATER', 'VALVE', 'TO RADIATOR', 'ROOM', 'COOL', 'WARM', 'INSIDE THE KNOB: WAX', 'WAX', 'PIN',
-      'ROOM WARMS: WAX GROWS', 'WAX PUSHES THE PIN: VALVE SHUTS', 'SHUT', 'ROOM COOLS: SPRING OPENS IT', 'SPRING', 'WARM WAX GROWS', 'AND SHUTS THE VALVE', 'FOLLOW → A NEW MACHINE EVERY DAY']
+on = ['INSIDE IT', 'HOW DOES IT KNOW', 'THE ROOM IS WARM?', 'HOT WATER FLOWS IN', 'HOT WATER', 'VALVE', 'TO RADIATOR', 'OPEN', 'ROOM', 'COOL', 'WARM', 'INSIDE THE KNOB: WAX', 'WAX', 'PIN',
+      'ROOM WARMS: WAX GROWS', 'WAX PUSHES THE PIN: VALVE SHUTS', 'SHUT', 'WARM AIR', 'WAX GROWS', 'WAX SHRINKS', 'ROOM COOLS: SPRING OPENS IT', 'SPRING', 'WARM WAX GROWS', 'AND SHUTS THE VALVE', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 src = ['https://assets.danfoss.com/documents/latest/44965/AM000086447758en-010101.pdf', 'https://www.buildingservicestutor.com/how-thermostatic-radiator-valves-work/',
        'https://phpionline.co.uk/feature-articles/inside-a-thermostatic-radiator-valve', 'https://eua.org.uk/uploads/5E1EC0897C97B.pdf']

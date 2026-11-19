@@ -141,7 +141,8 @@ function setScene(t) {
   PUSH.position.set(0, G.STEM_TOP0 - s + G.PUSH_T / 2, 0);
   SPR.position.set(0, G.SPR_FLOOR, 0); SPR.setLength(G.COLLAR0 - s - G.SPR_FLOOR);
   CAPG.scale.y = (G.CAP_TOP - (G.STEM_TOP0 - s + G.PUSH_T)) / L0; const sw = 1 + 0.11 * s / G.GAP0; CAPG.scale.x = CAPG.scale.z = sw;
-  M.waxM.emissive.setRGB(0.95 * tp, 0.22 * tp, 0.0); M.waxM.color.setRGB(0.95 - 0.1 * tp, 0.88 - 0.72 * tp, 0.6 - 0.56 * tp);
+  const wc = Math.min(1, 0.35 * tp + 0.75 * s / G.GAP0); M.waxM.emissive.setRGB(0.95 * wc, 0.22 * wc, 0.0); M.waxM.color.setRGB(0.95 - 0.1 * wc, 0.88 - 0.72 * wc, 0.6 - 0.56 * wc);
+  const k2 = kin(t + 0.05); K.glow(DISC, Math.min(1, Math.abs(k2[1] - s) * 12) * (s > 0.02 || k2[1] > 0.02 ? 1 : 0));
   const fl = k[2]; M.waterD.color.setRGB(1.0 * fl + 0.12 * (1 - fl), 0.7 * fl + 0.13 * (1 - fl), 0.12 * fl + 0.16 * (1 - fl)); M.waterD.emissiveIntensity = 0.9 * fl;
   const io = inF(t); setRoom(io); setVO(1 - xf(t)); IN.visible = io > 0.01 || xf(t) > 0.01;
   K.shoot(st, CAMK, t);
@@ -177,10 +178,15 @@ function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const s = k[1], flow = k[2], tp = k[3], ins = insideAt(t);
   { let fx = 0; for (const c of [T.hookEnd]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
   // flowing hot water dots (speed = how open the valve is)
-  // upstream dots stop at the closed seat; dots past the seat only exist while water flows (shut = none downstream)
-  const xa = xf(t); if (xa > 0.3) { const ph = phase(t); for (let i = 0; i < 24; i++) { const u = (ph * 0.42 + i / 24) % 1; const down = u > U_SEAT;
-      const a = (down ? Math.min(1, Math.max(0, (flow - 0.06) * 4)) : 1) * S.smooth((xa - 0.3) / 0.5); if (a <= 0.01) continue; const [x, y] = wpAt(u); const [sx, sy] = ip(x, y, 2);
-      g2.save(); g2.globalAlpha = a; g2.fillStyle = '#ffe2a0'; g2.strokeStyle = '#4a2200'; g2.lineWidth = 3; g2.beginPath(); g2.arc(sx, sy, 7, 0, 7); g2.fill(); g2.stroke(); g2.restore(); } }
+  // thick hot-water stream: full + still before the seat when shut; through the seat and after it, its width = how open the valve is
+  const xa = xf(t); if (xa > 0.3) { const al = S.smooth((xa - 0.3) / 0.5), ph = phase(t); const [, py0] = ip(0, 0, 2), [, py1] = ip(0, 10, 2); const ppm = Math.abs(py0 - py1) / 10;
+    const seg = (u0, u1, w) => { if (w < 1.5) return; const P = []; for (let q = 0; q <= 40; q++) P.push(ip(...wpAt(u0 + (u1 - u0) * q / 40), 2));
+      g2.save(); g2.globalAlpha = al; g2.lineCap = 'round'; g2.lineJoin = 'round'; g2.shadowColor = 'rgba(0,0,0,0.5)'; g2.shadowBlur = 10;
+      g2.strokeStyle = '#ff9a1a'; g2.lineWidth = w; g2.beginPath(); P.forEach(([x, y], i) => i ? g2.lineTo(x, y) : g2.moveTo(x, y)); g2.stroke(); g2.shadowBlur = 0;
+      g2.strokeStyle = '#ffe9b0'; g2.lineWidth = Math.max(2, w * 0.38); g2.setLineDash([w * 1.1, w * 0.9]); g2.lineDashOffset = -ph * 2200 * ppm / 6; g2.stroke(); g2.restore(); };
+    const W = 5.2 * ppm; seg(0, U_SEAT, W); const fw = Math.max(0, Math.min(1, (flow - 0.02) / 0.98)); seg(U_SEAT, 1, W * Math.sqrt(fw)); }
+  // big valve-state tag at the seat
+  if (xa > 0.6 || t < T.hookEnd) { const shut = s > G.GAP0 - 0.15; S.tag(g2, 1, shut ? 'SHUT' : 'OPEN', ...ip(9, G.GAP0 - s - 1, 8), 200, 120, 64, shut ? '#ff4a3a' : '#4ade6a'); }
   if (t >= T.cutIn && t < T.vo6) thermo(g2, 1, tp, t);
   // warm room air -> into the knob (with the 'warms' line)
   const ha = hard(t, T.vo3, T.vo4 + 0.6); if (ha) { const [hx, hy] = ip(-24, 120, 10); for (let j = 0; j < 3; j++) { const y0 = hy - 90 + j * 90, x1 = hx - 14, x0 = Math.max(80, x1 - 230);
@@ -189,7 +195,7 @@ function overlay(t) {
       g2.fillStyle = '#ff6a2a'; g2.beginPath(); g2.moveTo(x1, y0); g2.lineTo(x1 - 34, y0 - 20); g2.lineTo(x1 - 34, y0 + 20); g2.closePath(); g2.fill(); g2.restore(); }
     S.outlined(g2, 'WARM AIR', Math.max(170, hx - 150), hy - 150, 48, '#ff8a4a'); }
   // the wax's cool size (dashed) so the growth is obvious
-  if (hard(t, T.vo3, T.vo5)) { const [ax, ay] = ip(-21, G.STEM_TOP0 + G.PUSH_T, 20), [bx] = ip(21, G.STEM_TOP0 + G.PUSH_T, 20); g2.save(); g2.setLineDash([16, 12]); g2.strokeStyle = '#ffffff'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(ax - 10, ay); g2.lineTo(bx + 10, ay); g2.stroke(); g2.restore(); }
+  if (hard(t, T.vo3, T.vo6)) { const [ax, ay] = ip(-21, G.STEM_TOP0 + G.PUSH_T, 20), [bx] = ip(21, G.STEM_TOP0 + G.PUSH_T, 20); g2.save(); g2.setLineDash([16, 12]); g2.strokeStyle = '#ffffff'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(ax - 10, ay); g2.lineTo(bx + 10, ay); g2.stroke(); g2.restore(); }
   // hook
   const hk = t < T.vo1 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.25) : 0;
   if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES IT KNOW', 'THE ROOM IS WARM?', 92);
@@ -207,9 +213,9 @@ function overlay(t) {
   if (s3) { S.tag(g2, 1, 'WAX GROWS', ...ip(-6, 104, 1), -120, 250, 50, '#ff8a4a');
     const [ax, ay0] = ip(30, 104 - s, 10), [, ay1] = ip(30, 84 - s, 10); arrowC(g2, hard(t, T.pushA, T.vo4), ax, ay0, ax, ay1, 22, '#ffd21f'); }
   if (s4) { const [ax, ay0] = ip(-24, 48 - s), [, ay1] = ip(-24, 26 - s); arrowC(g2, s < G.GAP0 - 0.05 ? 1 : 0, ax, ay0, ax, ay1, 22, '#ffd21f');
-    S.tag(g2, 1, 'PIN', ...ip(-3, 36 - s, 3), -190, 30, 48, '#ffffff'); S.tag(g2, s > G.GAP0 - 0.3 ? 1 : 0, 'SHUT', ...ip(6, 1, 6), 230, 110, 52, '#ff6a4a'); }
-  if (s5) { S.tag(g2, 1, 'SPRING', ...ip(6, G.SPR_FLOOR + 6, 6), 210, 40, 48, '#ffd21f');
-    const [ax, ay0] = ip(-24, 26 - s), [, ay1] = ip(-24, 48 - s); arrowC(g2, hard(t, T.openA, T.openB), ax, ay0, ax, ay1, 22, '#ffd21f'); }
+    S.tag(g2, 1, 'PIN', ...ip(-3, 36 - s, 3), -190, 30, 48, '#ffffff'); }
+  if (s5) { S.tag(g2, 1, 'SPRING', ...ip(-6, G.SPR_FLOOR + 6, 6), -200, 20, 48, '#ffd21f'); S.tag(g2, 1, 'WAX SHRINKS', ...ip(-6, 112, 1), -130, 60, 50, '#ffe9b0');
+    const [ax, ay0] = ip(24, 26 - s, 8), [, ay1] = ip(24, 48 - s, 8); arrowC(g2, hard(t, T.openA, T.openB), ax, ay0, ax, ay1, 22, '#ffd21f'); }
   K.TXT.answer(g2, hard(t, T.vo6, LOOP + 1), 'WARM WAX GROWS', 'AND SHUTS THE VALVE', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }
