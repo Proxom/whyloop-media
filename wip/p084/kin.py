@@ -6,10 +6,10 @@ import json, math
 import numpy as np
 D2R = math.pi / 180
 RL = 24.0                                         # lower disc radius
-HOTR = (-7.0, -9.5, -1.2, -2.0, 2.0)              # inlet slots (u0, v0, u1, v1, r)
-COLDR = (1.2, -9.5, 7.0, -2.0, 2.0)
+HOTR = (-8.0, -9.5, -2.0, -2.0, 2.0)              # inlet slots (u0, v0, u1, v1, r)
+COLDR = (2.0, -9.5, 8.0, -2.0, 2.0)
 OUTS = (12.0, 17.0, 62.0, 118.0)                  # outlet crescent: r0, r1, angle0, angle1 (deg, v up)
-PK = (-4.5, 0.0, 4.5, 21.0, 3.0)                  # pocket in the control-disc frame (u0, v0, u1, v1, r)
+PK = (-4.0, 0.0, 4.0, 21.0, 2.8)                  # pocket in the control-disc frame (u0, v0, u1, v1, r)
 EL = (0.0, 4.0, 16.5, 21.5)                       # control disc outline: ellipse centre + semi-axes (frame)
 S_OPEN, TH = 7.0, 32.0
 G = 0.05; uu, vv = np.meshgrid(np.arange(-28, 28, G), np.arange(-28, 28, G))
