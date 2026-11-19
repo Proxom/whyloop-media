@@ -2,6 +2,12 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 19 Nov 2026 18:07): 3 POSTS A DAY — 01:00, 17:00 AND 21:00 (21:00 OPEN AGAIN FROM TODAY) — overrides "21:00 CLOSED" and "2 a day" everywhere below; QUEUE TARGET stays 20
+- Slots: 01:00, 17:00 and 21:00 Europe/London, one post each. No other slot.
+- Fill empty slots in date order, nearest first (today's 21:00 included if a gate-passed video can be scheduled in time; never rush a video past the gate for it).
+- QUEUE target 20 unchanged (19 or less → make videos, to the full gate, until 20 or the 2-hour cap). With 3 posts a day the queue drains faster: keep producing every run while QUEUE < 20.
+- Spread series/formats over the three slots so two of the same kind do not run back to back.
+
 ## TOP OVERRIDE (Erkan, 19 Nov 2026 11:00): QUEUE TARGET = 20 (was 10) — overrides the queue numbers of the 18 Nov block below; everything else in that block stays (2 a day at 01:00 + 17:00, 5 runs a day, full quality gates, no repeated topics)
 - QUEUE 20 or more: short check only (max 15 min), then end.
 - QUEUE 19 or less: make videos one after another, each to the FULL hard gate and every quality/topic/no-repeat rule, scheduled into the next empty 01:00/17:00 slots, until QUEUE is 20 or the run's 2-hour cap is reached. Never lower quality to fill the queue.
