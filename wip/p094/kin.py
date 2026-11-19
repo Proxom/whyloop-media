@@ -5,7 +5,7 @@
 # Diagram is EXAGGERATED (wedge 14 deg, cabin compressed) so the rays can be seen; real wedges are a few degrees (said in the first comment).
 import json, math
 ALPHA = math.radians(14.0); NG = 1.52; H = 32.0; T0 = 3.0
-PV = (-14.0, 47.0); EYE = (210.0, -45.0); ROOF_Y = 108.0; Y0 = 0.0; S_IN = 330.0
+PV = (-14.0, 47.0); EYE = (165.0, -38.0); ROOF_Y = 95.0; Y0 = 0.0; S_IN = 330.0
 R_FRONT, R_BACK = 0.04, 0.90          # patent US4679906: front ~4 %, rear (silvered) ~90 %
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
 GAP = {1: 0.28, 2: 0.32, 3: 0.29, 4: 0.34, 5: 0.35, 6: 0.33}

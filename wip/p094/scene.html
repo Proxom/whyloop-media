@@ -22,7 +22,7 @@ const phys = (o) => new THREE.MeshPhysicalMaterial(o);
 const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
 M.house = phys({ color: 0x24272c, metalness: 0, roughness: 0.38, roughnessMap: M.plastic.roughnessMap, clearcoat: 0.35, clearcoatRoughness: 0.3 });
 M.fabric = phys({ color: 0x9a907f, roughness: 0.96, bumpMap: M.alu.bumpMap, bumpScale: 0.8 });
-M.secH = phys({ color: 0xd2261d, roughness: 0.5, side: THREE.DoubleSide });                  // housing section (cut red)
+M.secH = phys({ color: 0x5b616b, roughness: 0.55, side: THREE.DoubleSide, emissive: 0x111317, emissiveIntensity: 0.4 }); // housing section (plastic grey; red slabs read as 'diagram')
 M.secG = phys({ color: 0x9fd8ea, roughness: 0.15, transparent: true, opacity: 0.78, side: THREE.DoubleSide, emissive: 0x16323c, emissiveIntensity: 0.5 }); // glass section
 M.secS = new THREE.MeshBasicMaterial({ color: 0xf4f7fb, side: THREE.DoubleSide, toneMapped: false }); // silver layer section (bright line)
 M.tab = phys({ color: 0x2f3338, roughness: 0.45, clearcoat: 0.2 });
@@ -74,8 +74,7 @@ const BALL = new THREE.Mesh(new THREE.SphereGeometry(6.5, 24, 16), M.chrome); BA
   const b = new THREE.Mesh(new K.RBox(70, 10, 46, 3, 4), M.house); b.position.set(0, G.ROOF_Y + 3, PV[0]); scene.add(b); }
 // roof liner (fabric) + windshield (beyond the mirror) as context
 { const r = new THREE.Mesh(new K.RBox(1600, 30, 1100, 3, 10), M.fabric); r.position.set(0, G.ROOF_Y + 22, 200); r.receiveShadow = true; scene.add(r);
-  const ws = new THREE.Mesh(new THREE.PlaneGeometry(1600, 700), phys({ color: 0x9fb4c8, roughness: 0.05, transparent: true, opacity: 0.18, envMapIntensity: 1.5, depthWrite: false, side: THREE.DoubleSide }));
-  ws.position.set(0, -170, -260); ws.rotation.x = -0.62; scene.add(ws); }
+}
 S.shadowAll(scene); for (const v of VIEW) { v.castShadow = false; } for (const s of SKINS) s.castShadow = false;
 K.backdrop(scene, { floorY: -520, R: 900, zBack: -2200, h: 9000, width: 20000, wall: '#3e4859', floor: '#2f3642', pool: true, catcher: 3000 });
 const RIG = K.lightRig(scene, V(0, 0, 0), 140, { key: 2.2, rim: 2.6, fill: 0.5 }); RIG.key.shadow.bias = -0.0004;
@@ -101,8 +100,8 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const FRONT = (az = 8, d = 1430, el = -6) => [0, 2, 0, d, el, az];
-const SIDE = (dx = 0, d = 1200, az = -88, el = 3) => [0, 20, 115 + dx, d, el, az];
+const FRONT = (az = 8, d = 1300, el = -6) => [0, 2, 0, d * 0.9, el, az];
+const SIDE = (dx = 0, d = 1000, az = -88, el = 3) => [0, 18, 85 + dx, d * 0.84, el, az];
 const CAMK = [k_(0, FRONT(6, 1380)), k_(T.hookEnd - 0.01, FRONT(8, 1440)), k_(T.hookEnd, FRONT(10, 1460)), k_(T.orb_a, FRONT(12, 1430)),
   k_(T.orb_b, SIDE(4, 1220)), k_(T.vo2, SIDE(0, 1200)), k_(T.vo4, SIDE(0, 1185)), k_(T.vo5, SIDE(0, 1200)), k_(T.back_a, SIDE(2, 1210)),
   k_(T.back_b + 0.25, FRONT(10, 1450)), k_(LOOP, FRONT(6, 1380))];
@@ -155,7 +154,7 @@ function overlay(t) {
       eye(g2, 1, ex, ey, glare);
       const sDay = hard(t, T.ray_c, T.vo4), sNight = hard(t, T.vo5, T.back_a);
       S.tag(g2, sDay, 'GLARE!', ex, ey + 30, -40, 110, 50, '#ff6a4a');
-      S.tag(g2, sNight, 'DIM, STILL VISIBLE', ex, ey + 30, -60, 110, 48, COOL);
+      S.tag(g2, sNight, 'DIM, STILL VISIBLE', ex, ey + 30, 10, 120, 48, COOL);
       S.tag(g2, hard(t, T.ray_a, T.vo3), 'HEADLIGHTS', ...ip(250, G.Y0), -10, -100, 48, WARM);
       S.tag(g2, hard(t, T.vo3, T.vo4), '4%', ...ip(P[0] + 0.45 * (Ef[0] - P[0]), P[1] + 0.45 * (Ef[1] - P[1])), 70, 60, 52, COOL);
       S.tag(g2, hard(t, T.vo3, T.vo4), '90%', ...ip(X[0] + 0.55 * (Eb[0] - X[0]), X[1] + 0.55 * (Eb[1] - X[1])), 60, -90, 52, WARM);
