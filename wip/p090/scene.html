@@ -150,7 +150,7 @@ function overlay(t) {
   if (ins && k[5]) for (let i = 0; i < 30; i++) { const s = (t * 0.11 + i / 30) % 1; const [sx, sy] = gp(pathAt(s)); g2.save(); g2.fillStyle = '#fff3a0'; g2.strokeStyle = '#3a2400'; g2.lineWidth = 3; g2.shadowColor = '#ffb21f'; g2.shadowBlur = 16; g2.beginPath(); g2.arc(sx, sy, 8, 0, 7); g2.fill(); g2.stroke(); g2.restore(); }
   // hook
   const hk = t < T.hookEnd + 0.2 ? 1 - S.smooth((t - T.hookEnd) / 0.2) : 0;
-  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DO WIPERS', 'STOP AT THE BOTTOM?', 92); const [cx, cy] = S.toScreen(camera, W1.B.localToWorld(V(0, 0, 12))); K.TXT.circle(g2, hk, cx, cy, 110, [180, 250]); }
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DO WIPERS', 'STOP AT THE BOTTOM?', 92); const [cx, cy] = S.toScreen(camera, W1.B.localToWorld(V(0, 0, 12))); K.TXT.circle(g2, hk, cx, cy, 110, [210, -150]); }
   if (t >= T.hookEnd && t < T.cutOut + 3) {}
   const s1 = hard(t, T.hookEnd, T.cutIn), s2 = hard(t, T.cutIn, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.open), s5 = hard(t, T.open, T.cutOut), s6 = hard(t, T.cutOut, T.vo6 - 0.05);
   K.TXT.step(g2, s1, 1, 'SWITCH OFF MID-SWIPE', 60);
@@ -159,7 +159,7 @@ function overlay(t) {
   K.TXT.step(g2, s4, 4, 'UNTIL THE GAP REACHES THE CONTACT', 48);
   K.TXT.step(g2, s5, 5, 'NO CONTACT = NO POWER', 58);
   K.TXT.step(g2, s6, 6, 'PARKED AT THE BOTTOM', 60);
-  if (s1 && t >= T.off) { S.tag(g2, 1, 'STILL MOVING', ...S.toScreen(camera, W1.B.localToWorld(V(150, 0, 12))), 80, 160, 50, '#ffd21f'); }
+  if (s1 && t >= T.off) { { const [bx, by] = S.toScreen(camera, W1.A.localToWorld(V(330, -16, 24))); S.tag(g2, 1, 'STILL MOVING', bx, by, 60, Math.max(160, 760 - by), 50, '#ffd21f'); } }
   const slow = t >= T.off + 0.15 && t < T.stop + 0.1; if (slow) { g2.save(); g2.font = '44px Anton'; g2.textAlign = 'right'; g2.textBaseline = 'middle'; S.outlined(g2, 'SLOW MOTION', 900, 1408, 44, '#9fd0ff'); g2.restore(); }
   if (ins) {
     const gapS = S.toScreen(camera, gearPt(90, 21.5));
