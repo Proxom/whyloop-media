@@ -155,7 +155,7 @@ const k_ = (t, a) => [t, ...a];
 const OUTK = (d = 900, az = 4) => [15, 50, 0, d, 6, az];
 const INK = (ty = -70, d = 900, az = 0, el = 12) => [3000, ty, 0, d, el, az];
 const CAMK = [k_(0, OUTK(860, 3)), k_(T.cutIn - 0.75, OUTK(900, 5)), k_(T.cutIn - 0.01, [15, 0, 0, 380, 4, 4]),
-  k_(T.cutIn, INK(-22, 560, 8, 20)), k_(T.vo2 - 0.01, INK(-26, 520, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-58, 340, 0, 14)), k_(T.vo4 - 0.01, INK(-56, 320, -6, 15)),
+  k_(T.cutIn, INK(-22, 560, 8, 20)), k_(T.vo2 - 0.01, INK(-26, 520, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-47, 360, 0, 14)), k_(T.vo4 - 0.01, INK(-46, 345, -6, 15)),
   k_(T.vo4, INK(-36, 330, -6, 24)), k_(T.vo5 - 0.01, INK(-34, 320, -10, 25)), k_(T.vo5, INK(-42, 430, -18, 17)), k_(T.out - 0.01, INK(-42, 450, -52, 17)),
   k_(T.out, OUTK(900, 5)), k_(LOOP, OUTK(860, 3))];
 // ---------- overlay ----------
@@ -205,7 +205,7 @@ function overlay(t) {
     S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'NEEDLE (ON THE CUP)', ...tip(55), 120, 170, 46, '#ffd21f');
     arrowPath(g2, arc(26, mc - 14, 1.2, 2.2), hard(t, T.spinA + 0.3, T.vo2), '#ffffff'); }
   if (s2) { S.tag(g2, 1, 'CUP (HOLDS THE NEEDLE)', ...ip(-23, -46, 3), -110, 300, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 0.6, T.vo3), 'GAP', ...ip(-19, mc + 4, 3), 200, 140, 54, AMBER); }
-  if (s3) { topView(g2, mag, phi); arrowPath(g2, arc(26, mc - 14, 1.0, 2.0), 1, '#ffffff', 9); }
+  if (s3) { arrowPath(g2, arc(26, mc - 14, 1.0, 2.0), 1, '#ffffff', 9); topView(g2, mag, phi); }
   if (s4) { const th0 = 0.15, sc = 1.25, d = k[6] * G.KD, sp = phi;
     arrowPath(g2, arc(34, -38, th0, d * sc), 1, '#ffd21f', 13); arrowPath(g2, arc(34, -44, th0, -sp * sc), 1, '#ffffff', 13);
     const pe = arc(34, -38, th0, d * sc).pop(), se = arc(34, -44, th0, -sp * sc).pop();
