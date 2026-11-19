@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does a bike pump push air only into the tire?",
+  "dur": 2.432
+ },
+ {
+  "i": 1,
+  "text": "Push down, and air goes in. Pull up, and none comes back out.",
+  "dur": 3.328
+ },
+ {
+  "i": 2,
+  "text": "The secret is the soft rubber cup on the end of the piston.",
+  "dur": 3.2
+ },
+ {
+  "i": 3,
+  "text": "Pulling up, its thin edge bends inward, so outside air slips past it into the pump.",
+  "dur": 4.608
+ },
+ {
+  "i": 4,
+  "text": "Pushing down, the trapped air presses the edge out against the wall. It seals, so the air can only go into the tire.",
+  "dur": 6.379
+ },
+ {
+  "i": 5,
+  "text": "Then the tire's valve shuts, so the air can't come back.",
+  "dur": 2.795
+ },
+ {
+  "i": 6,
+  "text": "The soft cup lets air in. Then it seals and pushes.",
+  "dur": 2.795
+ }
+]

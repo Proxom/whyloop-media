@@ -1,0 +1,135 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p078 bike floor pump "HOW DOES AIR GO / ONLY ONE WAY?" (group E, track A voice). Built from kit/kit.js.
+// mm, y up, barrel axis x = 0 (bottom y = 0), z toward the camera; the cut removes z > 0 of the barrel, hose head and valve.
+// kin.json rows: [t, piston (lip) y, velocity, lip bend 0..1, tire valve open 0..1, push flow 0..1, pull flow 0..1]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.0, near: 3, far: 30000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+const cm = (m) => { const c = m.clone(); c.clippingPlanes = [CUT]; c.side = THREE.DoubleSide; return c; };
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const lath = (prof, mat, seg = 64) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
+M.barrel = cm(phys({ color: 0xd23a2a, metalness: 0.3, roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.12 }));     // red painted steel barrel
+M.barIn = cm(phys({ color: 0x8b9199, metalness: 0.8, roughness: 0.35 }));
+M.cupM = phys({ color: 0x24262a, metalness: 0, roughness: 0.6, emissive: 0xff7a1a, emissiveIntensity: 0, side: THREE.DoubleSide });
+M.cut = cm(M.cut);
+K.backdrop(scene, { floorY: -14, R: 600, zBack: -1600, h: 8000, width: 14000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 6 });
+const RIG = K.lightRig(scene, V(80, 200, 0), 320);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.5;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(-300, 600, 1500); f.target.position.set(60, 200, 0); scene.add(f, f.target); }
+// ---------- pump: base, barrel (cut), top cap, rod + T-handle, piston + cup ----------
+{ const base = new THREE.Mesh(new K.RBox(200, 14, 70, 5, 4), M.plastic); base.position.set(0, -7, 0); scene.add(base);
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(26, 30, 22, 48), cm(M.plastic)); foot.position.set(0, 4, 0); scene.add(foot);
+  scene.add(lath([[G.BAR_RI + 1.6, 0], [G.BAR_RI + 1.6, G.BAR_H]], M.barrel, 72)); scene.add(lath([[G.BAR_RI, 0], [G.BAR_RI, G.BAR_H]], M.barIn, 72));
+  const cap = lath([[4.6, G.BAR_H], [G.BAR_RI + 3, G.BAR_H], [G.BAR_RI + 3, G.BAR_H + 10], [12, G.BAR_H + 16], [4.6, G.BAR_H + 16]], cm(M.plastic), 48); scene.add(cap);
+  const bot = new THREE.Mesh(new THREE.CylinderGeometry(G.BAR_RI, G.BAR_RI, 6, 48), cm(M.plastic)); bot.position.set(0, 3, 0); scene.add(bot);
+  for (const a of [0.6, 2.2, 3.8]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 6, 12), new THREE.MeshBasicMaterial({ color: 0x050505 })); h.position.set(14 * Math.cos(a), G.BAR_H + 13.5, 14 * Math.sin(a) - 2); scene.add(h); } }
+const ROD = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 330, 24), M.chrome); scene.add(ROD);
+const HANDLE = new THREE.Group(); scene.add(HANDLE);
+{ const hb = new THREE.Mesh(new THREE.CapsuleGeometry(12, 150, 8, 24), M.rubber); hb.rotation.z = Math.PI / 2; HANDLE.add(hb); const hc = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 22, 24), M.plastic); HANDLE.add(hc); }
+const PIS = new THREE.Group(); scene.add(PIS);
+{ const hold = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 9, 40), M.alu); hold.position.y = 9; PIS.add(hold);
+  const nut = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 4, 6), M.steel); nut.position.y = -1; PIS.add(nut); }
+let CUP = null;
+function buildCup(rl) { // cup seal opening downward: hub r 9.5 at y +4..+2, wall flares to the lip (radius rl) at y -12; 1.3 mm thick
+  const pts = [[5, 4.5], [10.5, 4.5], [10.5 + (rl - 10.5) * 0.25, 0], [rl - 0.4 * (G.LIP_SEAL - rl), -7], [rl, -12], [rl - 1.3, -12], [rl - 1.5 - 0.4 * (G.LIP_SEAL - rl), -7], [9.2 + (rl - 10.5) * 0.2, -0.5], [9.2, 2.6], [5, 2.6]];
+  const g = new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p[0], p[1])), 64, Math.PI / 2, Math.PI); // back half only (z < 0, cut view)
+  if (!CUP) { CUP = new THREE.Mesh(g, M.cupM); PIS.add(CUP); } else { CUP.geometry.dispose(); CUP.geometry = g; }
+  CUP.castShadow = true; }
+buildCup(G.LIP_SEAL);
+// ---------- wheel: tire + rim arc, valve stem with core (cut), hose ----------
+const WC = V(430, 230, 0), RR = 300, VALX = WC.x - RR;
+{ const tire = new THREE.Mesh(new THREE.TorusGeometry(RR + 14, 16, 24, 120, Math.PI * 0.62), M.rubber); tire.rotation.z = Math.PI * 0.69; tire.position.copy(WC); scene.add(tire);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(RR - 2, 6, 12, 120, Math.PI * 0.62), M.alu); rim.rotation.z = Math.PI * 0.69; rim.position.copy(WC); scene.add(rim);
+  for (let i = 0; i < 6; i++) { const a = Math.PI * (0.78 + i * 0.09); const sp = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, RR, 8), M.steel); sp.position.set(WC.x + RR / 2 * Math.cos(a), WC.y + RR / 2 * Math.sin(a), -4); sp.rotation.z = a - Math.PI / 2; scene.add(sp); } }
+const STEM_X0 = VALX - 4, STEM_X1 = VALX + 34;
+{ const stem = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, STEM_X1 - STEM_X0, 32, 1, true), cm(M.brass)); stem.rotation.z = Math.PI / 2; stem.position.set((STEM_X0 + STEM_X1) / 2, WC.y, 0); scene.add(stem);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 26, 32), cm(M.plastic)); head.rotation.z = Math.PI / 2; head.position.set(STEM_X1 + 6, WC.y, 0); scene.add(head); }
+const CORE = new THREE.Group(); scene.add(CORE);
+{ const c = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 10, 20), M.chrome); c.rotation.z = Math.PI / 2; CORE.add(c); const sl = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 1.4, 24), M.rubber); sl.rotation.z = Math.PI / 2; sl.position.x = -5.5; CORE.add(sl); }
+const HOSEC = new THREE.CatmullRomCurve3([V(G.BAR_RI + 1, 10), V(60, 8), V(120, 40), V(170, 140), V(STEM_X1 + 40, WC.y - 30), V(STEM_X1 + 19, WC.y)]);
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(HOSEC, 120, 6, 16), M.rubber));
+// ---------- air particles ----------
+const NA = 30, NB = 40;
+const AIR = phys({ color: 0xbfe6ff, metalness: 0, roughness: 0.2, emissive: 0x5a90c0, emissiveIntensity: 0.9 });
+const PA = new THREE.InstancedMesh(new THREE.SphereGeometry(2.0, 12, 10), AIR, NA), PB = new THREE.InstancedMesh(new THREE.SphereGeometry(2.0, 12, 10), AIR, NB);
+PA.frustumCulled = PB.frustumCulled = false; scene.add(PA, PB);
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const O = new THREE.Object3D(); let KK = null, lastRl = -1;
+function setScene(t) {
+  const k = KK = kin(t); const y = k[1], lip = k[3], vo = k[4], fd = k[5], fu = k[6];
+  PIS.position.set(0, y + 12, 0); const rl = G.LIP_SEAL - (G.LIP_SEAL - G.LIP_BENT) * lip; if (Math.abs(rl - lastRl) > 0.01) { buildCup(rl); lastRl = rl; }
+  ROD.position.set(0, y + 12 + 165, 0); HANDLE.position.set(0, y + 12 + 330, 0);
+  CORE.position.set(VALX + 10 - G.VLIFT * vo * 3, WC.y, 0);   // core lift drawn 3x so it reads
+  M.cupM.emissiveIntensity = 0.45 * Math.max(fade(t, T.vo2 + 0.3, T.vo3 - 0.05, 0.3), 0);
+  // intake path (relative to the cup lip): above the piston -> past the bent lip at the wall -> into the chamber below
+  const yl = y + 12 - 12; // lip height
+  for (let i = 0; i < NA; i++) { const u = ((t * 0.5) + i / NA) % 1; let px, py; const a = (i * 2.39) % 6.28 - 3.14;
+    if (u < 0.4) { px = 13 - 4 * (0.4 - u); py = yl + 60 - u / 0.4 * 58; } else if (u < 0.55) { px = 14.6; py = yl + 2 - (u - 0.4) / 0.15 * 12; } else { const w = (u - 0.55) / 0.45; px = 14.6 - w * 10; py = yl - 10 - w * 70; }
+    const ok = py > 6 && py < G.BAR_H - 2 && fu > 0.03; O.position.set(-px * Math.abs(Math.cos(a * 0.5)), py, -px * Math.abs(Math.sin(a * 0.5)) - 1); O.scale.setScalar(ok ? fu : 0.001); O.updateMatrix(); PA.setMatrixAt(i, O.matrix); }
+  PA.instanceMatrix.needsUpdate = true;
+  const PBC = new THREE.CatmullRomCurve3([V(0, Math.max(30, yl - 20), -3), V(0, 14, -3), V(G.BAR_RI + 1, 10, -3), ...HOSEC.getSpacedPoints(10).slice(1).map(p => p.setZ(-3)), V(STEM_X0 + 6, WC.y, -2), V(VALX - 20, WC.y + 8, -2)]);
+  for (let i = 0; i < NB; i++) { const u = ((t * 0.42) + i / NB) % 1; const p = PBC.getPointAt(u); O.position.copy(p); O.scale.setScalar(fd > 0.03 ? fd : 0.001); O.updateMatrix(); PB.setMatrixAt(i, O.matrix); }
+  PB.instanceMatrix.needsUpdate = true;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOKC = [0, 0, 160, 0, 430, 4, 8];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const yAt = (t) => kin(t)[1] + 6;
+const CAMK = [k_(0, HOOKC), k_(T.hookEnd - 0.01, [0, 0, 145, 0, 415, 4, 10]),
+  k_(T.hookEnd, [0, 150, 280, 0, 1700, 8, 14]), k_(T.vo2 - 0.3, [0, 150, 270, 0, 1650, 8, 10]),
+  k_(T.vo2 + 0.7, [0, 0, yAt(T.vo2 + 2) - 4, 0, 225, 4, 6]), k_(T.vo3 - 0.1, [0, 0, yAt(T.vo3) - 4, 0, 225, 4, 6]),
+  k_(T.vo4 - 0.2, [0, 0, yAt(T.vo4 - 0.2) - 4, 0, 235, 4, 6]), k_(T.vo4 + 0.4, [0, 0, yAt(T.vo4 + 0.4) - 4, 0, 235, 4, 6]),
+  k_(T.vo5 - 0.5, [0, 30, 120, 0, 600, 4, 6]), k_(T.vo5 + 0.3, [0, VALX + 12, WC.y, 0, 260, 4, 8]), k_(T.vo6 - 0.2, [0, VALX + 12, WC.y, 0, 250, 4, 8]),
+  k_(T.vo6 + 0.8, [0, 0, 160, 0, 460, 4, 6]), k_(LOOP - 0.5, [0, 0, 160, 0, 440, 4, 8]), k_(LOOP, HOOKC)];
+// ---------- overlay ----------
+const scr = (v) => S.toScreen(camera, v);
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const y = k[1], lip = k[3], fd = k[5], fu = k[6]; const yl = y;
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.75 * fx); }
+  const hk = t < 3.5 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES AIR GO', 'ONLY ONE WAY?', 96); const [cx, cy] = scr(V(-G.BAR_RI + 2, yl + 2, 0)); K.TXT.circle(g2, hk, cx, cy, 90, [-230, 220]); }
+  { const a = fade(t, T.vo1 + 0.2, T.vo2 - 0.2, 0.2); if (a > 0) { const [hx, hy] = scr(V(0, y + 12 + 330, 0)); const dn = k[2] < 0; S.forceArrow(g2, a * (Math.abs(k[2]) > 20 ? 1 : 0.35), hx + 140, hy + (dn ? -60 : 60), hx + 140, hy + (dn ? 60 : -60), 18); pill(g2, a, dn ? 'PUSH' : 'PULL', hx + 250, hy, 54, '#ffd21f');
+      const [tx, ty] = scr(V(VALX, WC.y + 30, 0)); pill(g2, fade(t, T.vo1 + 0.5, T.vo2 - 0.2, 0.2), 'TIRE', tx + 120, ty - 120, 50, '#ffffff'); } }
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo2, T.vo3 - 0.05), s2 = fade(t, T.vo3, T.vo4 - 0.05), s3 = fade(t, T.vo4, T.vo5 - 0.05), s4 = fade(t, T.vo5, T.vo6 - 0.05);
+  stepPlate(Math.max(s1, s2, s3, s4));
+  K.TXT.step(g2, s1, 1, 'A SOFT CUP ON THE PISTON', 60);
+  K.TXT.step(g2, s2, 2, 'PULL: AIR SLIPS PAST THE CUP', 54);
+  K.TXT.step(g2, s3, 3, 'PUSH: AIR PRESSES IT SHUT', 56);
+  K.TXT.step(g2, s4, 4, 'THE TIRE VALVE SHUTS', 60);
+  { const a = fade(t, T.vo2 + 0.6, T.vo3 + 1.2, 0.25); if (a > 0) { S.tag(g2, a, 'RUBBER CUP', ...scr(V(-G.BAR_RI + 1, yl - 4, 0)), -60, 220, 52, '#ffa15a'); S.tag(g2, fade(t, T.vo2 + 1.2, T.vo3 - 0.1, 0.25), 'PISTON', ...scr(V(-8, yl + 18, 0)), -60, -200, 50, '#ffffff'); S.tag(g2, fade(t, T.vo2 + 1.6, T.vo3 - 0.1, 0.25), 'WALL', ...scr(V(G.BAR_RI + 0.8, yl + 30, 0)), 60, -150, 50, '#ffffff'); } }
+  { const a = fade(t, T.vo3 + 1.2, T.vo4 - 0.05, 0.25) * Math.min(1, fu * 1.5 + 0.2); if (a > 0) { S.tag(g2, a, 'EDGE BENDS IN', ...scr(V(-G.LIP_BENT, yl - 10, 0)), -40, 230, 50, '#ffd21f'); S.tag(g2, a, 'AIR SLIPS PAST', ...scr(V(G.BAR_RI - 1.2, yl + 2, 0)), 40, -200, 50, '#bfe6ff'); } }
+  { const a = fade(t, T.vo4 + 0.8, T.vo5 - 0.05, 0.25); if (a > 0) { const [lx, ly] = scr(V(-G.LIP_SEAL, yl - 8, 0)), [rx, ry] = scr(V(G.LIP_SEAL, yl - 8, 0)); S.forceArrow(g2, a, lx + 70, ly, lx + 5, ly, 16); S.forceArrow(g2, a, rx - 70, ry, rx - 5, ry, 16);
+      S.tag(g2, fade(t, T.vo4 + 1.6, T.vo5 - 0.05, 0.25), 'SEALED', ...scr(V(-G.LIP_SEAL, yl - 12, 0)), -40, 220, 54, '#ffd21f'); S.tag(g2, fade(t, T.vo4 + 2.6, T.vo5 - 0.05, 0.25), 'AIR → TIRE', ...scr(V(0, Math.max(20, yl - 70), 0)), 60, 220, 50, '#bfe6ff'); } }
+  { const a = fade(t, T.vo5 + 0.5, T.vo6 + 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'TIRE VALVE', ...scr(V(VALX + 14, WC.y + 4, 0)), 60, -220, 52, '#ffd21f'); S.tag(g2, fade(t, T.vo5 + 1.2, T.vo6 + 0.1, 0.25) * (k[4] < 0.2 ? 1 : 0.3), 'SHUT', ...scr(V(CORE.position.x, WC.y - 2, 0)), -40, 220, 56, '#ff7a6a'); } }
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'THE CUP LETS AIR IN', 'THEN SEALS AND PUSHES', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
