@@ -16,14 +16,14 @@ Sources:
 Yale, Door Closer catalog (rack and pinion: the arm rotates the pinion, which drives the piston and compresses the spring; the stored energy closes the door; the fluid flows freely as the door opens but must return through adjustable valves that control the closing and latching speed): https://www.yalehome.com/in/en/documents/catalouge/Yale%20Door%20Closer.pdf
 LCN, Door Closer Reference Guide (the piston compresses the main spring; as the door closes the spring pushes the piston back and fluid is forced through the speed regulation valves; the flow of fluid through the valves controls the speed): https://www.lcnclosers.com/content/dam/allegion-us-2/web-files/lcn/information-documents/LCN_4040XP_Brochure_015520.pdf
 Door Closers USA, Door closer adjustments (adjustment valves limit how much oil passes through the channels; a closer leaking oil lets the door slam): https://www.doorclosersusa.com/Commercial-Door-Closers-s/243.htm"""
-alt = ("3D animation of a door closer, with a voiceover. Under the question Why doesn't the door slam? a door closes gently while the closer arm swings. "
-       "Then the closer box is shown opened from above. 1, open, the spring gets squeezed: the door opens, a gear turns and pushes a steel piston to the right, squeezing a spring. "
-       "2, let go, the spring pushes back: an arrow shows the spring pushing the piston to the left, and the box is full of amber oil. "
-       "3, without oil, slam: outside, the door with no oil slams shut in a fraction of a second. "
-       "4, oil must squeeze through a tiny hole: back inside, the piston moves slowly to the left while amber oil dots flow down, along a channel through a tiny hole with a brass speed screw, and up to the spring side. "
+alt = ("3D animation of a door closer, with a voiceover. Under the question Why doesn't the door slam? a wooden door closes gently while the closer arm swings. "
+       "Then the closer box is shown opened from above. 1, open, the spring gets squeezed: a small top-view drawing shows the door swinging open while a gear turns and pushes a steel piston to the right, squeezing a spring. "
+       "2, let go, the spring pushes back: the piston starts sliding slowly to the left, and the box is full of amber oil. "
+       "3, without oil, slam: seen from above, the door with no oil slams shut in a fraction of a second. "
+       "4, oil must squeeze through a tiny hole: back inside, the piston moves slowly to the left while amber oil dots crowd up in the channel, squeeze through a tiny hole above a brass screw, and spread out on the spring side. "
        "5, so the door closes gently. The payoff reads A tiny hole full of oil stops the slam, a follow line appears and the video loops.")
 on = ['INSIDE IT', "WHY DOESN'T", 'THE DOOR SLAM?', 'OPEN: THE SPRING GETS SQUEEZED', 'SPRING', 'PISTON', 'GEAR', 'LET GO: THE SPRING PUSHES BACK', 'OIL', 'WITHOUT OIL: SLAM!', 'NO OIL',
-      'OIL MUST SQUEEZE THROUGH A TINY HOLE', 'TINY HOLE', 'SPEED SCREW', 'SO THE DOOR CLOSES GENTLY', 'SLOW', 'A TINY HOLE FULL OF OIL', 'STOPS THE SLAM', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'OIL MUST SQUEEZE THROUGH A TINY HOLE', 'TINY HOLE', 'DOOR', 'SO THE DOOR CLOSES GENTLY', 'SLOW', 'A TINY HOLE FULL OF OIL', 'STOPS THE SLAM', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p087', track='A', group='E', slot='', topicKey='door closer',
   outlier='scorecard rule: everyday object you touch + one "why it does not slam"; our own model, script, words and sound',

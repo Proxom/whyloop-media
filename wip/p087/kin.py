@@ -14,24 +14,30 @@ GAP = {2: 0.3, 3: 0.3, 4: 0.35, 5: 0.3, 6: 0.4}
 for i in range(2, 7): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
 LOOP = round(T['vo6'] + dur[6] + 1.5, 2); T['LOOP'] = LOOP
 T['open_a'] = T['vo1'] + 0.1; T['open_b'] = T['vo1'] + 3.0; T['cutIn'] = T['vo1'] + 0.7
-T['slam_a'] = T['vo3'] + 0.9; T['slam_b'] = T['slam_a'] + 0.32         # WITHOUT OIL (what-if, outside shot)
+T['slam_a'] = T['vo3'] + 1.0; T['slam_b'] = T['slam_a'] + 0.3         # WITHOUT OIL (what-if, outside shot)
 T['back'] = T['vo4'] - 0.05                                               # hard cut back inside: door open again (real state)
-T['close_a'] = T['vo4'] + 0.6; T['close_b'] = T['vo6'] - 0.25              # WITH OIL: slow close
+T['close_b'] = T['vo6'] - 0.25                                             # WITH OIL: slow close ends
 def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
+T['relA'] = T['vo2'] + 0.45; T['relB'] = T['vo3'] - 0.05                  # LET GO: the spring starts pushing back (with oil, slow)
+T['close_a'] = T['back']                                                   # after the what-if cut the real close resumes where it paused
+DA = T['relB'] - T['relA']; DB = T['close_b'] - T['close_a']; TOT = DA + DB
+def real_close(tau):  # tau = real closing time since release; oil-limited, nearly constant speed, soft finish
+    u = min(1, max(0, tau / TOT)); return A_OPEN * (1 - (0.85 * u + 0.15 * ease(u)))
+A_PAUSE = real_close(DA)
 def door_angle(t):
-    if t < T['hookEnd']: return 28.0 * (1 - ease(t / 0.9)) ** 1.0           # hook: gentle close (with oil)
+    if t < T['hookEnd']: return 28.0 * (1 - ease(t / 0.9))                  # hook: gentle close (with oil)
     if t < T['open_a']: return 0.0
     if t < T['open_b']: return A_OPEN * ease((t - T['open_a']) / (T['open_b'] - T['open_a']))
-    if t < T['slam_a']: return A_OPEN
-    if t < T['back']:                                                       # what-if: spring alone, accelerating slam
-        u = min(1, max(0, (t - T['slam_a']) / (T['slam_b'] - T['slam_a']))); return A_OPEN * (1 - u * u)
-    if t < T['close_a']: return A_OPEN
-    if t < T['close_b']:                                                    # oil-limited: nearly constant slow speed, soft finish
-        u = (t - T['close_a']) / (T['close_b'] - T['close_a']); return A_OPEN * (1 - (0.85 * u + 0.15 * ease(u)))
+    if t < T['relA']: return A_OPEN
+    if t < T['relB']: return real_close(t - T['relA'])
+    if t < T['back']:                                                       # what-if (outside, NO OIL): from the paused angle, the spring alone slams it
+        if t < T['slam_a']: return A_PAUSE
+        u = min(1, max(0, (t - T['slam_a']) / (T['slam_b'] - T['slam_a']))); return A_PAUSE * (1 - u * u)
+    if t < T['close_b']: return real_close(DA + (t - T['close_a']))
     return 0.0
 def oil_on(t): return 0.0 if (T['vo3'] - 0.05 <= t < T['back']) else 1.0
 def flow(t):  # oil pushed through the tiny hole: only while the piston moves back (closing) with oil
-    return 1.0 if (oil_on(t) and (T['close_a'] <= t < T['close_b'] or t < 0.9)) else 0.0
+    return 1.0 if (oil_on(t) and (T['relA'] <= t < T['relB'] or T['close_a'] <= t < T['close_b'] or t < 0.9)) else 0.0
 def pinion(a):
     ar = math.radians(a); c, s = math.cos(ar), math.sin(ar)
     Px, Pz = PX * c - PZ * s, PX * s + PZ * c
@@ -60,11 +66,11 @@ for r in rows[::7]:
     assert abs(math.hypot(r[4] - Px, TZ - Pz) - LARM) < 0.01
 # nothing moves without a cause: the door only closes while the spring is compressed (piston right of its rest) and only opens in the push window
 for r0, r1 in zip(rows, rows[1:]):
-    if r1[1] > r0[1] + 1e-9: assert T['open_a'] <= r1[0] <= T['open_b'] + 1e-6 or r1[0] >= T['back'] - 0.01 and r0[0] < T['back'], ('door opens without a push', r1[0])
+    if r1[1] > r0[1] + 1e-9: assert T['open_a'] <= r1[0] <= T['open_b'] + 1e-6 or (r1[0] >= T['back'] - 0.01 and r0[0] < T['back']), ('door opens without a push', r1[0])
     if r1[1] < r0[1] - 1e-9: assert r0[3] > X0 + 1e-6 or r0[0] < T['hookEnd'], ('door closes without spring force', r1[0])
 # with oil: max closing speed limited; without oil: much faster
 def vmax(t0, t1): return max(abs(r1[1] - r0[1]) * FPS_K for r0, r1 in zip(rows, rows[1:]) if t0 <= r0[0] < t1)
-v_oil, v_slam = vmax(T['close_a'], T['close_b']), vmax(T['slam_a'], T['slam_b'])
+v_oil, v_slam = max(vmax(T['relA'], T['relB']), vmax(T['close_a'] + 0.01, T['close_b'])), vmax(T['slam_a'], T['slam_b'])
 assert v_slam > 8 * v_oil, (v_slam, v_oil)
 print('PASS piston x %.1f..%.1f (stroke %.1f mm), pinion turn %.1f deg, spring %.1f..%.1f (bound %.1f), door speed oil %.0f deg/s vs no oil %.0f deg/s' % (
     xmin, xmax, xmax - xmin, math.degrees(B0 - min(r[2] for r in rows)), min(spr), max(spr), SPR_BOUND, v_oil, v_slam))
