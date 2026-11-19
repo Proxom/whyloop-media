@@ -24,7 +24,7 @@ const lathe = (prof, mat, seg = 160) => new THREE.Mesh(new THREE.LatheGeometry(p
 const fine = K.grainTex(41, 10); fine.repeat.set(0.05, 0.05);
 M.tin = phys({ color: 0xd9dde2, metalness: 1, roughness: 0.22, roughnessMap: fine, envMapIntensity: 1.35, side: THREE.DoubleSide });
 M.lid = phys({ color: 0xe2e6ea, metalness: 1, roughness: 0.36, roughnessMap: fine, envMapIntensity: 1.3, side: THREE.DoubleSide });
-M.ss = phys({ color: 0xe0e4e9, metalness: 1, roughness: 0.28, roughnessMap: fine, envMapIntensity: 1.7, side: THREE.DoubleSide });
+M.ss = M.steel.clone(); M.ss.color.setHex(0xe2e6eb); M.ss.envMapIntensity = 1.7; M.ss.side = THREE.DoubleSide;
 M.blade = phys({ color: 0xeef1f4, metalness: 1, roughness: 0.1, envMapIntensity: 1.5, side: THREE.DoubleSide });
 M.grip = phys({ color: 0x18191c, metalness: 0, roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.5 });
 M.slit = new THREE.MeshBasicMaterial({ color: 0x050506, side: THREE.DoubleSide, toneMapped: false });
@@ -96,7 +96,7 @@ function setScene(t) {
   // cutting wheel rolls along the slit (free spinning): angle = arc length / radius
   JAW.userData.cw.rotation.x = -phi * G.XC / G.RC;
   SLIT.geometry.setDrawRange(0, Math.max(0, Math.floor(slit / (2 * Math.PI * 1.02) * SLIT.userData.N)) * 6);
-  PANEL.position.y = -2.6 * drop; PANEL.rotation.x = 0.05 * drop; PANEL.rotation.z = -0.03 * drop;
+  PANEL.position.y = -4.5 * drop; PANEL.rotation.x = 0.14 * drop; PANEL.rotation.z = -0.06 * drop;
   K.glow(KEY.userData.tw, Math.min(1, fade(t, T.vo2 + 0.3, T.vo4 - 0.1, 0.35)) * 0.85);
   K.glow(JAW.userData.cw, Math.min(1, fade(t, T.vo1 + 0.6, T.vo2 - 0.1, 0.35), fade(t, T.vo4 + 0.2, T.vo5 - 0.1, 0.35)) * 0.6);
   // the cut line glows orange while it is being explained (step 4), dark otherwise
@@ -106,14 +106,14 @@ function setScene(t) {
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] (targets in WORLD-rotated coordinates) ----------
 const wp = (x, y, z = 0) => { const v = V(x, y, z).applyAxisAngle(V(0, 1, 0), VIEW); return [v.x, v.y, v.z]; };
 const k_ = (t, tgt, d, el, az) => [t, ...tgt, d, el, az];
-const HOOK = (t) => k_(t, wp(10, -12), 300, 38, 4);
-const CAMK = [HOOK(0), k_(T.hookEnd - 0.01, wp(10, -12), 292, 38, 6),
-  k_(T.hookEnd, wp(28, -22), 440, 26, 10), k_(T.vo1 - 0.1, wp(30, -18), 420, 24, 12),
-  k_(T.vo1 + 1.2, wp(32, -8), 360, 20, 14), k_(T.vo2 - 0.3, wp(32, -8), 350, 20, 14),
+const HOOK = (t) => k_(t, wp(10, 2), 330, 38, 4);
+const CAMK = [HOOK(0), k_(T.hookEnd - 0.01, wp(10, 2), 322, 38, 6),
+  k_(T.hookEnd, wp(36, -10), 560, 26, 10), k_(T.vo1 - 0.1, wp(38, -8), 540, 24, 12),
+  k_(T.sqa - 0.6, wp(40, -4), 470, 22, 14), k_(T.sqa + 0.5, wp(33, -1), 150, 26, 72), k_(T.vo2 - 0.3, wp(33, -1), 140, 28, 70),
   k_(T.vo2 + 0.5, wp(38, -10), 120, -4, 53), k_(T.vo3 - 0.3, wp(38, -10), 114, -4, 51),
-  k_(T.vo3 + 0.6, wp(30, -25), 400, 26, 20), k_(T.vo4 - 0.2, wp(30, -25), 390, 28, 18),
-  k_(T.vo4 + 0.5, wp(20, -8), 270, 52, 10), k_(T.tb, wp(20, -8), 260, 54, 10),
-  k_(T.vo5 + 0.6, wp(12, -16), 320, 40, 8), k_(LOOP, wp(11, -14), 305, 39, 6)];
+  k_(T.vo3 + 0.6, wp(28, -12), 480, 26, 20), k_(T.vo4 - 0.2, wp(28, -12), 470, 28, 18),
+  k_(T.vo4 + 0.5, wp(20, 0), 290, 52, 10), k_(T.tb, wp(20, 0), 280, 54, 10),
+  k_(T.vo5 + 0.6, wp(14, 6), 380, 40, 8), k_(LOOP, wp(13, 6), 370, 39, 6)];
 // ---------- overlay ----------
 const scrW = (x, y, z = 0) => S.toScreen(camera, V(x, y, z).applyAxisAngle(V(0, 1, 0), VIEW));
 const scrCan = (r, a, y) => { const ph = KK ? KK[2] : 0; return scrW(r * Math.cos(a - ph), y, r * Math.sin(a - ph)); };  // a point fixed on the can at local angle a
@@ -141,7 +141,7 @@ function overlay(t) {
       const [ax, ay] = scrW(G.XC, -3.4, 0); S.tag(g2, fade(t, T.sqb - 0.05, T.vo2 - 0.1, 0.2), 'PUNCHED THROUGH', ax, ay, -60, 230, 48, '#ffffff'); } }
   // step 2: teeth tag
   { const a = fade(t, T.vo2 + 0.4, T.vo3 - 0.05, 0.25); if (a > 0) { S.tag(g2, a, 'TEETH', ...scrW(G.XT, G.YT - 3, 1), 140, 190, 54, '#ffd21f');
-      S.tag(g2, fade(t, T.vo2 + 0.9, T.vo3 - 0.05, 0.25), 'RIM', ...scrW(G.SEAM_RO - 0.5, -1.5, -10), -180, -150, 52, '#ffffff'); } }
+      S.tag(g2, fade(t, T.vo2 + 0.9, T.vo3 - 0.05, 0.25), 'RIM', ...scrW(34.8, -1.0, 16.7), -120, 230, 52, '#ffffff'); } }
   // step 3: key turn + wheel + can rotation arrows
   { const a = fade(t, T.ta - 0.3, T.vo4 + 0.2, 0.25); if (a > 0) { const [kx, ky] = scrW(64, G.YT, 0); arcArrow(g2, a, kx, ky, 80, -2.4, -0.3, false, '#ffd21f', 12);
       const [cx, cy] = scrW(0, -40, 0), [rx, ry] = scrW(44, -40, 0), [fx, fy] = scrW(0, -40, 44); const R = Math.hypot(rx - cx, ry - cy), sy = Math.abs(fy - cy) / Math.max(1, Math.hypot(fx - cx, 0) + Math.abs(fy - cy)) + 0.25;
@@ -150,7 +150,7 @@ function overlay(t) {
   // step 4: the blade stays, the slit grows
   { const a = fade(t, T.vo4 + 0.4, T.vo5 - 0.05, 0.25); if (a > 0) { S.tag(g2, a, 'BLADE STAYS HERE', ...scrW(G.XC, -2.6, 0), 90, -200, 50, '#ffd21f');
       const sl = k[4]; if (sl > 0.4) S.tag(g2, fade(t, T.vo4 + 1.0, T.vo5 - 0.05, 0.25), 'CUT', ...scrCan(G.XC, sl * 0.5, -3), -120, 170, 52, '#ffffff'); } }
-  K.TXT.answer(g2, fade(t, T.vo5 + 0.05, LOOP - 1.3, 0.3), 'ONE WHEEL PULLS THE CAN', 'ONE WHEEL CUTS', 600);
+  K.TXT.answer(g2, fade(t, T.vo5 + 0.05, LOOP - 1.3, 0.3), 'ONE WHEEL PULLS THE CAN', 'ONE WHEEL CUTS', 480);
   K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.15, 0.25));
 }
 window.motionPx = (t) => 0;
