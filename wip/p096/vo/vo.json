@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "Why is there a tiny hole in a plane window?",
+  "dur": 2.155
+ },
+ {
+  "i": 1,
+  "text": "The window is three panes: inner, middle and outer.",
+  "dur": 2.603
+ },
+ {
+  "i": 2,
+  "text": "Up high, the cabin air pushes hard to get out.",
+  "dur": 2.325
+ },
+ {
+  "i": 3,
+  "text": "The tiny hole lets cabin air into the gap behind the middle pane.",
+  "dur": 3.456
+ },
+ {
+  "i": 4,
+  "text": "Now the middle pane has the same push on both sides, so only the outer pane takes the load. The middle one is the backup.",
+  "dur": 6.592
+ },
+ {
+  "i": 5,
+  "text": "The hole also lets moisture out, so the window doesn't fog up.",
+  "dur": 3.2
+ },
+ {
+  "i": 6,
+  "text": "One tiny hole: the outer pane does the work.",
+  "dur": 2.475
+ }
+]
