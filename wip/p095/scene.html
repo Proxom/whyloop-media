@@ -27,7 +27,9 @@ M.inner = phys({ color: 0x3b3f46, roughness: 0.75, side: THREE.DoubleSide });
 M.btn = phys({ color: 0x3a3d43, roughness: 0.8, bumpMap: M.rubber.bumpMap, bumpScale: 0.2 });
 M.blade = phys({ color: 0xe4e8ee, metalness: 1, roughness: 0.16, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.5 });
 M.groove = phys({ color: 0x9aa1aa, metalness: 1, roughness: 0.38, envMapIntensity: 1.2 });
-M.sec = phys({ color: 0xd2261d, roughness: 0.5, side: THREE.DoubleSide });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#d42a1f'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(90,8,4,0.55)'; g.lineWidth = 7;
+  for (let i = -64; i < 128; i += 22) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.28, 0.28); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
 M.leg = phys({ color: 0xe7b85a, metalness: 1, roughness: 0.3, envMapIntensity: 1.2 });
 const PIV = new THREE.Group(); PIV.position.set(0, 0, 12); scene.add(PIV);
 const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
@@ -76,18 +78,20 @@ const RING = add(new THREE.Mesh(new THREE.TorusGeometry(5.6, 0.45, 12, 48), M.ch
 // springs: torsion spring around the axis (winds with the blade), small return spring under the button
 const TSP = K.spring(M.chrome, { R: 6.6, wire: 0.7, turns: 4, len: 4.4, closed: 0 }); TSP.position.y = -6.4; PIV.add(TSP);
 const TLEG = add(new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 4.2, 12), M.chrome), SW); TLEG.position.set(-6.6, -1.6, 0.6);
+const FLEG = add(new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 3.2, 12), M.chrome), PIV); FLEG.position.set(6.6, -7.2, 0.6);
 const RSP = K.spring(M.steel, { R: 3, wire: 0.42, turns: 3, len: 6 }); RSP.position.y = -6.5; PIV.add(RSP);
 S.shadowAll(scene);
 K.backdrop(scene, { floorY: -8.2, R: 160, zBack: -900, h: 4000, width: 8000, wall: '#2a3140', floor: '#2b3038', pool: true, catcher: 3000, shadowOpacity: 0.55 });
 K.contactBlob(scene, -30, -8.2, -5, 48, 0.45);
-const RIG = K.lightRig(scene, V(-10, 0, 5), 120, { key: 2.6, rim: 2.6, fill: 0.5 }); RIG.key.shadow.bias = -0.0004;
+const RIG = K.lightRig(scene, V(-10, 0, 5), 120, { key: 2.6, rim: 2.6, fill: 0.5 }); RIG.key.shadow.bias = -0.0004; RIG.rim.intensity = 3.6;
 { const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(200, 500, 600); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.2); g.position.set(-500, 300, -400); scene.add(g); }
 // ---------- kinematics ----------
 const DT = 1 / G.FPS_K;
 function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
   if (Math.abs(b[1] - a[1]) > 20) return a; return a.map((v, j) => j >= 4 ? a[j] : v + (b[j] - v) * u); }
 const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
-const inside = (t) => t >= T.cutIn && t < T.outA;
+T.outB = T.foldPop + 0.15;
+const inside = (t) => t >= T.cutIn && t < T.outB;
 let KK = null;
 function setScene(t) {
   const k = KK = kin(t); const th = k[1], b = k[2];
@@ -95,20 +99,21 @@ function setScene(t) {
   TSP.rotation.y = -th * D2R * 0.35;
   const ins = inside(t); FULL.visible = !ins; CUT.visible = ins;
   const wound = (k[3] - 60) / 180;                                   // 1 folded (wound) .. 0 open
-  K.glow(TSP, ins && t < T.snapB + 0.2 && t > T.vo1 + 0.4 ? 0.35 + 0.65 * wound : 0);
+  K.glow(TSP, ins && ((t < T.snapB + 0.2 && t > T.vo1 + 0.4) || t > T.foldA) ? 0.35 + 0.65 * wound : 0);
   K.glow(LEGS[0], ins && t >= T.vo2 + 0.6 && t < T.vo4 ? 1 : (ins && t >= T.pop - 0.1 && t < T.outA ? 1 : 0)); K.glow(LEGS[1], ins && t >= T.vo2 + 0.6 && t < T.vo4 ? 1 : (ins && t >= T.pop - 0.1 && t < T.outA ? 1 : 0));
   K.shoot(st, CAMK, t);
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 600, az = -45, el = 55) => [14.6, 0, -7.4, d * 1.07, el, az];
+const OUTK = (d = 600, az = -45, el = 55) => [-3.3, 0, 1.1, d * 0.98, el, az];
 const INK = (d = 118, az = 24, el = 24) => [0, 2.5, 12, d, el, az];
 const WIDE = (d = 560, az = 90, el = 66) => [-4, 0, 30, d * 1.05, el, az];
 const CAMK = [k_(0, OUTK(610, -45)), k_(T.cutIn - 0.01, OUTK(580, -43)),
   k_(T.cutIn, INK(150, 30, 28)), k_(T.vo2 - 0.01, INK(128, 22, 24)), k_(T.vo2, INK(112, 30, 22)), k_(T.vo3 - 0.01, INK(98, 36, 20)),
-  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.4, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(570, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
-  k_(T.vo5, INK(110, -26, 24)), k_(T.outA - 0.01, INK(96, -32, 22)),
-  k_(T.outA, OUTK(580, -47)), k_(LOOP, OUTK(610, -45))];
+  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.2, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(560, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
+  k_(T.vo5, INK(112, 30, 24)), k_(T.outA - 0.01, INK(100, 34, 22)),
+  k_(T.outA, INK(170, 30, 32)), k_(T.outB - 0.01, INK(160, 26, 32)),
+  k_(T.outB, OUTK(585, -47)), k_(LOOP, OUTK(610, -45))];
 // ---------- overlay ----------
 const sp = (x, y, z) => S.toScreen(camera, V(x, y, z));
 const pw = (x, y, z) => S.toScreen(camera, PIV.localToWorld(V(x, y, z)));
@@ -120,25 +125,35 @@ function arcArrow(g2, a, cx, cy, R, a0, a1, color) { if (a <= 0) return; g2.save
   g2.fillStyle = color; g2.beginPath(); g2.moveTo(ex + ux * 30, ey + uy * 30); g2.lineTo(ex - uy * 22, ey + ux * 22); g2.lineTo(ex + uy * 22, ey - ux * 22); g2.closePath(); g2.fill(); g2.restore(); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t);
-  { let fx = 0; for (const c of [T.cutIn, T.vo4 + 0.55, T.vo5, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.6 * Math.max(0, fx)); }
+  { let fx = 0; for (const c of [T.cutIn, T.vo5, T.outA, T.outB]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
   // hook
   const hk = t < T.cutIn ? 1 : 0;
   if (hk) { K.TXT.hook(g2, 1, 'WHAT FLIPS', 'THE KEY OUT?', 104); const [cx, cy] = pw(0, 9.5, 0); K.TXT.circle(g2, 1, cx, cy, 70, [210, 190]); }
-  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outA);
+  const s6 = hard(t, T.outA, T.outB), s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outA);
   K.TXT.step(g2, s1, 1, 'A WOUND SPRING PUSHES THE BLADE', 54);
   K.TXT.step(g2, s2, 2, 'BUTTON TEETH SIT IN NOTCHES', 58);
   K.TXT.step(g2, s3, 3, 'PRESS: TEETH LEAVE THE NOTCHES', 56);
   K.TXT.step(g2, s4, 4, 'THE SPRING SNAPS IT OUT', 60);
   K.TXT.step(g2, s5, 5, 'TEETH POP BACK: LOCKED OPEN', 58);
+  K.TXT.step(g2, s6, 6, 'PRESS, PUSH BACK: SPRING WINDS UP', 52);
   if (s1) { S.tag(g2, 1, 'WOUND SPRING', ...pw(-6.6, -4.5, 3), -170, 230, 50, '#ffb21f'); const [cx, cy] = pw(0, -4.2, 0); arcArrow(g2, hard(t, T.vo1 + 1.2, T.vo2), cx, cy + 6, 230, Math.PI * 0.15, Math.PI * 0.85, '#ffd21f');
-    S.tag(g2, hard(t, T.vo1 + 2.6, T.vo2), 'BLADE', ...sp(-40, 1, 12), 60, 250, 48, '#ffffff'); }
+    S.tag(g2, hard(t, T.vo1 + 2.2, T.vo2), 'END HOOKED TO THE CASE', ...pw(6.6, -7.6, 0.6), 60, 250, 46, '#ffffff');
+    S.tag(g2, hard(t, T.vo1 + 3.2, T.vo2), 'END HOOKED TO THE BLADE', ...S.toScreen(camera, TLEG.getWorldPosition(V())), -60, -330, 46, '#ffffff'); }
   if (s2) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, 1, 'TOOTH', lx, ly, 150, -170, 50, '#ffd21f');
-    S.tag(g2, hard(t, T.vo2 + 1.8, T.vo3), 'NOTCH IN THE CASE', ...pw(8.6, 7.3, 0), 60, -290, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 3.0, T.vo3), 'LOCKED', ...pw(-8.6, 5.5, 0), -150, 250, 52, '#ff6a4a'); }
+    S.tag(g2, hard(t, T.vo2 + 1.8, T.vo3), 'NOTCH IN THE CASE', ...pw(8.6, 7.3, 0), 60, -290, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 3.0, T.vo3), 'LOCKED', ...pw(-8.6, 5.5, 0), -150, 250, 52, '#ff6a4a');
+    { const [x0, y0] = pw(-12, 2, 1), [x1, y1] = pw(-12, 2, 11); const w = 0.5 + 0.5 * Math.sin(t * 9); arrowC(g2, hard(t, T.vo2 + 0.3, T.vo3), x0, y0, x0 + (x1 - x0) * (0.85 + 0.1 * w), y0 + (y1 - y0) * (0.85 + 0.1 * w), 24, '#ffb21f');
+      S.tag(g2, hard(t, T.vo2 + 0.3, T.vo2 + 1.8), 'SPRING PUSHES, TEETH HOLD', x0, y0, -40, 300, 46, '#ffb21f'); } }
   if (s3) { const [bx, by] = pw(0, 10.5 - k[2], 0); arrowC(g2, hard(t, T.press - 0.5, T.press + 0.4), bx, by - 230, bx, by - 40, 30, '#ffd21f'); S.tag(g2, hard(t, T.press + 0.4, T.vo4), 'TEETH OUT: FREE', ...pw(-6.45, 2.5 - k[2], 0), -150, 260, 52, '#7dff9a'); }
-  if (s4) { S.outlined(g2, 'SLOW MOTION', 300, 640, 48, '#ffd21f'); if (t > T.snapB - 0.05) S.tag(g2, 1, 'STOP', ...sp(16, 4, 4), 150, 200, 56, '#ff6a4a'); }
-  if (s5) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, hard(t, T.pop + 0.15, T.outA), 'BACK IN THE NOTCH', lx, ly, 120, 260, 50, '#ffd21f'); const [bx, by] = pw(0, 12, 0); arrowC(g2, hard(t, T.pop - 0.1, T.pop + 0.9), bx, by - 20, bx, by - 200, 28, '#7dff9a'); }
-  if (t >= T.outA && t < T.foldB + 0.3) { const [ax, ay] = sp(46, 2, 30); arrowC(g2, 1, ax + 40, ay + 120, ax - 120, ay + 220, 26, '#ffd21f'); S.tag(g2, hard(t, T.foldA, T.foldB + 0.3), 'WINDS THE SPRING', ...pw(0, 9, 0), -60, 330, 48, '#ffb21f'); }
-  K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 520);
+  if (s4) { const a = hard(t, T.vo4 + 0.7, T.snapB + 0.6); if (a) { g2.save(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 10; g2.lineCap = 'round'; g2.setLineDash([22, 18]); g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath();
+      for (let i = 0; i <= 40; i++) { const q = Math.PI * (1 - i / 40); const [x, y] = pw(80 * Math.cos(q), 2, 80 * Math.sin(q)); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke(); g2.setLineDash([]);
+      const [ex, ey] = pw(80, 2, 0), [px, py] = pw(80 * Math.cos(0.12), 2, 80 * Math.sin(0.12)); const an = Math.atan2(ey - py, ex - px); g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.moveTo(ex + 34 * Math.cos(an), ey + 34 * Math.sin(an)); g2.lineTo(ex + 22 * Math.cos(an + 2.2), ey + 22 * Math.sin(an + 2.2)); g2.lineTo(ex + 22 * Math.cos(an - 2.2), ey + 22 * Math.sin(an - 2.2)); g2.closePath(); g2.fill(); g2.restore(); }
+    S.outlined(g2, 'SLOW MOTION', 300, 640, 48, '#ffd21f'); if (t > T.snapB - 0.05) S.tag(g2, 1, 'STOP', ...sp(16, 4, 4), 150, 200, 56, '#ff6a4a'); }
+  if (s5) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, hard(t, T.vo5, T.pop - 0.05), 'NOTCH LINED UP', ...pw(8.6, 5.5, 0), 80, 260, 50, '#ffffff'); S.tag(g2, hard(t, T.pop + 0.15, T.outA), 'BACK IN THE NOTCH', lx, ly, 120, 260, 50, '#ffd21f'); const [bx, by] = pw(0, 12, 0); arrowC(g2, hard(t, T.pop - 0.1, T.pop + 0.9), bx, by - 20, bx, by - 200, 28, '#7dff9a'); }
+  if (s6) { const [bx, by] = pw(0, 10.5 - k[2], 0); arrowC(g2, hard(t, T.outA, T.foldA + 0.1), bx, by - 230, bx, by - 40, 30, '#ffd21f'); S.tag(g2, hard(t, T.outA, T.foldA + 0.1), 'PRESS TO FOLD', bx, by - 40, 160, -120, 50, '#ffd21f');
+    const q = (180 - k[1]) * D2R * 0 + k[1] * D2R; const [hx, hy] = pw(30 * Math.cos(q), 1, 30 * Math.sin(q)), [h2x, h2y] = pw(30 * Math.cos(q + 0.5), 1, 30 * Math.sin(q + 0.5));
+    arrowC(g2, hard(t, T.foldA + 0.1, T.foldB), hx, hy, hx + (h2x - hx) * 0.9, hy + (h2y - hy) * 0.9, 26, '#ffd21f'); S.tag(g2, hard(t, T.foldA + 0.1, T.foldA + 0.9), 'PUSH IT BACK', hx, hy, 60, 220, 48, '#ffffff');
+    S.tag(g2, hard(t, T.foldA + 0.9, T.foldPop), 'SPRING WINDS UP', ...pw(-6.6, -4.5, 3), -170, 230, 48, '#ffb21f'); S.tag(g2, hard(t, T.foldPop, T.outB), 'CLICK: LOCKED FOLDED', ...pw(-8.6, 5.5, 0), -150, 250, 50, '#ffd21f'); }
+  K.TXT.answer(g2, hard(t, T.outB, LOOP + 1), 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 520);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }
 window.motionPx = (t) => 0;

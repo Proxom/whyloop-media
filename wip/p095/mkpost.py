@@ -16,15 +16,15 @@ Sources:
 US Patent 7,370,501, Key unit (a torsion spring urges the key from the retracted to the projecting position; pushing in the release button frees it and it pivots out by the spring force; at the projecting position the button is pushed out by its coil spring so a projection fits into a recess and retains the key): https://patents.google.com/patent/US7370501
 US Patent 8,978,429, Flip key for an automotive vehicle (the push button is held up by a spring; its legs sit in anchoring grooves of the housing; pushing the button makes the legs exit the grooves, freeing the rotating bearing of the key insert): https://patents.google.com/patent/US8978429"""
 alt = ("3D animation of a folding car key, with a voiceover. Under the question What flips the key out? a black key fob sits on a dark table; a finger press on the round button at the pivot and the steel key blade snaps out. "
-       "Then the pivot is shown cut in half with red cut faces. 1, a wound spring pushes the blade: a coiled spring around the pivot glows and a curved arrow shows it pushing. "
-       "2, button teeth sit in notches: two small gold teeth on the button sit in notches in the case, so it is locked. "
+       "Then the pivot is shown cut in half with red cut faces. 1, a wound spring pushes the blade: a coiled spring around the pivot glows, one end hooked to the case and one to the blade. "
+       "2, button teeth sit in notches: an arrow shows the spring pushing while two small gold teeth on the button sit in notches in the case, so it is locked. "
        "3, press, teeth leave the notches: the button goes down and the teeth drop out, free. "
-       "4, the spring snaps it out: seen from above in slow motion, the blade swings out until it rests on a stop. "
-       "5, teeth pop back, locked open: the button rises and the teeth drop back into the notches. "
-       "Finally the blade is pushed back in, winding the spring. The payoff reads A wound-up spring flips the key out, a follow line appears and the video loops.")
+       "4, the spring snaps it out: seen from above in slow motion, the blade swings out along a dashed arc until it rests on a stop. "
+       "5, teeth pop back, locked open: the notch lines up, the button rises and the teeth drop back into the notches. "
+       "6, press, push back, spring winds up: the button is pressed again, the blade is pushed back in, the spring glows as it winds, and the teeth click into the notches. The payoff reads A wound-up spring flips the key out, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'WHAT FLIPS', 'THE KEY OUT?', 'A WOUND SPRING PUSHES THE BLADE', 'WOUND SPRING', 'BLADE', 'BUTTON TEETH SIT IN NOTCHES', 'TOOTH', 'NOTCH IN THE CASE', 'LOCKED',
       'PRESS: TEETH LEAVE THE NOTCHES', 'TEETH OUT: FREE', 'THE SPRING SNAPS IT OUT', 'SLOW MOTION', 'STOP', 'TEETH POP BACK: LOCKED OPEN', 'BACK IN THE NOTCH',
-      'WINDS THE SPRING', 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'NOTCH LINED UP', 'END HOOKED TO THE CASE', 'END HOOKED TO THE BLADE', 'SPRING PUSHES, TEETH HOLD', 'PRESS, PUSH BACK: SPRING WINDS UP', 'PRESS TO FOLD', 'PUSH IT BACK', 'SPRING WINDS UP', 'CLICK: LOCKED FOLDED', 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p095', track='A', group='V', slot='2026-11-21T21:00 Europe/London (planned, coordinator schedules)', topicKey='flip key',
   outlier='scorecard rule: everyday object you hold + one "what makes it snap / lock"; our own model, script, words and sound',

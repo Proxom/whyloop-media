@@ -15,8 +15,8 @@ T['press'] = T['vo3'] + 0.55                       # button goes down (step 3)
 T['snapA'] = T['vo4'] + 0.75; T['snapB'] = T['snapA'] + 1.3   # slow motion snap (real ~0.15 s)
 T['pop'] = T['vo5'] + 0.6                          # button pops back up (step 5)
 T['outA'] = T['vo6'] - 0.05                        # cut to outside for the fold-back
-T['foldP'] = T['vo6'] + 0.25; T['foldA'] = T['vo6'] + 0.45; T['foldB'] = T['vo6'] + 1.55; T['foldPop'] = T['foldB'] + 0.06
-LOOP = round(T['vo6'] + D[6] + 1.25, 2); T['LOOP'] = LOOP
+T['foldP'] = T['vo6'] + 0.25; T['foldA'] = T['vo6'] + 0.45; T['foldB'] = T['vo6'] + 2.1; T['foldPop'] = T['foldB'] + 0.06
+LOOP = round(T['vo6'] + 2.1 + 0.06 + 0.15 + 2.75, 2); T['LOOP'] = LOOP
 H = {'pressA': 0.15, 'snapA': 0.30, 'snapB': 0.52, 'pop': 0.56}   # hook (real speed payoff)
 B_DN = 3.4; WIND0 = 60.0
 sm = lambda u: (lambda v: v * v * (3 - 2 * v))(min(1, max(0, u)))
