@@ -22,7 +22,7 @@ for _ in range(60):
 U_LOCK = lo; L_LOCK = 2 * LS * U_LOCK      # cord travel from bottom to lock
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
 T = {'vo0': 0.3, 'vo1': 2.75}
-GAP = {2: 0.35, 3: 0.35, 4: 0.3, 5: 1.5, 6: 0.4}
+GAP = {2: 0.35, 3: 0.35, 4: 0.3, 5: 1.85, 6: 1.25}
 for i in range(2, 7): T[f'vo{i}'] = round(T[f'vo{i-1}'] + dur[i - 1] + GAP[i], 3)
 LOOP = round(T['vo6'] + dur[6] + 1.45, 2); T['LOOP'] = LOOP
 T['cutIn'] = T['vo1'] - 0.15; T['outEnd'] = T['vo6'] - 0.05
@@ -36,11 +36,11 @@ T['pd0'], T['pd1'] = T['vo2'] + 0.25, T['vo3'] - 0.35   # PULL DOWN (blind rises
 c2 = c1 + PULL
 T['lg0'] = T['vo3'] + 0.9; T['lg1'] = T['vo4'] + dur[4] - 0.35   # LET GO, slow motion lock-up; LOCK lands on 'pinched', then ~1.8 s hold
 c3 = c2 - L_LOCK
-T['rp0'], T['rp1'] = T['vo5'] + 0.05, T['vo5'] + 0.35          # release: small pull down unpinches
-T['rf0'], T['rf1'] = T['rp1'], T['rp1'] + 0.35                 # roller falls (gravity) to the wide end
-T['rm0'], T['rm1'] = T['vo5'] + 0.45, T['vo5'] + 0.95          # cord moved toward the middle
+T['rp0'], T['rp1'] = T['vo5'] + 0.05, T['vo5'] + 0.45          # release: small pull down unpinches
+T['rm0'], T['rm1'] = T['vo5'] + 0.5, T['vo5'] + 1.5            # cord moved toward the middle: it leaves the roller
+T['rf0'], T['rf1'] = T['vo5'] + 1.7, T['vo5'] + 2.3            # then the roller falls (gravity) to the wide end
 c4 = c3 + 3.0
-T['ld0'], T['ld1'] = T['vo5'] + 1.0, T['vo6'] + 0.6            # cord runs up freely: blind lowers to the start height
+T['ld0'], T['ld1'] = T['vo5'] + 2.45, T['vo6'] + 0.6           # cord runs up freely: blind lowers to the start height
 T['rb0'], T['rb1'] = T['vo6'] + 0.9, T['vo6'] + 1.5            # cord swings back to hanging (outside shot)
 def cord(t):
     if t < T['hp0']: return 0.0

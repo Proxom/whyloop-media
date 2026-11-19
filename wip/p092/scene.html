@@ -112,11 +112,12 @@ function buildHair(phi) {
   if (!HAIR) { HAIR = new THREE.Mesh(g, M.hair); HAIR.castShadow = true; IN.add(HAIR); } else { HAIR.geometry.dispose(); HAIR.geometry = g; } }
 buildHair(0);
 // eddy-current loops IN THE CUP WALL (amber, emissive): two nested loops beside each magnet pole, drawn only where the cup wall exists, brightness ~ spin speed
+const LAG = 0.42;   // induced cup poles trail the magnet poles (rotation = decreasing angle, so 'behind' = +angle)
 const EDDY = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffb23a, transparent: true, opacity: 1 })); IN.add(EDDY);
 function buildEddy(mag, phi, w, on) {
   const geos = []; const mc = (G.MAG_Z[0] + G.MAG_Z[1]) / 2;
   if (on) for (const off of [0, Math.PI]) for (const [hw, hh] of [[0.5, 15], [0.28, 8.5]]) for (const r of [G.R_CUP_OUT + 0.35, G.R_CUP_IN - 0.35]) {
-    const c = Math.PI / 2 - mag + off; const run = []; const runs = [run];
+    const c = Math.PI / 2 - mag + off + LAG; const run = []; const runs = [run];
     for (let i = 0; i <= 72; i++) { const u = i / 72 * 2 * Math.PI; const a = c + hw * Math.cos(u), y = mc + hh * Math.sin(u);
       const solid = Math.cos(a - (WIN0 - phi)) < Math.cos(WIN / 2) - 0.02; if (solid) runs[runs.length - 1].push(V(Math.sin(a) * r, y, Math.cos(a) * r)); else if (runs[runs.length - 1].length) runs.push([]); }
     for (const p of runs) if (p.length >= 4) geos.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p), p.length * 2, 0.8, 5, false)); }
@@ -153,9 +154,9 @@ function setScene(t) {
 const k_ = (t, a) => [t, ...a];
 const OUTK = (d = 900, az = 4) => [15, 50, 0, d, 6, az];
 const INK = (ty = -70, d = 900, az = 0, el = 12) => [3000, ty, 0, d, el, az];
-const CAMK = [k_(0, OUTK(860, 3)), k_(T.cutIn - 0.01, OUTK(900, 5)),
+const CAMK = [k_(0, OUTK(860, 3)), k_(T.cutIn - 0.75, OUTK(900, 5)), k_(T.cutIn - 0.01, [15, 0, 0, 380, 4, 4]),
   k_(T.cutIn, INK(-22, 560, 8, 20)), k_(T.vo2 - 0.01, INK(-26, 520, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-58, 340, 0, 14)), k_(T.vo4 - 0.01, INK(-56, 320, -6, 15)),
-  k_(T.vo4, INK(-36, 330, -6, 24)), k_(T.vo5 - 0.01, INK(-34, 320, -10, 25)), k_(T.vo5, INK(-36, 450, -10, 22)), k_(T.out - 0.01, INK(-34, 480, -34, 25)),
+  k_(T.vo4, INK(-36, 330, -6, 24)), k_(T.vo5 - 0.01, INK(-34, 320, -10, 25)), k_(T.vo5, INK(-42, 430, -18, 17)), k_(T.out - 0.01, INK(-42, 450, -52, 17)),
   k_(T.out, OUTK(900, 5)), k_(LOOP, OUTK(860, 3))];
 // ---------- overlay ----------
 const ip = (x, y, z = 0) => S.toScreen(camera, V(3000 + x, y, z));
@@ -172,6 +173,19 @@ function inset(g2, mph) { const phi = mph / G.MPH_MAX * G.SWEEP;   // small dial
   const a = needleAng(phi); g2.strokeStyle = '#ff5a1a'; g2.lineWidth = 9; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(cx, cy); g2.lineTo(cx + Math.sin(a) * (R - 18), cy - Math.cos(a) * (R - 18)); g2.stroke();
   g2.fillStyle = '#222'; g2.beginPath(); g2.arc(cx, cy, 12, 0, 7); g2.fill(); g2.restore();
   S.outlined(g2, Math.round(mph) + ' MPH', cx, cy + 82, 46, '#ffffff'); }
+function topView(g2, mag, phi) {   // SEEN FROM ABOVE: magnet N/S halves, cup ring, induced cup poles trailing the magnet poles, attraction arrows
+  const cx = 645, cy = 1255, Rm = 72, R0 = 92, R1 = 112; const P = (a, r) => [cx + Math.sin(a) * r, cy + Math.cos(a) * r];
+  g2.save(); g2.fillStyle = 'rgba(8,9,12,0.86)'; S.rrect(g2, 380, 1070, 530, 368, 22); g2.fill();
+  g2.fillStyle = '#c9ced6'; g2.beginPath(); g2.arc(cx, cy, R1, 0, 7); g2.arc(cx, cy, R0, 0, 7, true); g2.fill();
+  const am = WIN0 + Math.PI - phi; const [mx, my] = P(am, (R0 + R1) / 2); g2.fillStyle = '#ffb21f'; g2.beginPath(); g2.arc(mx, my, 7, 0, 7); g2.fill();
+  for (const [off, col, L] of [[0, '#d8352a', 'N'], [Math.PI, '#3466d0', 'S']]) { const c = Math.PI / 2 - mag + off;
+    g2.fillStyle = col; g2.beginPath(); g2.moveTo(cx, cy); for (let i = 0; i <= 24; i++) { const a = c - Math.PI / 2 + Math.PI * i / 24; g2.lineTo(...P(a, Rm)); } g2.closePath(); g2.fill();
+    g2.fillStyle = '#fff'; g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; const [lx, ly] = P(c, Rm * 0.55); g2.fillText(L, lx, ly);
+    const ci = c + LAG, [px, py] = P(ci, (R0 + R1) / 2); g2.fillStyle = '#ffb23a'; g2.strokeStyle = '#120a00'; g2.lineWidth = 4; g2.beginPath(); g2.arc(px, py, 22, 0, 7); g2.fill(); g2.stroke();
+    g2.fillStyle = '#120a00'; g2.font = '34px Anton'; g2.fillText(L === 'N' ? 'S' : 'N', px, py + 1);
+    const pts = []; for (let i = 0; i <= 10; i++) pts.push(P(ci - 0.12 - (LAG - 0.12) * 0.75 * i / 10, R1 + 16)); arrowPath(g2, pts, 1, '#ffd21f', 7); }
+  g2.fillStyle = '#ddd'; g2.beginPath(); g2.arc(cx, cy, 8, 0, 7); g2.fill(); g2.restore();
+  S.outlined(g2, 'SEEN FROM ABOVE', cx, 1112, 44, '#ffffff'); S.outlined(g2, 'CUP = WEAK MAGNET, PULLED ALONG', cx, 1425, 38 + 6, '#ffb23a'); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = insideAt(t); const mag = k[1], phi = k[2], drag = k[6];
   { let fx = 0; for (const c of [T.cutIn, T.out]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
@@ -181,23 +195,28 @@ function overlay(t) {
   const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.out);
   K.TXT.step(g2, s1, 1, 'A CABLE SPINS A MAGNET', 60);
   K.TXT.step(g2, s2, 2, 'AIR GAP: THEY NEVER TOUCH', 58);
-  K.TXT.step(g2, s3, 3, 'SPINNING MAGNET DRAGS THE CUP', 56);
-  K.TXT.step(g2, s4, 4, 'A SPRING HOLDS THE CUP BACK', 56);
+  K.TXT.step(g2, s3, 3, 'SPINNING MAGNET PULLS THE CUP', 56);
+  K.TXT.step(g2, s4, 4, 'A SPRING PULLS BACK', 60);
   K.TXT.step(g2, s5, 5, 'FASTER SPIN = NEEDLE HIGHER', 56);
   const mc = (G.MAG_Z[0] + G.MAG_Z[1]) / 2;
   if (ins) inset(g2, k[7]);
   const tip = (r) => ip(Math.sin(needleAng(phi)) * r, 9, -Math.cos(needleAng(phi)) * r);
-  if (s1) { S.tag(g2, 1, 'MAGNET', ...ip(8, mc - 4, 14), 230, 40, 50, '#ffd21f'); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'CABLE', ...ip(0, -100, 3), 230, 190, 48, '#ffffff');
+  if (s1) { S.tag(g2, 1, 'MAGNET', ...ip(8, mc - 4, 14), 230, 40, 50, '#ffd21f'); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'CABLE FROM THE WHEELS', ...ip(0, -100, 3), 150, 190, 46, '#ffffff');
     S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'NEEDLE (ON THE CUP)', ...tip(55), 120, 170, 46, '#ffd21f');
     arrowPath(g2, arc(26, mc - 14, 1.2, 2.2), hard(t, T.spinA + 0.3, T.vo2), '#ffffff'); }
-  if (s2) { S.tag(g2, 1, 'ALUMINUM CUP', ...ip(-23, -46, 3), -110, 300, 50, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 0.6, T.vo3), 'GAP', ...ip(-19, mc + 4, 3), 200, 140, 54, AMBER); }
-  if (s3) { S.tag(g2, 1, 'CURRENTS IN THE CUP', ...ip(-Math.sin(0.5) * 23.4, mc + 15, -Math.cos(0.5) * 23.4), -60, -150, 48, AMBER);
-    arrowPath(g2, arc(26, mc - 14, 1.0, 2.0), 1, '#ffffff', 9); arrowPath(g2, arc(33, -38, 0.9, 1.5), 1, '#ffd21f', 12); }
-  if (s4) { S.tag(g2, 1, 'HAIRSPRING', ...ip(-16, HY, 6), -140, -170, 52, '#ffd21f'); arrowPath(g2, arc(25, HY + 5, 0.2, -1.5), 1, '#ffffff', 10); }
+  if (s2) { S.tag(g2, 1, 'CUP (HOLDS THE NEEDLE)', ...ip(-23, -46, 3), -110, 300, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 0.6, T.vo3), 'GAP', ...ip(-19, mc + 4, 3), 200, 140, 54, AMBER); }
+  if (s3) { topView(g2, mag, phi); arrowPath(g2, arc(26, mc - 14, 1.0, 2.0), 1, '#ffffff', 9); }
+  if (s4) { const th0 = 0.15, sc = 1.25, d = k[6] * G.KD, sp = phi;
+    arrowPath(g2, arc(34, -38, th0, d * sc), 1, '#ffd21f', 13); arrowPath(g2, arc(34, -44, th0, -sp * sc), 1, '#ffffff', 13);
+    const pe = arc(34, -38, th0, d * sc).pop(), se = arc(34, -44, th0, -sp * sc).pop();
+    S.outlined(g2, 'PULL', pe[0] - 60, pe[1] - 30, 50, '#ffd21f'); S.outlined(g2, 'SPRING', se[0] + 80, se[1] + 60, 50, '#ffffff');
+    S.tag(g2, hard(t, T.vo4, T.vo4 + 2.5), 'HAIRSPRING', ...ip(-16, HY, 6), -140, -170, 50, '#ffd21f');
+    const bal = t > T.balB && Math.abs(d - sp) < 0.04;
+    if (bal) { g2.save(); g2.fillStyle = 'rgba(10,12,16,0.85)'; S.rrect(g2, 380, 1290, 530, 140, 20); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 4; g2.stroke(); g2.restore();
+      S.outlined(g2, 'PULL = SPRING', 645, 1350, 54, '#ffd21f'); S.outlined(g2, '→ NEEDLE STOPS', 645, 1412, 50, '#ffffff'); } }
   if (s5) { arrowPath(g2, arc(26, mc - 14, 1.0, 2.2), 1, '#ffffff', 9 + 5 * Math.min(1, Math.max(0, (k[4] - 0.7) / 0.8)));
-    const fast = t >= T.fastA, x0 = 400, y0 = 1282; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.82)'; S.rrect(g2, x0, y0, 510, 150, 20); g2.fill(); g2.restore();
-    S.outlined(g2, 'SLOW SPIN: 25 MPH', x0 + 255, y0 + 60, 46, fast ? '#9aa0a8' : '#ffffff');
-    if (fast) S.outlined(g2, 'FAST SPIN: ' + Math.round(k[7]) + ' MPH', x0 + 255, y0 + 128, 46, '#ffd21f'); }
+    const fast = t >= T.fastA; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.85)'; S.rrect(g2, 380, 1300, 530, 110, 20); g2.fill(); g2.restore();
+    S.outlined(g2, (fast ? 'FAST SPIN: ' : 'SLOW SPIN: ') + Math.round(k[7]) + ' MPH', 645, 1377, 58, fast ? '#ffd21f' : '#ffffff'); }
   K.TXT.answer(g2, hard(t, T.out, LOOP + 1), 'A SPINNING MAGNET', 'DRAGS THE NEEDLE', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

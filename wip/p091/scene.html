@@ -72,7 +72,9 @@ let WI = 0; const wallBox = (w, h, d, x, y, z = 0) => { d += (WI++) * 0.25; cons
 const back = new THREE.Mesh(new THREE.BoxGeometry(120, 110, 2.5), M.lockBody); back.position.set(-10, -20, -8.5); back.receiveShadow = true; IN.add(back);
 { const A = G.A, B = G.B, r = 2.2; const ang = Math.atan2(A[1] - B[1], A[0] - B[0]), L = Math.hypot(A[0] - B[0], A[1] - B[1]);
   const sh = new THREE.Shape(); sh.absarc(0, 0, r, Math.PI / 2, Math.PI * 1.5, false); sh.absarc(L + 1.2, 0, r, -Math.PI / 2, Math.PI / 2, false);
-  const slot = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), M.slotDark); slot.position.set(B[0], B[1], -6.9); slot.rotation.z = ang; IN.add(slot); }
+  const slot = new THREE.Mesh(new THREE.ShapeGeometry(sh, 24), M.slotDark); slot.position.set(B[0], B[1], -6.9); slot.rotation.z = ang; IN.add(slot);
+  const op_ = sh.getPoints(24).map(p => new THREE.Vector3(p.x, p.y, 0)); const edge = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(op_, true), 120, 0.28, 6, true),
+    new THREE.MeshBasicMaterial({ color: 0xd9e2ea })); edge.position.set(B[0], B[1], -6.75); edge.rotation.z = ang; IN.add(edge); }
 // section walls (red caps face the camera): top, right, bottom with the exit hole, left lower
 wallBox(110, 1.6, 14, -30, 13); wallBox(1.6, 42, 14, 25, -8); wallBox(64, 1.6, 14, -40, -28); wallBox(8, 1.6, 14, 23, -28);
 
@@ -137,7 +139,7 @@ function gapBar(g2, k, color) {   // yellow bracket across the gap between guide
   const px = k[7], py = k[8], d = Math.hypot(px, py), ux = px / d, uy = py / d; const a = ip(ux * G.RG, uy * G.RG, 9), b = ip(px - ux * G.RR, py - uy * G.RR, 9);
   g2.save(); g2.strokeStyle = color; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath(); g2.moveTo(...a); g2.lineTo(...b); g2.stroke();
   const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1; for (const p of [a, b]) { g2.beginPath(); g2.moveTo(p[0] - nx / nl * 18, p[1] - ny / nl * 18); g2.lineTo(p[0] + nx / nl * 18, p[1] + ny / nl * 18); g2.stroke(); } g2.restore(); return b; }
-function blindInset(g2, c, weight, held) {   // LARGE 2D window icon: the blind's bottom rail follows c
+function blindInset(g2, c, weight, held, dir = 0) {   // LARGE 2D window icon: the blind's bottom rail follows c
   const x0 = 82, y0 = 1095, w = 250, h = 300; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.8)'; S.rrect(g2, x0 - 16, y0 - 16, w + 32, h + 32, 20); g2.fill();
   g2.strokeStyle = held ? '#5fe08a' : 'rgba(255,255,255,0.5)'; g2.lineWidth = held ? 7 : 3; g2.stroke();
   g2.fillStyle = '#bcd3e8'; g2.fillRect(x0, y0, w, h); g2.fillStyle = '#f1f2f2'; g2.fillRect(x0 - 6, y0, w + 12, 18);
@@ -145,7 +147,14 @@ function blindInset(g2, c, weight, held) {   // LARGE 2D window icon: the blind'
   for (let y = y0 + 30; y < yb; y += 12) { g2.beginPath(); g2.moveTo(x0, y); g2.lineTo(x0 + w, y); g2.stroke(); } g2.fillStyle = '#d9dcde'; g2.fillRect(x0 - 4, yb, w + 8, 12);
   g2.restore(); S.outlined(g2, 'BLIND', x0 + w / 2, y0 - 30, 46, '#ffffff');
   if (weight > 0 && !held) arrowC(g2, weight, x0 + w / 2, yb + 6, x0 + w / 2, yb + 100, 20, '#ff8a3a');
-  if (held) S.outlined(g2, 'STAYS UP', x0 + w / 2, Math.min(yb + 95, y0 + h - 14), 52, '#5fe08a'); }
+  if (held) S.outlined(g2, 'STAYS UP', x0 + w / 2, Math.min(yb + 95, y0 + h - 14), 52, '#5fe08a');
+  if (dir) { const yy = Math.min(yb + 60, y0 + h - 70); arrowC(g2, 1, x0 + 60, dir > 0 ? yy + 50 : yy - 50, x0 + 60, dir > 0 ? yy - 50 : yy + 50, 18, dir > 0 ? '#5fe08a' : '#ffffff');
+    S.outlined(g2, dir > 0 ? 'BLIND UP' : 'BLIND DOWN', x0 + 165, yy + 16, 40, dir > 0 ? '#5fe08a' : '#ffffff'); } }
+function slotGuide(g2, a, showTrack) {   // dashed track beside the slot + WIDE / NARROW end labels
+  if (a <= 0) return; const off = 4.6, Bx = G.B[0] + off * 0.95, By = G.B[1] - off * 0.32, Ax = G.A[0] + off * 0.95, Ay = G.A[1] - off * 0.32;
+  const b = ip(Bx, By - 1.5, 9), c = ip(Ax, Ay + 1.5, 9);
+  if (showTrack) { g2.save(); g2.globalAlpha = a * 0.85; g2.strokeStyle = '#ffffff'; g2.lineWidth = 5; g2.setLineDash([16, 12]); g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 6; g2.beginPath(); g2.moveTo(...b); g2.lineTo(...c); g2.stroke(); g2.restore(); }
+  S.outlined(g2, 'NARROW', c[0] + 70, c[1] - 6, 44, '#ff8a6a'); S.outlined(g2, 'WIDE', b[0] + 60, b[1] + 46, 44, '#5fe08a'); return [b, c]; }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = inside(t);
   { let fx = 0; for (const c of [T.cutIn, T.outEnd]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
@@ -153,32 +162,36 @@ function overlay(t) {
   if (t < 2.1) { K.TXT.hook(g2, 1, "WHY DOESN'T", 'THE BLIND FALL?', 100); const [cx, cy] = op(LX, -2, 8); K.TXT.circle(g2, t < 2.0 ? 1 : 0, cx, cy, 70, [-230, 210]);
     const [qx, qy] = op(LX, -150 - k[1], 6); arrowC(g2, hard(t, T.hp0, T.hp1 + 0.05), qx - 70, qy - 130, qx - 70, qy + 10, 24); }
   const held = k[6] && ((t >= T.lg1 && t < T.vo5 + 0.1) || t < T.cutIn);
-  if (ins) blindInset(g2, k[1], hard(t, T.vo3, T.lg1), held && t >= T.lg1);
+  if (ins) blindInset(g2, k[1], hard(t, T.vo3, T.lg1), held && t >= T.lg1, (t >= T.pd0 && t < T.pd1) ? 1 : (t >= T.ld0 && t < T.outEnd) ? -1 : 0);
   const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outEnd);
   K.TXT.step(g2, s1, 1, 'CORD PASSES A TOOTHED ROLLER', 56);
   K.TXT.step(g2, s2, 2, 'PULL: ROLLER DROPS, GAP OPENS', 56);
   K.TXT.step(g2, s3, 3, 'LET GO: WEIGHT PULLS CORD UP', 56);
   K.TXT.step(g2, s4, 4, 'ROLLER CLIMBS: GAP CLOSES', 58);
-  K.TXT.step(g2, s5, 5, 'TO LOWER: PULL TOWARD THE MIDDLE', 52);
+  K.TXT.step(g2, s5, 5, 'PULL TOWARD THE MIDDLE OF THE WINDOW', 46);
+  slotGuide(g2, s1 || s2 || s3 || (s4 && t >= T.lg1) ? 1 : 0, !(s4));
   const P = k[10]; const cAt = (i) => ip(P[2 * i], P[2 * i + 1], 3); const NP = P.length / 2;
   const rol = ip(k[7], k[8], 7);
   if (s1) { S.tag(g2, 1, 'TOOTHED ROLLER', ...ip(k[7] + 3.5, k[8] - 3, 7), 60, 230, 50, YEL); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'GUIDE', ...ip(-1, 1, 9), -170, -40, 48, '#ffffff');
-    S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'CORD', ...cAt(NP - 12), 150, 40, 48, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 1.6, T.vo2), 'SLANTED SLOT', ...ip(G.A[0] + 2.0, G.A[1] + 1.4, -6), 120, -160, 46, '#ffffff'); }
-  if (s2) { const [x, y] = cAt(NP - 3); arrowC(g2, hard(t, T.pd0 - 0.2, T.pd1), x + 70, y - 150, x + 70, y + 10, 24); gapBar(g2, k, '#5fe08a');
-    S.tag(g2, hard(t, T.pd0 + 1.2, T.vo3), 'WIDE GAP', ...ip(k[7] * 0.45, k[8] * 0.45, 9), 230, -30, 50, '#5fe08a'); S.tag(g2, hard(t, T.pd0 - 0.2, T.pd1), 'PULL', x + 70, y - 150, 60, 0, 48, '#ffffff'); }
-  if (s3 || s4) { const [x0, y0] = cAt(3), [x1] = cAt(0); arrowC(g2, hard(t, T.lg0, T.lg1), x0, y0 + 70, Math.max(90, x1 - 10), y0 + 70, 24, '#ff8a3a');
+    S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'CORD', ...cAt(NP - 12), 150, 40, 48, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 1.6, T.vo2), 'SLANTED SLOT', ...ip((G.A[0] + G.B[0]) / 2 + 4.4, (G.A[1] + G.B[1]) / 2 - 1.5, 9), 90, 60, 46, '#ffffff'); }
+  if (s2) { const [x, y] = ip(G.EV[0], -30, 3); arrowC(g2, hard(t, T.pd0 - 0.2, T.pd1), x - 70, y - 190, x - 70, y - 30, 24); gapBar(g2, k, '#5fe08a');
+    S.tag(g2, hard(t, T.pd0 + 1.2, T.vo3), 'WIDE GAP', ...ip(k[7] * 0.45, k[8] * 0.45, 9), -150, -170, 50, '#5fe08a'); S.tag(g2, hard(t, T.pd0 - 0.2, T.pd1), 'PULL DOWN', x - 70, y - 190, -50, -10, 48, '#ffffff'); }
+  if (s3 || s4) { const [x0, y0] = cAt(14); arrowC(g2, s3 * hard(t, T.lg0, T.lg1), x0, y0 + 60, Math.max(110, x0 - 230), y0 + 60, 24, '#ff8a3a');
     if (t >= T.lg0) gapBar(g2, k, k[6] ? '#ff5a3a' : YEL); }
   if (s3) S.tag(g2, hard(t, T.vo3 + 0.3, T.vo4), "BLIND'S WEIGHT", ...cAt(3), 40, 130, 48, '#ff8a3a');
   if (s4) { const climb = t < T.lg1 ? 1 : 0; const a = ip(G.B[0] + 3.5, G.B[1] - 3.5, 9), b = ip(G.A[0] + 3.5, G.A[1] - 3.5, 9); arrowC(g2, climb, a[0] + 40, a[1] + 30, b[0] + 40, b[1] + 30, 22);
     S.tag(g2, climb, 'UP THE SLOT = TIGHTER', a[0] + 40, a[1] + 30, 40, 150, 50, YEL);
     if (climb) S.outlined(g2, 'SLOW MOTION', 760, 420 + 80, 44, '#ffffff');
-    if (!climb && k[6]) { const n = ip(k[7] * 0.46, k[8] * 0.46, 9); g2.save(); g2.strokeStyle = '#ff5a3a'; g2.lineWidth = 9; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10; g2.beginPath(); g2.arc(n[0], n[1], 120, 0, 7); g2.stroke(); g2.restore();
-      S.tag(g2, 1, 'LOCKED', n[0] + 85, n[1] + 85, 150, 250, 72, '#ff5a3a'); } }
-  if (s5) { const e = ip(G.EV[0], -28, 3); arrowC(g2, hard(t, T.rp0, T.rm1 + 0.4), e[0] + 40, e[1] - 140, e[0] - 120, e[1] - 10, 24);
-    S.tag(g2, hard(t, T.rp0, T.rm1 + 0.4), 'PULL TO THE MIDDLE', e[0] + 40, e[1] - 140, 40, -80, 46, '#ffffff');
-    const a = ip(G.A[0] + 3.5, G.A[1] - 3.5, 9), b = ip(G.B[0] + 3.5, G.B[1] - 3.5, 9); arrowC(g2, hard(t, T.rf0 - 0.1, T.ld0 + 0.6), a[0] + 40, a[1] + 30, b[0] + 40, b[1] + 30, 22, '#5fe08a');
-    S.tag(g2, hard(t, T.rf0 - 0.1, T.ld0 + 0.6), 'ROLLER DROPS', b[0] + 40, b[1] + 30, 40, 120, 48, '#5fe08a');
-    S.tag(g2, hard(t, T.ld0 + 0.6, T.outEnd), 'MISSES THE ROLLER', ...cAt(NP - 10), 330, -60, 48, '#5fe08a'); }
+    if (!climb && k[6]) { const d = Math.hypot(k[7], k[8]), ux = k[7] / d, uy = k[8] / d, nm = G.RG + k[9] / 2; const n = ip(ux * nm, uy * nm, 9);
+      const g0 = ip(ux * (nm - 4.2), uy * (nm - 4.2), 9), g1 = ip(ux * (nm - 1.6), uy * (nm - 1.6), 9), r0 = ip(ux * (nm + 4.2), uy * (nm + 4.2), 9), r1 = ip(ux * (nm + 1.6), uy * (nm + 1.6), 9);
+      arrowC(g2, 1, ...g0, ...g1, 22, '#ff5a3a'); arrowC(g2, 1, ...r0, ...r1, 22, '#ff5a3a');
+      S.tag(g2, hard(t, T.lg1 + 0.4, T.vo5), 'TEETH GRIP THE CORD', ...ip(ux * (nm + 0.9) - uy * 0.6, uy * (nm + 0.9) + ux * 0.6, 9), 60, -280, 50, YEL);
+      S.tag(g2, 1, 'LOCKED', ...n, 150, 300, 72, '#ff5a3a'); } }
+  if (s5) { const e = ip(G.EV[0], -30, 3); arrowC(g2, hard(t, T.vo5, T.rm1 + 0.2), e[0] + 30, e[1] - 200, e[0] - 170, e[1] - 40, 24);
+    const l1 = hard(t, T.rm0 + 0.45, T.rf0 - 0.05), l2 = hard(t, T.rf0 - 0.05, T.ld0 + 1.2);
+    if (l1) { gapBar(g2, { 7: k[7], 8: k[8], 9: k[9] }, '#5fe08a'); const p = cAt(36); S.tag(g2, 1, 'CORD LEAVES THE ROLLER', ...p, 170, 120, 48, '#5fe08a'); }
+    const a = ip(G.A[0] + 4.4, G.A[1] - 1.4, 9), b = ip(G.B[0] + 4.4, G.B[1] - 1.4, 9); arrowC(g2, l2, ...a, ...b, 22, '#5fe08a');
+    S.tag(g2, l2, 'ROLLER DROPS', ...b, 40, 110, 48, '#5fe08a'); }
   K.TXT.answer(g2, hard(t, T.outEnd, LOOP + 1), 'A TINY ROLLING WEDGE', 'HOLDS THE BLIND', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

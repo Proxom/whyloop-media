@@ -11,23 +11,23 @@
  },
  {
   "i": 2,
-  "text": "Around it sits an aluminum cup. They never touch.",
-  "dur": 2.667
+  "text": "Around it sits the cup that holds the needle. They never touch.",
+  "dur": 3.115
  },
  {
   "i": 3,
-  "text": "The spinning magnet stirs up tiny electric currents in the cup, and they drag it along.",
-  "dur": 4.48
+  "text": "The spinning magnet makes currents in the cup. They turn it into a weak magnet that gets pulled along.",
+  "dur": 5.205
  },
  {
   "i": 4,
-  "text": "A thin spring pulls back, so the cup only turns a little.",
-  "dur": 2.923
+  "text": "A spring pulls back. The cup turns until the pull and the spring are equal, then stops.",
+  "dur": 4.672
  },
  {
   "i": 5,
-  "text": "Drive faster, the magnet spins faster, the drag gets stronger, and the needle climbs.",
-  "dur": 4.715
+  "text": "Spin faster, and the pull gets stronger, so the needle stops higher.",
+  "dur": 3.605
  },
  {
   "i": 6,
