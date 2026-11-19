@@ -1,0 +1,163 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p075 kettle auto switch-off "HOW DOES A KETTLE KNOW / IT'S BOILING?" (group E, track A voice). Built from kit/kit.js.
+// mm. Side section: x to the handle side, y up, z toward the camera; the cut removes z > 0. kin.json rows: [t, heat 0..1, strip lift at the rod (mm), rocker angle (deg), power 0/1, boil 0..1]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x1a1d22, envIntensity: 1.0, near: 3, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const CUT = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e5);
+const cm = (m) => { const c = m.clone(); c.clippingPlanes = [CUT]; c.side = THREE.DoubleSide; return c; };
+M.body = cm(phys({ color: 0xd6dade, metalness: 1, roughness: 0.22, envMapIntensity: 1.3 }));
+M.bodyIn = cm(phys({ color: 0x8d949c, metalness: 0.7, roughness: 0.45 }));
+M.blk = cm(phys({ color: 0x202226, metalness: 0, roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3 }));
+M.water = phys({ color: 0x2a86d6, metalness: 0, roughness: 0.06, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [CUT] });
+M.bub = phys({ color: 0xe8f4ff, metalness: 0, roughness: 0.05, transparent: true, opacity: 0.75, clippingPlanes: [CUT] });
+M.steam = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false });
+M.tube = phys({ color: 0xe9eef3, metalness: 0, roughness: 0.15, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
+M.cu = phys({ color: 0xd0804a, metalness: 1, roughness: 0.3, envMapIntensity: 1.3, emissive: 0xff4a00, emissiveIntensity: 0 });
+M.fe = phys({ color: 0xc9cdd2, metalness: 1, roughness: 0.32, envMapIntensity: 1.2, emissive: 0xff4a00, emissiveIntensity: 0 });
+M.led = new THREE.MeshBasicMaterial({ color: 0xff8a1a });
+K.backdrop(scene, { floorY: -14, R: 900, zBack: -1600, h: 6000, width: 12000, wall: '#1d2026', floor: '#22252b', pool: false, catcher: 6 });
+const RIG = K.lightRig(scene, new THREE.Vector3(60, 90, 0), 240);
+RIG.key.shadow.bias = -0.0005; RIG.key.shadow.normalBias = 0.4;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(-300, 400, 1500); f.target.position.set(60, 60, 0); scene.add(f, f.target); }
+const lath = (prof, mat, seg = 96) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+// ---------- kettle body, lid, power base ----------
+scene.add(lath([[0.1, 2], [72, 2], [77, 5], [79, 12], [79, 150], [75, 184], [69, 198], [64, 201]], M.body));
+scene.add(lath([[0.1, 4], [70, 4], [75, 7], [77, 12], [77, 150], [73, 183], [67, 196], [62, 199]], M.bodyIn));
+{ const lid = lath([[0.1, 214], [20, 213], [50, 208], [64, 202], [66, 199]], M.blk, 64); scene.add(lid); const kn = lath([[0.1, 222], [10, 221], [12, 214], [0.1, 214]], M.blk, 32); scene.add(kn);
+  const base = lath([[0.1, -14], [86, -14], [88, -10], [86, -2], [0.1, -2]], cm(phys({ color: 0x16171a, metalness: 0, roughness: 0.5 })), 64); scene.add(base);
+  const spout = new THREE.Mesh(new THREE.CylinderGeometry(9, 14, 40, 24, 1, true), M.body); spout.position.set(-84, 178, 0); spout.rotation.z = -0.9; scene.add(spout); }
+const WAT = new THREE.Mesh(new THREE.CylinderGeometry(76.4, 76.4, 124, 72, 1, false), M.water); WAT.position.y = 4 + 62; scene.add(WAT);
+// bubbles (instanced) + steam puffs above the water
+const NB = 70, BUB = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), M.bub, NB); scene.add(BUB);
+const rnd = (() => { let s = 75; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const BP = Array.from({ length: NB }, () => { const r = 70 * Math.sqrt(rnd()), a = rnd() * 6.283; return [r * Math.cos(a), r * Math.sin(a), rnd(), 0.6 + rnd() * 0.8, 1.5 + rnd() * 3]; });
+const NS = 16, STM = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 10), M.steam, NS); scene.add(STM);
+// ---------- handle + switch housing (cut open) ----------
+{ const H = new THREE.CatmullRomCurve3([V(74, 186), V(118, 210), V(165, 196), V(182, 150), V(178, 104), V(170, 80)]); scene.add(new THREE.Mesh(new THREE.TubeGeometry(H, 80, 12, 20), M.blk));
+  const box = new THREE.Mesh(new K.RBox(92, 58, 34, 4, 6), M.blk); box.position.set(136, 49, 0); scene.add(box);
+  const fl = new THREE.Mesh(new THREE.BoxGeometry(88, 2, 30), cm(M.innerWall)); fl.position.set(136, 22, 0); scene.add(fl); }
+// steam tube: from the top of the kettle, through the handle, down to the strip
+const TC = new THREE.CatmullRomCurve3([V(40, 172, -4), V(76, 190, -4), V(118, 205, -4), V(160, 192, -4), V(174, 150, -4), V(172, 104, -4), V(150, 78, -4), V(116, 70, -4), V(110, 56, -4), V(110, 43, -4)]);
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(TC, 140, 3.4, 14), M.tube));
+const NP = 22, PUF = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), M.steam, NP); scene.add(PUF);
+// bimetal strip (two layers, rebuilt each frame), mount, rod + guide, rocker with contact + paddle LED, fixed terminal
+const NSEG = 24, LAY = [], SW = 8;
+for (const [mat, off] of [[M.fe, 0.6], [M.cu, -0.6]]) { const g = []; for (let i = 0; i < NSEG; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(G.SL / NSEG + 0.12, 1.2, SW), mat); scene.add(b); g.push(b); } LAY.push([g, off]); }
+{ const mt = new THREE.Mesh(new K.RBox(10, 14, 12, 1, 2), M.alu); mt.position.set(G.SX0 - 4, 34.8 - 2, -1); scene.add(mt);
+  const sc = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 3, 16), M.chrome); sc.position.set(G.SX0 - 4, 41.2, -1); scene.add(sc);
+  const gd = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 4, 20, 1, true), M.alu); gd.position.set(G.XR, 42.5, -1); scene.add(gd); }
+const ROD = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, G.ROD_LEN, 16), M.chrome); scene.add(ROD);
+const ROCK = new THREE.Group(); ROCK.position.set(G.PR[0], G.PR[1], -1); scene.add(ROCK);
+{ const arm = new THREE.Mesh(new K.RBox(64, 2.5, 10, 0.8, 2), phys({ color: 0x3a3d44, metalness: 0.1, roughness: 0.4 })); arm.position.x = 16; ROCK.add(arm);
+  const piv = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 14, 16), M.chrome); piv.rotation.x = Math.PI / 2; ROCK.add(piv);
+  const ct = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 1.0, 16), M.chrome); ct.position.set(-12, 1.75, 0); ROCK.add(ct);
+  const pad = new THREE.Mesh(new K.RBox(16, 8, 14, 2, 3), phys({ color: 0x2b2e34, metalness: 0, roughness: 0.4, clearcoat: 0.5 })); pad.position.set(50, 2, 0); ROCK.add(pad);
+  const led = new THREE.Mesh(new THREE.SphereGeometry(2.6, 16, 12), M.led); led.position.set(50, 6.4, 0); ROCK.add(led); ROCK.userData.led = led; ROCK.userData.arm = arm; }
+{ const term = new THREE.Mesh(new K.RBox(16, 2, 8, 0.5, 2), M.brass); term.position.set(G.PR[0] - 12, 55.8, -1); scene.add(term);
+  const tc = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 1.0, 16), M.chrome); tc.position.set(G.PR[0] - 12, 54.3, -1); scene.add(tc);
+  const w = new THREE.CatmullRomCurve3([V(G.PR[0] - 18, 56, -1), V(100, 60, -6), V(92, 40, -8), V(90, 24, -8)]); scene.add(new THREE.Mesh(new THREE.TubeGeometry(w, 30, 1.0, 8), M.paint(0xb3261e))); }
+S.shadowAll(scene);
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j === 4 ? a[4] : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const D4 = new THREE.Object3D();
+function stripPose(d) { const kap = 2 * d / (G.S_ROD * G.S_ROD); const pts = []; // centreline as a circular arc from the fixed end, tangent along +x
+  for (let i = 0; i <= NSEG; i++) { const s = G.SL * i / NSEG; if (kap < 1e-7) pts.push([G.SX0 + s, 34.8, 0]); else { const R = 1 / kap, a = s * kap; pts.push([G.SX0 + R * Math.sin(a), 34.8 + R * (1 - Math.cos(a)), a]); } } return pts; }
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const HOOK = [0, 142, 52, 0, 300, 8, 12];
+const k_ = (t, a) => [t, ...a.slice(1)];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 142, 52, 0, 285, 8, 14]), k_(T.hookEnd, [0, 50, 96, 0, 980, 10, 22]), k_(T.vo2 - 0.3, [0, 55, 96, 0, 940, 10, 18]),
+  k_(T.vo2 + 0.2, [0, 100, 120, 0, 640, 8, 10]), k_(T.vo3 - 0.6, [0, 110, 110, 0, 600, 8, 8]), k_(T.vo3 + 0.4, [0, 128, 42, 0, 235, 6, 6]), k_(T.vo4 - 0.2, [0, 128, 42, 0, 225, 6, 4]),
+  k_(T.vo4 + 0.3, [0, 130, 18, 0, 280, 6, 4]), k_(T.vo5 - 0.3, [0, 132, 20, 0, 280, 6, 4]), k_(T.vo5 + 0.4, [0, 146, 46, 0, 330, 8, 8]), k_(T.vo6 - 0.2, [0, 146, 46, 0, 320, 8, 10]),
+  k_(T.vo6 + 0.6, [0, 90, 96, 0, 760, 10, 18]), k_(LOOP - 0.6, [0, 120, 60, 0, 330, 8, 12]), k_(LOOP, HOOK)];
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const h = k[1], d = k[2], psi = k[3], pw = k[4], b = k[5];
+  const P = stripPose(d);
+  for (const [g, off] of LAY) for (let i = 0; i < NSEG; i++) { const p0 = P[i], p1 = P[i + 1], a = (p0[2] + p1[2]) / 2; const m = g[i];
+    m.position.set((p0[0] + p1[0]) / 2 - off * Math.sin(a), (p0[1] + p1[1]) / 2 + off * Math.cos(a), -1); m.rotation.z = a; }
+  const hg = h * 0.9; M.cu.emissiveIntensity = hg * 0.35; M.fe.emissiveIntensity = hg * 0.25;
+  ROD.position.set(G.XR, G.STRIP_TOP0 + d + G.ROD_LEN / 2, -1);
+  ROCK.rotation.z = psi * D2R; ROCK.userData.led.visible = pw === 1;
+  // bubbles / steam in the kettle
+  for (let i = 0; i < NB; i++) { const [x, z, ph, sp, r] = BP[i]; const y = 8 + ((t * sp * 0.8 + ph) % 1) * 118; const sc = b > 0.02 ? r * Math.min(1, b * 1.3) : 0.001;
+    D4.position.set(x, y, z); D4.scale.setScalar(sc); D4.updateMatrix(); BUB.setMatrixAt(i, D4.matrix); } BUB.instanceMatrix.needsUpdate = true;
+  for (let i = 0; i < NS; i++) { const ph = (i * 0.618) % 1, u = (t * 0.35 + ph) % 1; const a = i * 2.4; D4.position.set(40 * Math.cos(a) * (0.4 + u), 132 + u * 60, -30 + 20 * Math.sin(a));
+    D4.scale.setScalar(b > 0.05 ? (6 + 10 * u) * b : 0.001); D4.updateMatrix(); STM.setMatrixAt(i, D4.matrix); } STM.instanceMatrix.needsUpdate = true;
+  const flow = b > 0.3 && t > T.hookEnd + 0.5 ? Math.min(1, (b - 0.3) * 2) : (t < T.hookEnd ? b : 0);
+  for (let i = 0; i < NP; i++) { const u = (t * 0.32 + i / NP) % 1; const p = TC.getPointAt(u); D4.position.copy(p); D4.scale.setScalar(flow > 0.02 ? 2.6 * flow : 0.001); D4.updateMatrix(); PUF.setMatrixAt(i, D4.matrix); } PUF.instanceMatrix.needsUpdate = true;
+  const cw = Math.max(t < T.hookEnd ? 1 : 0, S.smooth((t - (T.vo2 - 0.2)) / 0.8)) * (1 - S.smooth((t - (T.vo6 + 0.3)) / 0.6)) + (t > LOOP - 1.2 ? S.smooth((t - (LOOP - 1.2)) / 0.6) : 0);
+  CUT.constant = cw > 0.001 ? 0 + 300 * (1 - Math.min(1, cw)) : 1e5;
+  K.glow(ROD, fade(t, T.vo5 + 0.1, T.vo6, 0.25) * 0.8);
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const scr = (x, y, z = 0) => S.toScreen(camera, new THREE.Vector3(x, y, z));
+function pill(g2, a, text, x, y, size = 46, fg = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.font = `${size}px Anton`; const w = g2.measureText(text).width + 44; x = Math.max(60 + w / 2 + 4, Math.min(930 - w / 2, x));
+  y = Math.max(320 + size / 2 + 16, Math.min(1440 - size / 2 - 16, y));
+  S.rrect(g2, x - w / 2, y - size / 2 - 12, w, size + 24, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = fg; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = fg; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, x, y + 2); g2.restore(); }
+function badge(g2, a, on) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const x0 = 720, y0 = 1200, w = 208, h = 220;
+  g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = on ? '#ffa114' : '#9aa3ad'; g2.lineWidth = 4; g2.stroke();
+  const cx = x0 + w / 2; g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('POWER:', cx, y0 + 52);
+  g2.font = '72px Anton'; g2.fillStyle = on ? '#ffa114' : '#c9d3e3'; g2.fillText(on ? 'ON' : 'OFF', cx, y0 + 148); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const h = k[1], d = k[2], pw = k[4];
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12) + Math.max(0, 1 - Math.abs(t - T.vo2) / 0.1) * 0.6; K.TXT.flash(g2, 0.8 * Math.min(1, fx)); }
+  const hk = t < 3 ? 1 - S.smooth((t - (T.hookEnd - 0.3)) / 0.28) : S.smooth((t - (LOOP - 0.45)) / 0.35);
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES A KETTLE KNOW', "IT'S BOILING?", 84); const [cx, cy] = scr(124, 36, 0); K.TXT.circle(g2, hk, cx, cy, 100, [-210, 230]); pill(g2, hk, 'METAL STRIP', cx + 30, cy + 150, 50, '#ffffff'); }
+  { const a = fade(t, T.vo1 + 0.2, T.vo2 - 0.1, 0.2); if (a > 0) { S.tag(g2, a, 'SWITCH', ...scr(180, 56, 8), 60, -150, 50, '#ffd21f'); } }
+  const stepPlate = (al) => { if (al <= 0) return; g2.save(); g2.globalAlpha = al * 0.62; g2.fillStyle = '#05070a'; S.rrect(g2, 66, 352, 858, 116, 26); g2.fill(); g2.restore(); };
+  const s1 = fade(t, T.vo2, T.vo3 - 0.05), s2 = fade(t, T.vo3, T.vo4 - 0.05), s3 = fade(t, T.vo4, T.vo5 - 0.05), s4 = fade(t, T.vo5, T.vo6 - 0.05);
+  stepPlate(Math.max(s1, s2, s3, s4));
+  K.TXT.step(g2, s1, 1, 'STEAM GOES DOWN A TUBE', 62);
+  K.TXT.step(g2, s2, 2, 'IT HEATS A TWO-METAL STRIP', 58);
+  K.TXT.step(g2, s3, 3, 'COPPER GROWS MORE: IT BENDS', 56);
+  K.TXT.step(g2, s4, 4, 'THE STRIP FLIPS THE SWITCH', 58);
+  { const a = fade(t, T.vo2 + 0.6, T.vo3 - 0.2, 0.25); if (a > 0) { S.tag(g2, a, 'STEAM', ...scr(30, 160, -30), -120, -150, 50, '#ffffff'); S.tag(g2, a, 'STEAM TUBE', ...scr(174, 140, -4), 60, 150, 50, '#ffd21f'); S.tag(g2, a, 'BOILING WATER', ...scr(-20, 60, -10), -60, 230, 48, '#7cc4f2'); } }
+  { const a = fade(t, T.vo3 + 0.5, T.vo4 + 0.1, 0.25); if (a > 0) { S.tag(g2, a, 'STEEL', ...scr(G.SX0 + 14, 35.7, 3), -40, -200, 50, '#e6ebf0'); S.tag(g2, a, 'COPPER', ...scr(G.SX0 + 24, 34, 3), 40, 200, 50, '#ffa15a');
+      S.tag(g2, fade(t, T.vo3 + 0.2, T.vo4 + 0.1, 0.25), 'STEAM', ...scr(110, 46, -4), -150, -120, 48, '#ffffff'); } }
+  // step 3: flat 2D picture of the two metals: apart they grow differently, joined they must curl
+  { const a = fade(t, T.vo4 + 0.1, T.vo5 + 0.1, 0.3); if (a > 0) { g2.save(); g2.globalAlpha = a; const Y0 = 1060, Y1 = 1435;
+      g2.fillStyle = 'rgba(8,10,14,0.9)'; S.rrect(g2, 70, Y0, 860, Y1 - Y0, 26); g2.fill(); g2.strokeStyle = 'rgba(255,255,255,0.25)'; g2.lineWidth = 3; g2.stroke();
+      const p = Math.max(0, Math.min(1, (t - T.vo4 - 0.3) / 3.2)), grow = S.smooth(p / 0.45), curl = S.smooth((p - 0.5) / 0.45);
+      g2.font = '46px Anton'; g2.textBaseline = 'middle';
+      if (curl <= 0) { const L0 = 520, x0 = 150; const lf = L0 * (1 + 0.05 * grow), lc = L0 * (1 + 0.22 * grow);
+        g2.fillStyle = '#c9cdd2'; g2.fillRect(x0, 1150, lf, 34); g2.fillStyle = '#d0804a'; g2.fillRect(x0, 1250, lc, 34);
+        g2.textAlign = 'left'; g2.fillStyle = '#e6ebf0'; g2.fillText(grow > 0.2 ? 'STEEL: GROWS A LITTLE' : 'STEEL', x0, 1115); g2.fillStyle = '#ffa15a'; g2.fillText(grow > 0.2 ? 'COPPER: GROWS MORE' : 'COPPER', x0, 1335);
+        g2.globalAlpha = a * grow; g2.fillStyle = '#ff7a1a'; g2.textAlign = 'center'; g2.fillText('HOT!', 820, 1110); }
+      else { const L = 560, x0 = 160, yb = 1360; const ang = 1.1 * curl; const R = ang > 1e-3 ? L / ang : 1e6;
+        const arc = (off, col) => { g2.strokeStyle = col; g2.lineWidth = 30; g2.lineCap = 'butt'; g2.beginPath(); for (let i = 0; i <= 40; i++) { const s = L * i / 40, a2 = s / R; const x = x0 + (R - off) * Math.sin(a2), y = yb - (R - (R - off) * Math.cos(a2)) - off; i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke(); };
+        arc(-15, '#d0804a'); arc(15, '#c9cdd2');
+        g2.fillStyle = '#9aa3ad'; g2.fillRect(x0 - 40, yb - 50, 40, 70);
+        g2.textAlign = 'left'; g2.fillStyle = '#ffffff'; g2.fillText('JOINED: IT HAS TO BEND', 120, 1110); g2.textAlign = 'center'; g2.fillStyle = '#ffd21f'; g2.globalAlpha = a * curl; g2.fillText('UP!', 800, 1200); }
+      g2.restore(); } }
+  // step 4: rod lifts, switch flips
+  { const a = fade(t, T.vo5 + 0.1, T.vo6 + 0.1, 0.25); if (a > 0) { const [rx, ry] = scr(G.XR, G.STRIP_TOP0 + d + 5, 4); S.forceArrow(g2, a, rx - 120, ry + 60, rx - 120, ry - 120, 26); pill(g2, a, 'ROD', rx - 230, ry - 30, 48, '#ffffff');
+      S.tag(g2, fade(t, T.vo5 + 1.0, T.vo6 + 0.1, 0.25), 'SWITCH', ...scr(182, 58, 8), 40, -170, 50, '#ffd21f'); S.tag(g2, fade(t, T.vo5 + 2.0, T.vo6 + 0.1, 0.25), 'CONTACTS APART', ...scr(G.PR[0] - 12, 53, 4), -60, -210, 48, '#ffffff'); } }
+  { const sn = T.snaps.find(s => s > T.vo5); const a = sn ? fade(t, sn, sn + 1.2, 0.12) : 0; if (a > 0) { const [px, py] = scr(180, 60, 8); pill(g2, a, 'CLICK!', px - 80, py + 190, 64, '#ffd21f'); } }
+  badge(g2, Math.max(fade(t, T.vo1 + 0.2, T.vo2 - 0.1, 0.25), fade(t, T.vo5 + 0.3, LOOP - 1.5, 0.3)), pw === 1);
+  K.TXT.answer(g2, fade(t, T.vo6 + 0.05, LOOP - 1.3, 0.3), 'STEAM BENDS THE STRIP', 'THE STRIP TURNS IT OFF', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

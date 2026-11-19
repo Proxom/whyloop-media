@@ -42,7 +42,8 @@ const WS = new THREE.Group(); WG.add(WS);
   const rim = lath([[284, -7], [290, -10], [310, -10], [312, -8], [312, 8], [310, 10], [290, 10], [284, 7], [280, 0], [284, -7]], M.wTrack, 160); rim.rotation.x = Math.PI / 2; WS.add(rim);
   const hub = lath([[0, -40], [16, -40], [18, -30], [12, -20], [12, 20], [18, 30], [16, 40], [0, 40]], M.wHub, 32); hub.rotation.x = Math.PI / 2; WS.add(hub);
   for (let i = 0; i < 24; i++) { const a = i * 2 * Math.PI / 24, side = i % 2 ? 1 : -1; WS.add(cyl([17 * Math.cos(a + 0.12 * side), 17 * Math.sin(a + 0.12 * side), 28 * side], [283 * Math.cos(a), 283 * Math.sin(a), 0], 1.1, M.wSpk, 6)); }
-  for (let i = 0; i < 12; i++) { const a = i * 2 * Math.PI / 12 + 0.05; const v = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 3), M.chrome); v.position.set(298 * Math.cos(a), 298 * Math.sin(a), 0); }
+  { const rf = new THREE.Mesh(new K.RBox(70, 26, 8, 3, 4), wm(new THREE.MeshPhysicalMaterial({ color: 0xe0281e, roughness: 0.25, clearcoat: 1, emissive: 0x400000 }))); rf.position.set(0, 190, 0); WS.add(rf);
+    const vs = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 26, 12), M.wHub); vs.position.set(0, -270, 0); WS.add(vs); }
 }
 // ---------- fork, bosses, handlebar, lever ----------
 for (const sx of [-1, 1]) { scene.add(cyl([sx * 56, 175, -40], [sx * 52, -310, -40], 11.5, M.frame, 24)); scene.add(cyl([sx * 52, -310, -40], [sx * 52, -310, 0], 7, M.chrome));
@@ -74,13 +75,13 @@ const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth
 const top = (sx, phi) => [sx * (G.PX + G.S_TOP * Math.sin(phi)), G.PY + G.S_TOP * Math.cos(phi)];
 const padC = (sx, phi) => [sx * (G.PX - (G.OFF - 3) * Math.cos(phi) + G.S_PAD * Math.sin(phi)), G.PY + G.S_PAD * Math.cos(phi) + (G.OFF - 3) * Math.sin(phi) * 0];
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
-const HOOK = [0, 0, -5, 0, 620, 12, 34];
+const HOOK = [0, 0, 40, 0, 640, 12, 34];
 const WIDE = [0, 40, 60, 0, 2300, 10, 32];
 const FRONT = [0, 0, 10, 0, 640, 8, 0];
 const k_ = (t, a) => [t, ...a.slice(1)];
-const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 0, -5, 0, 590, 12, 36]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.6, [0, 40, 50, 0, 2150, 10, 28]),
-  k_(T.vo2 + 0.6, [0, 0, 0, 0, 700, 10, 22]), k_(T.vo3 - 0.2, [0, 0, 0, 0, 690, 10, 20]), k_(T.vo3 + 0.5, [0, 0, -80, 0, 700, 6, 6]), k_(T.vo4 - 0.3, [0, 0, -80, 0, 700, 6, 4]), k_(T.vo4 + 0.4, FRONT), k_(T.vo5 + 2.2, [0, 0, 10, 0, 620, 6, 2]), k_(T.vo5 + 3.4, [0, 0, -20, 0, 700, 12, 30]), k_(T.vo6 + 0.3, [0, 0, -15, 0, 720, 12, 32]),
-  k_(LOOP - 0.5, [0, 0, -8, 0, 650, 12, 34]), k_(LOOP, HOOK)];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, [0, 0, 40, 0, 610, 12, 36]), k_(T.hookEnd, WIDE), k_(T.vo2 - 0.6, [0, 40, 50, 0, 2150, 10, 28]),
+  k_(T.vo2 + 0.6, [0, 0, 0, 0, 700, 10, 22]), k_(T.vo3 - 0.2, [0, 0, 0, 0, 690, 10, 20]), k_(T.vo3 + 0.5, [0, 0, -40, 0, 760, 6, 6]), k_(T.vo4 - 0.3, [0, 0, -40, 0, 760, 6, 4]), k_(T.vo4 + 0.4, FRONT), k_(T.vo5 + 2.2, [0, 0, 10, 0, 620, 6, 2]), k_(T.vo6 - 0.1, [0, 0, 10, 0, 640, 6, 3]), k_(T.vo6 + 1.0, [0, 0, 0, 0, 720, 12, 30]),
+  k_(LOOP - 0.5, [0, 0, 30, 0, 660, 12, 34]), k_(LOOP, HOOK)];
 let KK = null;
 function setScene(t) {
   const k = kin(t); KK = k; const phi = k[2] * D2R;
@@ -96,7 +97,7 @@ function setScene(t) {
   K.glow(CAB, fade(t, T.vo3 + 0.2, T.vo5, 0.25) * 0.9); K.glow(NOOD, fade(t, T.vo3 + 1.8, T.vo5, 0.25) * 0.9);
   const gp = fade(t, T.vo5, T.vo6, 0.2) * 0.9; K.glow(AR.userData.pad, gp); K.glow(AL.userData.pad, gp);
   K.glow(AR, Math.max(fade(t, T.vo2 + 0.4, T.vo3, 0.25), fade(t, T.vo4, T.vo5, 0.25)) * 0.35); K.glow(AL, Math.max(fade(t, T.vo2 + 0.4, T.vo3, 0.25), fade(t, T.vo4, T.vo5, 0.25)) * 0.35);
-  const cw = Math.min(S.smooth((t - (T.vo2 + 0.2)) / 0.6), 1 - S.smooth((t - (T.vo5 + 2.4)) / 0.5)) * (t > T.hookEnd ? 1 : 0); CUTW.constant = cw > 0.001 ? 45 + 400 * (1 - cw) : 1e5;
+  const cw = Math.min(S.smooth((t - (T.vo2 + 0.2)) / 0.6), 1 - S.smooth((t - (T.vo6 + 0.1)) / 0.5)) * (t > T.hookEnd ? 1 : 0); CUTW.constant = cw > 0.001 ? 45 + 400 * (1 - cw) : 1e5;
   K.shoot(st, CAMK, t);
 }
 // ---------- overlay ----------
@@ -128,33 +129,32 @@ function overlay(t) {
   K.TXT.step(g2, s1, 1, 'WIRE PULLS, CASING PUSHES', 60);
   K.TXT.step(g2, s2, 2, 'BOTH ARMS SWING IN', 64);
   K.TXT.step(g2, s3, 3, 'BOTH PADS PINCH THE RIM', 62);
-  // step 1: flat 2D strip of the cable (wire inside its casing) under the brake
+  // step 1: flat 2D strip of the cable: a see-through casing (tube) with the wire sliding inside it
   { const a = fade(t, T.vo3 + 0.1, T.vo4 + 0.1, 0.3); if (a > 0) { g2.save(); g2.globalAlpha = a;
-      const Y0 = 1075, Y1 = 1435, yc = 1185, d = 30 * u, xL = 360 + d, xR = 700 - d, pv = 1370;
+      const Y0 = 1075, Y1 = 1435, yc = 1200, d = 30 * u, xL = 380 + d, xR = 690 - d, pv = 1330;
       g2.fillStyle = 'rgba(8,10,14,0.9)'; S.rrect(g2, 70, Y0, 860, Y1 - Y0, 26); g2.fill(); g2.strokeStyle = 'rgba(255,255,255,0.25)'; g2.lineWidth = 3; g2.stroke();
-      // arms (pivot at the bottom, top moves in)
-      for (const [x, px] of [[xL, 360], [xR, 700]]) { line(g2, 1, [[px, pv - 30], [x, yc - 30]], '#d5d9de', 22); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(px, pv - 30, 11, 0, 7); g2.fill(); }
-      // casing (thick, orange) from the lever side to the left arm top; wire (thin, white) through it and across to the right arm top
-      line(g2, 1, [[110, yc], [xL - 12, yc]], '#ffa114', 30); g2.fillStyle = '#ffa114'; g2.fillRect(xL - 16, yc - 24, 12, 48);
-      line(g2, 1, [[110, yc], [xR, yc]], '#ffffff', 7);
-      g2.fillStyle = '#ffd21f'; const sl = (t - T.vo3) * 22 % 40; for (let x = xR - 20 - ((40 - sl) % 40); x > 120; x -= 40) { if (x < xL && x > xL - 60) continue; g2.fillRect(x - 3, yc - 12, 6, 24); }
-      const aw = fade(t, T.vo3 + 0.5, T.vo4 + 0.1, 0.25), ac = fade(t, T.vo3 + 2.1, T.vo4 + 0.1, 0.25);
-      S.forceArrow(g2, aw, 270, yc - 60, 150, yc - 60, 24); S.forceArrow(g2, aw, xR + 130, yc - 60, xR + 20, yc - 60, 24);
-      S.forceArrow(g2, ac, 140, yc + 62, 260, yc + 62, 24); S.forceArrow(g2, ac, xL - 150, yc + 62, xL - 26, yc + 62, 24);
-      g2.font = '46px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
-      g2.globalAlpha = a * aw; g2.fillStyle = '#ffffff'; g2.fillText('WIRE PULLS', 560, Y0 + 40);
-      g2.globalAlpha = a * ac; g2.fillStyle = '#ffa114'; g2.fillText('CASING PUSHES BACK', 500, Y1 - 38);
-      g2.globalAlpha = a; g2.font = '44px Anton'; g2.fillStyle = '#c9d3e3'; g2.textAlign = 'right'; g2.fillText('LEFT ARM', 335, pv - 30); g2.textAlign = 'left'; g2.fillText('RIGHT ARM', 725, pv - 30);
+      for (const [x, px] of [[xL, 380], [xR, 690]]) { line(g2, 1, [[px, pv], [x, yc - 34]], '#d5d9de', 22); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(px, pv, 11, 0, 7); g2.fill(); }
+      g2.fillStyle = 'rgba(255,161,20,0.28)'; g2.fillRect(100, yc - 20, xL - 112, 40); g2.strokeStyle = '#ffa114'; g2.lineWidth = 6; g2.beginPath(); g2.moveTo(100, yc - 20); g2.lineTo(xL - 12, yc - 20); g2.moveTo(100, yc + 20); g2.lineTo(xL - 12, yc + 20); g2.stroke();
+      g2.fillStyle = '#ffa114'; g2.fillRect(xL - 16, yc - 26, 12, 52);
+      line(g2, 1, [[100, yc], [xR, yc]], '#ffffff', 7);
+      g2.fillStyle = '#ffd21f'; const sl = (t - T.vo3) * 22 % 40; for (let x = xR - 20 - ((40 - sl) % 40); x > 110; x -= 40) { if (x < xL + 4 && x > xL - 22) continue; g2.fillRect(x - 3, yc - 12, 6, 24); }
+      g2.font = '48px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+      g2.fillStyle = '#ffa114'; g2.fillText('CASING (TUBE)', 235, yc - 62); g2.fillStyle = '#ffffff'; g2.fillText('WIRE', (xL + xR) / 2, yc - 62);
+      const ap = fade(t, T.vo3 + 0.8, T.vo4 + 0.1, 0.25);
+      S.forceArrow(g2, ap, xL - 170, yc + 70, xL - 14, yc + 70, 26); S.forceArrow(g2, ap, xR + 170, yc + 70, xR + 14, yc + 70, 26);
+      g2.globalAlpha = a * ap; g2.font = '50px Anton'; g2.fillStyle = '#ffa114'; g2.fillText('CASING PUSHES', 270, Y1 - 50); g2.fillStyle = '#ffffff'; g2.fillText('WIRE PULLS', 780, Y1 - 50);
       g2.restore(); } }
   // step 2: the same two pushes on the real brake
   { const a = fade(t, T.vo4 + 0.2, T.vo5 + 0.1, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr), [lx, ly] = scr(xl, yl);
       S.forceArrow(g2, a, rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'WIRE PULLS', rx + 60, ry + 110, 48, '#ffffff');
       S.forceArrow(g2, a, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, a, 'CASING PUSHES', lx - 60, ly + 175, 48, '#ffa114'); } }
-  { const an = fade(t, T.vo4 + 0.2, T.vo5 - 0.1, 0.25); if (an > 0) { S.tag(g2, an, 'CASING', ...scr(xl - 24, yl + 30), -170, 90, 48, '#ffa114'); S.tag(g2, an, 'WIRE', ...scr((xl + xr) / 2, yr), 60, -200, 48, '#ffffff'); } }
+  { const an = fade(t, T.vo3 + 0.2, T.vo5 - 0.1, 0.25); if (an > 0) { S.tag(g2, an, 'CASING', ...scr(xl - 24, yl + 30), -170, 90, 48, '#ffa114'); S.tag(g2, an, 'WIRE', ...scr((xl + xr) / 2, yr), 70, 150, 48, '#ffffff'); } }
+  { const a = fade(t, T.vo4 + 0.6, T.vo5 + 0.1, 0.25); if (a > 0) { for (const sx of [-1, 1]) { const [qx, qy] = scr(sx * G.PX, G.PY, 6); g2.save(); g2.globalAlpha = a; g2.fillStyle = '#000'; g2.beginPath(); g2.arc(qx, qy, 17, 0, 7); g2.fill(); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(qx, qy, 13, 0, 7); g2.fill(); g2.restore(); }
+      const [px0, py0] = scr(0, G.PY, 6); pill(g2, a, 'PIVOTS', px0, py0 + 110, 46, '#ffffff'); } }
   // step 3: squeeze marks at the pads
   { const a = fade(t, T.vo5 + 0.2, T.vo5 + 1.4, 0.2); if (a > 0) { const [px, py] = scr(G.RIM_X + 6, -10), [qx, qy] = scr(-G.RIM_X - 6, -10); S.forceArrow(g2, a, px + 150, py + 90, px + 14, py + 10, 22); S.forceArrow(g2, a, qx - 150, qy + 90, qx - 14, qy + 10, 22);
       pill(g2, a, 'PINCH!', (px + qx) / 2, py + 220, 54, '#ffd21f'); } }
-  { const a = fade(t, T.vo5 + 1.3, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS THE WHEEL', 495, Math.min(py + 190, 1110), 52, '#ffa114'); } }
+  { const a = fade(t, T.vo5 + 1.3, T.vo6 + 0.1, 0.25); if (a > 0) { const [px, py] = scr(G.RIM_X + 8, -12); pill(g2, a, 'FRICTION STOPS THE WHEEL', 495, 560, 52, '#ffa114'); } }
   badge(g2, fade(t, T.vo5 + 0.3, LOOP - 1.5, 0.3), sp);
   K.TXT.answer(g2, fade(t, T.vo6 + 0.1, LOOP - 1.3, 0.3), 'ONE PULL, TWO ARMS', 'BOTH SIDES SQUEEZED', 560);
   K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.25, 0.25));

@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does a kettle know the water is boiling?",
+  "dur": 2.176
+ },
+ {
+  "i": 1,
+  "text": "Switch it on. When it boils, it clicks off all by itself.",
+  "dur": 3.072
+ },
+ {
+  "i": 2,
+  "text": "Boiling water makes steam. A thin tube carries the steam down to the switch.",
+  "dur": 4.075
+ },
+ {
+  "i": 3,
+  "text": "There, the steam heats a strip made of two metals, joined together.",
+  "dur": 3.157
+ },
+ {
+  "i": 4,
+  "text": "When it's hot, the copper grows more than the steel, so the strip has to bend.",
+  "dur": 3.712
+ },
+ {
+  "i": 5,
+  "text": "The bending strip lifts a rod, the rod flips the switch, and the power is cut.",
+  "dur": 4.181
+ },
+ {
+  "i": 6,
+  "text": "Steam bends the strip. The strip turns it off.",
+  "dur": 2.453
+ }
+]

@@ -17,12 +17,12 @@ Wikipedia, Bicycle brake (V-brakes: the cable housing is attached to one arm and
 Wikipedia, Lever (the mechanical advantage of a lever is the ratio of the distances from the pivot to where the forces act): https://en.wikipedia.org/wiki/Lever"""
 alt = ("3D animation of the front of a bike with a blue fork and a V-brake, with a voiceover. Under the question How does one cable squeeze both sides? a red circle marks a brake pad next to the spinning rim. "
        "The whole front of the bike: the brake lever is squeezed, the cable pulls and the wheel stops. A close-up with the front of the wheel cut away names the two arms, the two pads and the rim. "
-       "1, wire pulls, casing pushes: a flat diagram of the cable shows the inner wire sliding into its outer casing; arrows show the wire pulling one way and the casing pushing back the other way, so the left arm and the right arm both move in. "
-       "2, both arms swing in: on the real brake an arrow shows the wire pulling the right arm in and another shows the casing pushing the left arm in. "
+       "1, wire pulls, casing pushes: a flat diagram shows the cable as a see-through tube, the casing, with the wire sliding inside it; one arrow shows the wire pulling the right arm in and the other shows the casing pushing the left arm in. "
+       "2, both arms swing in: on the real brake the same two arrows push the arm tops together and the two pivots at the bottom of the arms are marked. "
        "3, both pads pinch the rim at once, and friction stops the wheel; a badge shows the wheel stopped. "
        "The payoff reads One pull, two arms, both sides squeezed, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES ONE CABLE', 'SQUEEZE BOTH SIDES?', 'PAD', 'BRAKE LEVER', 'CABLE', 'BRAKE', 'ARM', 'RIM',
-      'WIRE PULLS, CASING PUSHES', 'WIRE PULLS', 'CASING PUSHES BACK', 'LEFT ARM', 'RIGHT ARM', 'BOTH ARMS SWING IN', 'CASING', 'WIRE', 'CASING PUSHES',
+      'WIRE PULLS, CASING PUSHES', 'CASING (TUBE)', 'WIRE', 'CASING PUSHES', 'WIRE PULLS', 'CASING', 'BOTH ARMS SWING IN', 'PIVOTS',
       'BOTH PADS PINCH THE RIM', 'PINCH!', 'FRICTION STOPS THE WHEEL', 'WHEEL:', 'STOP', 'ONE PULL, TWO ARMS', 'BOTH SIDES SQUEEZED', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p073', track='A', group='V', slot='2026-11-20T17:00 Europe/London', topicKey='bike v-brake',
