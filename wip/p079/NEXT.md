@@ -1,0 +1,13 @@
+# p079 winged corkscrew "WHY DO THE / WINGS GO UP?" - track A (Kokoro af_heart) - group E - NOT SCHEDULED (topic-registry question, approval a-041)
+topic key: wing corkscrew. Registry check (65 rows): no corkscrew/cork/wine row, BUT p020 (31 Oct) = "Rack and pinion (steering)", key "rack and pinion".
+The corkscrew's mechanism IS a rack and pinion (different object, different question). AGENT.md 15 Nov 17:19: "If unsure, treat it as a repeat" -> not scheduled; Erkan asked in approval a-041.
+Built from kit/kit.js (spurGear outline for the wing pinion sectors) + lathe parts: green glass bottle + wine, cork (procedural cork texture, x-ray in steps), chrome body (base cup, 2 pillars, open head plates), shaft (helix worm, shank, revolved rack rings, collar, loop handle), 2 wings (gear sector + arm + paddle).
+kin.py: z=15 m=2 pinions (r 15) at x=+-21, rack pitch r 6; wings -74 deg -> +74 deg = 38.75 mm shaft travel; worm pitch 9 mm. Checks PASS: rack/pinion overlap 0.0000 mm2 over the whole loop (min clearance 0.047 mm = backlash), rack always 2+ teeth in mesh, handle clears head top, worm never through the cork, wings clear the body by 7.3 mm.
+Facts: Wikipedia Corkscrew + US 2017/0043989 A1 + L'Atelier du Vin (post.json). Copy spellchecked (flags: whyloop, hq, howitworks, Vin = proper noun).
+Audio PASS (after pop gain cut): -15.0 LUFS, -3.1 dBTP, HP4k gap 21.0 dB.
+Render: NODE_PATH=/opt/node22/lib/node_modules node tools/render/render.js wip/p079/scene.html <out> 30 1 0 726 0.75 0 0 1 1080 1920 1 (~1 s/frame wall, 12 min); encode.sh <out> wip/p079/mix.wav corkscrew_reel.mp4 24.2 30
+STATUS (19 Nov 10:09 run): final v1 = wip/p079/corkscrew_reel.mp4 (+ cover = still 0). HARD GATE PASS (1080x1920 H.264 High yuv420p 30 fps, AAC, 24.2 s, no black ends). CLARITY PASS (14yo YES). VISUAL 5/10.
+If Erkan approves (a-041): rule B score 5 -> fix the top 3 once, no re-score, then schedule:
+ 1. Keep the cork solid and visible all the time (no x-ray): cut the bottle neck + cork front half (section) so the helix is seen screwing into solid cork and the cork rides up in step 4; final 2 s: cork fully above the bottle.
+ 2. Distinct highlight colours: gears cyan, rack teeth amber (keep metal shading); one rotating-arrow pair right on the mesh point; drop the converging step-3 arrows; fix WING/GEAR labels (WING on the arm, GEAR on the sector); CORK COMES UP must point at the cork.
+ 3. Layout: captions/answer card off the shaft + ring (frame the head lower or move the card to y 1250), twist arrow below the caption, wings not cropped (dist +10 %), hook: no end-state flash (start on wings rising with the title instead).
