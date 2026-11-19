@@ -69,6 +69,7 @@ Update this file every time a video is scheduled.
 | 2026-11-20 17:00 | p073 | How one cable squeezes both sides | bike v-brake | v-brake, linear-pull rim brake, bicycle rim brake, brake cable casing, noodle (scheduled 19 Nov 01:09 run) |
 | 2026-11-21 01:00 | p075 | How a kettle knows it's boiling | kettle switch | electric kettle auto switch-off, bimetallic strip, kettle thermostat, steam switch (scheduled 19 Nov 01:09 run) |
 | 2026-11-21 17:00 | p080 | How does a can opener cut the lid | can opener | manual can opener, butterfly opener, traction wheel / feed wheel + cutting wheel, top-cut opener (scheduled 19 Nov 10:09 run) |
+| 2026-11-22 01:00 | p081 | How does a sharpener make a perfect point | pencil sharpener | prism / pocket sharpener, shaping cone + tangential blade, pencil point (scheduled 19 Nov 10:09 run) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
