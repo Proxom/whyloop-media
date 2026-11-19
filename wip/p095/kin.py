@@ -36,7 +36,7 @@ def state(t):
     th = 0 if t < T['foldA'] else 180 * sm((t - T['foldA']) / (T['foldB'] - T['foldA']))
     return th, b, 0
 # ---- geometry (top view) ----
-PIV = (0.0, 12.0); R_HEAD = 11.0; BL_R0 = 11.5; BL_R1 = 66.0; BL_W = 9.0
+PIV = (0.0, 12.0); R_HEAD = 13.0; BL_R0 = 13.5; BL_R1 = 66.0; BL_W = 9.0
 BODY = unary_union([box(-78, -17, 18, 7), Point(PIV).buffer(R_HEAD, 64)])
 def blade(th):
     a = math.radians(th); d = np.array([math.cos(a), math.sin(a)]); n = np.array([-d[1], d[0]]); p = np.array(PIV); h = BL_W / 2
