@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does this knob know the room is warm?",
+  "dur": 1.941
+ },
+ {
+  "i": 1,
+  "text": "Hot water flows through this valve into the radiator.",
+  "dur": 2.795
+ },
+ {
+  "i": 2,
+  "text": "Inside the knob is a little capsule of wax.",
+  "dur": 2.432
+ },
+ {
+  "i": 3,
+  "text": "As the room warms up, the wax expands.",
+  "dur": 2.219
+ },
+ {
+  "i": 4,
+  "text": "It pushes a pin down, and the pin shuts the valve.",
+  "dur": 2.667
+ },
+ {
+  "i": 5,
+  "text": "When the room cools, the wax shrinks, and a spring opens the valve again.",
+  "dur": 3.712
+ },
+ {
+  "i": 6,
+  "text": "Warm wax grows and shuts off the hot water.",
+  "dur": 2.411
+ }
+]

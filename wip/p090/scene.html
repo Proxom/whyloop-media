@@ -1,0 +1,184 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p090 wiper park switch "WHY DO WIPERS / STOP AT THE BOTTOM?" (group V, track A voice). Built from kit/kit.js. Units mm, y up.
+// OUTSIDE: windshield bottom close-up (glass raked 28 deg, cowl, hood), two wiper arms + beam blades pivoting in the glass plane.
+// INSIDE (world x = 6000): wiper gearbox opened from above: motor can + worm sleeve, nylon gear with a copper park plate (one gap
+// in the outer track), two brass contact fingers on a terminal block, power wire in, wire out to the motor.
+// kin.json rows: [t, phi, theta, switchOn, contactClosed, current, omega]
+import * as K from '/kit/kit.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x101216, envIntensity: 1.05, near: 2, far: 60000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.glassW = phys({ color: 0x05080b, metalness: 0.0, roughness: 0.03, envMap: scene.environment, envMapIntensity: 0.3 });   // explicit envMap: envMapIntensity is ignored for scene.environment
+M.frit = phys({ color: 0x030304, roughness: 0.22, metalness: 0, envMapIntensity: 0.25 });
+M.hood = phys({ color: 0x23365a, metalness: 0.55, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.2 });
+M.cowl = phys({ color: 0x17181b, roughness: 0.72, metalness: 0, bumpMap: M.rubber.bumpMap, bumpScale: 0.4 });
+M.arm = phys({ color: 0x141518, metalness: 0.35, roughness: 0.48, clearcoat: 0.3, clearcoatRoughness: 0.5 });
+M.nylon = phys({ color: 0xe9e2cf, roughness: 0.5, metalness: 0, clearcoat: 0.2, clearcoatRoughness: 0.5 });
+M.copper = phys({ color: 0xd9824a, metalness: 1, roughness: 0.3, envMapIntensity: 1.3 });
+M.can = phys({ color: 0x1b1c20, metalness: 0.7, roughness: 0.35, clearcoat: 0.4 });
+M.wireRed = phys({ color: 0xc8261c, roughness: 0.45, clearcoat: 0.4 });
+M.wireYel = phys({ color: 0xe7b21c, roughness: 0.45, clearcoat: 0.4 });
+M.block = phys({ color: 0x2a2c31, roughness: 0.6 });
+M.mat = phys({ color: 0x2b2e34, roughness: 0.95, bumpMap: M.rubber.bumpMap, bumpScale: 0.5 });
+const mesh = (geo, mat, parent, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; parent.add(m); return m; };
+const rbox = (w, h, d, r, mat, parent, x, y, z) => mesh(new RoundedBoxGeometry(w, h, d, 4, r), mat, parent, x, y, z);
+// ---------- OUTSIDE ----------
+const OUT = new THREE.Group(); scene.add(OUT);
+const GL = new THREE.Group(); GL.rotation.x = -62 * D2R; OUT.add(GL);          // glass plane: local x across, y up the glass, z = normal (up-forward)
+rbox(2600, 1400, 8, 3, M.glassW, GL, 0, 700, -4);
+{ const fr = rbox(2600, 70, 2, 1, M.frit, GL, 0, 35, 0.6);                      // black ceramic band at the glass bottom + dot fade
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#000'; for (let x = 4; x < 1024; x += 9) for (let y = 0; y < 3; y++) { g.beginPath(); g.arc(x + (y % 2) * 4, 10 + y * 18, 4 - y * 1.1, 0, 7); g.fill(); }
+  const tx = new THREE.CanvasTexture(c); tx.repeat.set(4, 1); tx.wrapS = THREE.RepeatWrapping;
+  const dots = new THREE.Mesh(new THREE.PlaneGeometry(2600, 60), new THREE.MeshPhysicalMaterial({ map: tx, transparent: true, roughness: 0.22, alphaTest: 0.3, color: 0x030304, envMapIntensity: 0.25 }));
+  dots.position.set(0, 98, 0.7); GL.add(dots); void fr; }
+rbox(2600, 50, 170, 10, M.cowl, OUT, 0, -18, 78);                                  // cowl panel
+for (let i = -12; i <= 12; i++) mesh(new THREE.BoxGeometry(60, 4, 10), M.frit, OUT, i * 100 + 40, 7.5, 95);   // cowl vent slots
+{ const hood = rbox(2600, 60, 1400, 24, M.hood, OUT, 0, -120, 860); hood.rotation.x = 7 * D2R; }
+// wipers (two, tandem): pivot spindle in the glass plane, arm along +x at park, rotates CCW (up the glass) by theta
+function wiper(px, len, bladeL) {
+  const P = new THREE.Group(); P.position.set(px, 40, 0); GL.add(P);
+  mesh(new THREE.CylinderGeometry(22, 26, 30, 32), M.arm, P, 0, 0, 15).rotation.x = Math.PI / 2;             // spindle cap
+  const A = new THREE.Group(); P.add(A);
+  rbox(150, 40, 28, 8, M.arm, A, 70, 0, 34);                                                                    // spring head
+  const arm = rbox(len - 120, 18, 12, 5, M.arm, A, 120 + (len - 120) / 2, 0, 30); arm.rotation.y = 0.012;
+  const bx = len - bladeL / 2 + 40, B = new THREE.Group(); B.position.set(bx, -16, 0); A.add(B);              // beam blade along the arm
+  rbox(bladeL, 22, 10, 4, M.arm, B, 0, 0, 12); mesh(new THREE.BoxGeometry(bladeL - 10, 7, 7), M.rubber, B, 0, -2, 3.5);
+  rbox(30, 26, 14, 5, M.plastic, B, -bladeL / 2 + 10, 0, 12); rbox(30, 26, 14, 5, M.plastic, B, bladeL / 2 - 10, 0, 12);
+  rbox(46, 26, 22, 6, M.plastic, B, len - bx - 20 > 0 ? 0 : 0, 2, 20);                                          // hook adaptor
+  return { P, A, B, bladeL };
+}
+const W1 = wiper(-560, 640, 560), W2 = wiper(220, 600, 520);
+// ---------- INSIDE: gearbox at world x = 6000 ----------
+const IN = new THREE.Group(); IN.position.set(6000, 0, 0); scene.add(IN);
+mesh(new THREE.BoxGeometry(2400, 6, 2400), M.mat, IN, 0, -3.5, 0);
+const HS = K.housing(M, { R: 60, t: 3, H: 22, skin: M.alu }); HS.setCut(170); IN.add(HS);
+const GG = new THREE.Group(); GG.rotation.x = -Math.PI / 2; IN.add(GG);           // gearbox frame: local z = up (world y), local +y = far side (screen up)
+const GEAR = K.spurGear(M.nylon, { z: 40, m: 1.5, w: 8, bore: 0 }); GEAR.position.z = 12; GG.add(GEAR);
+// copper park plate on the gear face (rotates with the gear): inner full track r 8..17, outer track r 17..26 with ONE gap (GAP_W) centred at gear-local 90 deg
+{ const ring = (r0, r1, a0, a1, n = 96) => { const o = [], i = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([r1 * Math.cos(a), r1 * Math.sin(a)]); i.push([r0 * Math.cos(a), r0 * Math.sin(a)]); } return o.concat(i.reverse()); };
+  const g2 = G.GAP_W / 2 * D2R, c0 = 90 * D2R;
+  const full = S.extrude(S.shapeOf(S.circle(0, 0, 17, 96, false), [S.circle(0, 0, 8, 64, true)]), 4.05, 4.85, M.copper, 0.15); GEAR.add(full);
+  const outer = S.extrude(S.shapeOf(ring(16.6, 26, c0 + g2, c0 + 2 * Math.PI - g2)), 4.05, 4.85, M.copper, 0.15); GEAR.add(outer);
+  GEAR.userData.copper = [full, outer];
+  for (let k = 0; k < 3; k++) { const a = (90 + 120 * k) * D2R + Math.PI / 3; mesh(new THREE.CylinderGeometry(1.4, 1.4, 1.2, 16), M.steel, GEAR, 12.5 * Math.cos(a), 12.5 * Math.sin(a), 5.0).rotation.x = Math.PI / 2; } }
+{ const sh = mesh(new THREE.CylinderGeometry(5, 5, 10, 32), M.steel, GG, 0, 0, 20); sh.rotation.x = Math.PI / 2; }   // output shaft stub
+// motor can + worm sleeve (the worm itself stays inside its sleeve: background only)
+const SL_Y = -(31.5 + 9 + 0.8), SL_Z = 12.5;
+{ const sl = mesh(new THREE.CylinderGeometry(9, 9, 84, 40), M.alu, GG, 0, SL_Y, SL_Z); sl.rotation.z = Math.PI / 2;
+  const can = mesh(new THREE.CylinderGeometry(22, 22, 70, 48), M.can, GG, 77, SL_Y, SL_Z); can.rotation.z = Math.PI / 2;
+  const bell = mesh(new THREE.CylinderGeometry(22, 19, 8, 48), M.alu, GG, 116, SL_Y, SL_Z); bell.rotation.z = Math.PI / 2;
+  const fl = mesh(new THREE.CylinderGeometry(24, 24, 5, 48), M.alu, GG, 42, SL_Y, SL_Z); fl.rotation.z = Math.PI / 2;
+  const post = mesh(new THREE.CylinderGeometry(2.4, 2.4, 9, 16), M.brass, GG, 124, SL_Y + 8, SL_Z + 6); post.rotation.z = Math.PI / 2; }
+// terminal block + two brass leaf fingers (fixed): A rides the outer track at r 22, 90 deg; B rides the inner track at r 11, 70 deg
+rbox(34, 12, 14, 3, M.block, GG, 0, 47, 23);
+const FA_TIP = V(0, 22, 17.05), FB_TIP = V(11 * Math.cos(70 * D2R), 11 * Math.sin(70 * D2R), 17.05);
+function finger(from, tip) { const d = tip.clone().sub(from), L = d.length(); const m = mesh(new THREE.BoxGeometry(5, L, 0.9), M.brass, GG); m.position.copy(from.clone().add(tip).multiplyScalar(0.5)).add(V(0, 0, 0.6));
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); const b = mesh(new THREE.SphereGeometry(1.8, 16, 12), M.brass, GG); b.position.copy(tip).add(V(0, 0, 0.9)); return m; }
+const FA = finger(V(-7, 42, 24), FA_TIP), FB = finger(V(7, 42, 24), FB_TIP);
+for (const x of [-7, 7]) mesh(new THREE.CylinderGeometry(2.6, 2.6, 4, 16), M.brass, GG, x, 47, 31).rotation.x = Math.PI / 2;
+const tube = (pts, mat, r = 2.2) => mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, r, 12), mat, GG);
+const P_POW = [V(-30, 140, 34), V(-26, 80, 34), V(-14, 56, 34), V(-7, 48, 33)];
+const P_MOT = [V(7, 48, 33), V(30, 54, 36), V(80, 48, 38), V(128, 18, 36), V(138, SL_Y + 8, SL_Z + 8), V(128, SL_Y + 8, SL_Z + 6)];
+tube(P_POW, M.wireRed); tube(P_MOT, M.wireYel);
+S.shadowAll(IN);
+const RIG = K.lightRig(scene, V(6000, 10, 0), 170); RIG.key.shadow.bias = -0.0004; RIG.rim.intensity = 2.6;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 1.1); f.position.set(-900, 2600, 2400); scene.add(f); const g = new THREE.DirectionalLight(0xdbe8ff, 1.2); g.position.set(1600, 1200, -400); scene.add(g);
+  const f2 = new THREE.DirectionalLight(0xfff1e0, 0.7); f2.position.set(6300, 400, 900); scene.add(f2); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (Math.abs(b[1] - a[1]) > 30) return a; return a.map((v, j) => (j >= 3 && j <= 5) ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+let KK = null;
+const insideAt = (t) => t >= T.cutIn && t < T.cutOut;
+function setScene(t) {
+  const k = KK = kin(t); const th = k[2] * D2R;
+  W1.A.rotation.z = th; W2.A.rotation.z = th;
+  GEAR.rotation.z = k[1] * D2R;
+  const cur = insideAt(t) && k[5] ? 1 : 0; for (const m of GEAR.userData.copper) K.glow(m, cur * 0.45, 0xff9a3a);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const glw = (x, y) => GL.localToWorld(V(x, y, 0));
+GL.updateMatrixWorld(true);
+const gc = glw(-170, 190);
+const OUTK = (d = 2600, el = 36, az = 4, dx = 0) => [gc.x + dx, gc.y, gc.z, d, el, az];
+const INK = (d = 640, el = 58, az = 0, dx = 0, dz = 0) => [6000 + dx + 10, 12, dz + 8, d, el, az];
+const CAMK = [k_(0, OUTK(1500, 30, 2)), k_(T.park0, OUTK(1560, 30, 3)), k_(T.cutIn - 0.01, OUTK(1900, 33, 7, 60)),
+  k_(T.cutIn, INK(700, 56, -6)), k_(T.vo3 - 0.01, INK(610, 58, 3, 10, -10)), k_(T.vo4 - 0.01, INK(480, 62, -3, -10, -14)), k_(T.open + 0.2, INK(440, 64, 2, -8, -16)), k_(T.cutOut - 0.01, INK(460, 63, 4, -6, -14)),
+  k_(T.cutOut, OUTK(1650, 30, -3)), k_(LOOP, OUTK(1520, 30, 1))];
+// ---------- overlay ----------
+const gp = (v) => { const w = GG.localToWorld(v.clone()); return S.toScreen(camera, w); };
+const gearPt = (ang, r, z = 17) => { const a = ang * D2R; return GEAR.localToWorld(V(r * Math.cos(a), r * Math.sin(a), z - 12)); };
+const RED = '#ff4a3a', GRN = '#3ad16a', AMB = '#ffb23a';
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+// current path (gearbox-local 3D): power wire -> finger A -> copper (outer track -> inner track) -> finger B -> wire -> motor
+const PATH = (() => { const c1 = new THREE.CatmullRomCurve3(P_POW).getPoints(30), c2 = new THREE.CatmullRomCurve3(P_MOT).getPoints(50);
+  const lerp = (a, b, n) => { const o = []; for (let i = 0; i <= n; i++) o.push(a.clone().lerp(b, i / n)); return o; };
+  return [...c1, ...lerp(V(-7, 44, 25), FA_TIP, 10), ...lerp(FA_TIP, V(4, 15, 17.05), 6), ...lerp(V(4, 15, 17.05), FB_TIP, 4), ...lerp(FB_TIP, V(7, 44, 25), 10), ...c2]; })();
+const PLEN = (() => { const a = [0]; for (let i = 1; i < PATH.length; i++) a.push(a[i - 1] + PATH[i].distanceTo(PATH[i - 1])); return a; })();
+function pathAt(s) { const x = s * PLEN[PLEN.length - 1]; let i = 1; while (i < PLEN.length - 1 && PLEN[i] < x) i++; const u = (x - PLEN[i - 1]) / Math.max(1e-6, PLEN[i] - PLEN[i - 1]); return PATH[i - 1].clone().lerp(PATH[i], u); }
+function inset(g2, k, t) {   // dash switch state + mini windshield in sync with the blade
+  const x0 = 80, y0 = 1150, w = 330, h = 260; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.78)'; S.rrect(g2, x0, y0, w, h, 22); g2.fill(); g2.strokeStyle = '#8c9096'; g2.lineWidth = 3; g2.stroke();
+  const on = k[3] === 1; g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = '#ffffff'; g2.fillText('SWITCH', x0 + 22, y0 + 46);
+  g2.fillStyle = on ? GRN : RED; S.rrect(g2, x0 + 186, y0 + 18, 118, 56, 14); g2.fill(); g2.fillStyle = '#0d0f12'; g2.textAlign = 'center'; g2.fillText(on ? 'ON' : 'OFF', x0 + 245, y0 + 48);
+  const px = x0 + 50, py = y0 + 232, L = 230, a = -k[2] * D2R; g2.strokeStyle = '#5b6470'; g2.lineWidth = 5; g2.beginPath(); g2.arc(px, py, L + 8, -100 * D2R, 0); g2.stroke();
+  g2.strokeStyle = '#8c9096'; g2.beginPath(); g2.moveTo(px - 20, py); g2.lineTo(px + L + 20, py); g2.stroke();
+  g2.strokeStyle = '#e8e8e8'; g2.lineWidth = 12; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(px, py); g2.lineTo(px + L * Math.cos(a), py + L * Math.sin(a)); g2.stroke();
+  g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.arc(px, py, 9, 0, 7); g2.fill(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = insideAt(t);
+  { let fx = 0; for (const c of [T.cutIn, T.cutOut]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
+  // current dots (inside, while the motor gets power)
+  if (ins && k[5]) for (let i = 0; i < 30; i++) { const s = (t * 0.11 + i / 30) % 1; const [sx, sy] = gp(pathAt(s)); g2.save(); g2.fillStyle = '#fff3a0'; g2.strokeStyle = '#3a2400'; g2.lineWidth = 3; g2.shadowColor = '#ffb21f'; g2.shadowBlur = 16; g2.beginPath(); g2.arc(sx, sy, 8, 0, 7); g2.fill(); g2.stroke(); g2.restore(); }
+  // hook
+  const hk = t < T.hookEnd + 0.2 ? 1 - S.smooth((t - T.hookEnd) / 0.2) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY DO WIPERS', 'STOP AT THE BOTTOM?', 92); const [cx, cy] = S.toScreen(camera, W1.B.localToWorld(V(0, 0, 12))); K.TXT.circle(g2, hk, cx, cy, 110, [180, 250]); }
+  if (t >= T.hookEnd && t < T.cutOut + 3) {}
+  const s1 = hard(t, T.hookEnd, T.cutIn), s2 = hard(t, T.cutIn, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.open), s5 = hard(t, T.open, T.cutOut), s6 = hard(t, T.cutOut, T.vo6 - 0.05);
+  K.TXT.step(g2, s1, 1, 'SWITCH OFF MID-SWIPE', 60);
+  K.TXT.step(g2, s2, 2, 'A COPPER RING WITH ONE GAP', 56);
+  K.TXT.step(g2, s3, 3, 'POWER STILL FLOWS THROUGH IT', 54);
+  K.TXT.step(g2, s4, 4, 'UNTIL THE GAP REACHES THE CONTACT', 48);
+  K.TXT.step(g2, s5, 5, 'NO CONTACT = NO POWER', 58);
+  K.TXT.step(g2, s6, 6, 'PARKED AT THE BOTTOM', 60);
+  if (s1 && t >= T.off) { S.tag(g2, 1, 'STILL MOVING', ...S.toScreen(camera, W1.B.localToWorld(V(150, 0, 12))), 80, 160, 50, '#ffd21f'); }
+  const slow = t >= T.off + 0.15 && t < T.stop + 0.1; if (slow) { g2.save(); g2.font = '44px Anton'; g2.textAlign = 'right'; g2.textBaseline = 'middle'; S.outlined(g2, 'SLOW MOTION', 900, 1408, 44, '#9fd0ff'); g2.restore(); }
+  if (ins) {
+    const gapS = S.toScreen(camera, gearPt(90, 21.5));
+    const conS = gp(FA_TIP);
+    if (s2) { S.tag(g2, hard(t, T.cutIn + 0.3, T.vo3), 'MOTOR', ...gp(V(80, SL_Y, 34)), -60, 210, 50, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 0.9, T.vo3), 'GEAR', ...gp(V(28, -14, 17)), 140, 120, 50, '#ffffff');
+      S.tag(g2, hard(t, T.cutIn + 1.6, T.vo3), 'COPPER RING', ...S.toScreen(camera, gearPt(200, 21.5)), -120, -150, 50, AMB); S.tag(g2, hard(t, T.cutIn + 2.6, T.vo3), 'GAP', ...gapS, 140, 80, 52, '#ffd21f'); }
+    if (s3) { S.tag(g2, 1, 'CONTACT', ...conS, -200, -150, 50, '#ffd21f'); S.tag(g2, hard(t, T.vo3 + 0.8, T.vo4), 'POWER IN', ...gp(V(-26, 80, 34)), -130, 70, 48, '#ff8a7a'); S.tag(g2, hard(t, T.vo3 + 1.6, T.vo4), 'TO MOTOR', ...gp(V(80, 48, 38)), 40, -110, 48, '#ffd21f'); }
+    if (s4) { S.tag(g2, 1, 'GAP', ...gapS, 130, 110, 52, '#ffd21f'); S.tag(g2, 1, 'CONTACT', ...conS, -200, -150, 50, '#ffffff'); const [ax, ay] = gapS; const a = Math.atan2(conS[1] - ay, conS[0] - ax), L = Math.hypot(conS[0] - ax, conS[1] - ay);
+      if (L > 70) arrowC(g2, 1, ax + 18 * Math.cos(a), ay + 18 * Math.sin(a), conS[0] - 30 * Math.cos(a), conS[1] - 30 * Math.sin(a), 20, '#ffd21f'); }
+    if (s5) { const [cx, cy] = conS; g2.save(); g2.strokeStyle = RED; g2.lineWidth = 12; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10; g2.beginPath(); g2.moveTo(cx - 34, cy - 34); g2.lineTo(cx + 34, cy + 34); g2.moveTo(cx + 34, cy - 34); g2.lineTo(cx - 34, cy + 34); g2.stroke(); g2.restore();
+      S.tag(g2, 1, 'NO POWER', cx, cy - 40, -180, -150, 52, RED); S.tag(g2, hard(t, T.stop, T.cutOut), 'STOPPED', ...gp(V(80, SL_Y, 34)), -60, 210, 50, '#ffffff'); }
+  }
+  if (s6) S.tag(g2, 1, 'PARKED', ...S.toScreen(camera, W1.B.localToWorld(V(0, 0, 12))), 40, -220, 52, '#ffd21f');
+  if (t >= T.hookEnd && t < T.vo6 - 0.05) inset(g2, k, t);
+  K.TXT.answer(g2, hard(t, T.vo6 - 0.05, LOOP + 1), 'ONE GAP IN A COPPER RING', 'PARKS YOUR WIPERS', 560);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

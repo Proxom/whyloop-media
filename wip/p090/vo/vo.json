@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "Why do wipers always stop at the bottom?",
+  "dur": 2.24
+ },
+ {
+  "i": 1,
+  "text": "Switch them off mid-swipe, and they keep going.",
+  "dur": 2.261
+ },
+ {
+  "i": 2,
+  "text": "Inside, the motor turns a gear with a copper ring. The ring has one gap.",
+  "dur": 3.904
+ },
+ {
+  "i": 3,
+  "text": "The switch is off, but power still flows through the ring to the motor.",
+  "dur": 3.371
+ },
+ {
+  "i": 4,
+  "text": "So the motor keeps turning, until the gap reaches the contact.",
+  "dur": 3.2
+ },
+ {
+  "i": 5,
+  "text": "No contact, no power. The wipers stop right at the bottom.",
+  "dur": 3.52
+ },
+ {
+  "i": 6,
+  "text": "One gap in a copper ring parks your wipers.",
+  "dur": 2.261
+ }
+]

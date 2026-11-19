@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does the needle know your speed?",
+  "dur": 1.621
+ },
+ {
+  "i": 1,
+  "text": "Behind the dial, a cable from the wheels spins a magnet.",
+  "dur": 3.051
+ },
+ {
+  "i": 2,
+  "text": "Around it sits an aluminum cup. They never touch.",
+  "dur": 2.667
+ },
+ {
+  "i": 3,
+  "text": "The spinning magnet stirs up tiny electric currents in the cup, and they drag it along.",
+  "dur": 4.48
+ },
+ {
+  "i": 4,
+  "text": "A thin spring pulls back, so the cup only turns a little.",
+  "dur": 2.923
+ },
+ {
+  "i": 5,
+  "text": "Drive faster, the magnet spins faster, the drag gets stronger, and the needle climbs.",
+  "dur": 4.715
+ },
+ {
+  "i": 6,
+  "text": "A spinning magnet moves the needle without ever touching it.",
+  "dur": 3.051
+ }
+]

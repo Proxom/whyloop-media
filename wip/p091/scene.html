@@ -1,0 +1,173 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p091 window blind cord lock "WHY DOESN'T / THE BLIND FALL?" (group E, track A voice). Built from kit/kit.js. Units mm.
+// OUTSIDE: a venetian blind in a window recess; headrail y 0..46, cord lock at x = LX under the right end; slats stack on the bottom rail.
+// INSIDE (side-view cutaway of the cord lock, at world x = 6000): guide pin G at (0,0), toothed roller in a slanted slot, the cord (kin.json path).
+// kin.json rows (30 Hz): [t, c, u, rollerAngle, mode, contact, locked, Px, Py, gap, path(x0,y0,x1,y1,...)]
+import * as K from '/kit/kit.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.0, near: 2, far: 60000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const tex = (w, h, draw, rx = 1, ry = 1) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); return t; };
+// materials
+M.wall = phys({ color: 0xe9e2d6, roughness: 0.92, bumpMap: M.alu.bumpMap, bumpScale: 0.25 });
+M.trim = phys({ color: 0xf4f2ee, roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.5 });
+M.rail = phys({ color: 0xf1f2f2, metalness: 0.35, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+M.slat = phys({ color: 0xf6f5f1, metalness: 0.15, roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
+const braid = (base) => tex(64, 32, (g, w, h) => { g.fillStyle = base; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(90,70,40,0.35)'; g.lineWidth = 5;
+  for (let x = -h; x < w + h; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + h, h); g.stroke(); } g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 2;
+  for (let x = -h; x < w + h; x += 16) { g.beginPath(); g.moveTo(x + 6, 0); g.lineTo(x + 6 + h, h); g.stroke(); } });
+const cordTex = braid('#e8dcc2');
+M.cord = phys({ color: 0xffffff, map: cordTex, roughness: 0.85, bumpMap: cordTex, bumpScale: 0.6, sheen: 0.6, sheenColor: 0xfff4dd });
+M.tassel = phys({ color: 0xd8c39d, roughness: 0.55, clearcoat: 0.3 });
+M.sky = new THREE.MeshBasicMaterial({ map: tex(8, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#a9c7e6'); gr.addColorStop(0.6, '#d9e6f0'); gr.addColorStop(1, '#efe9dc'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }), toneMapped: true });
+const secTex = tex(4, 256, (g) => { const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#d8392d'); gr.addColorStop(0.5, '#b8231a'); gr.addColorStop(1, '#8e1610'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); });
+M.sec = phys({ color: 0xffffff, map: secTex, roughness: 0.4, clearcoat: 0.3, clearcoatRoughness: 0.35 });
+M.lockBody = phys({ color: 0x9aa0a8, metalness: 0.9, roughness: 0.38, roughnessMap: M.alu.roughnessMap, envMapIntensity: 1.2 });
+M.slotDark = phys({ color: 0x1a1c20, roughness: 0.7 });
+const box = (w, h, d, mat, x, y, z, parent, r = 0) => { const m = new THREE.Mesh(r > 0 ? new RoundedBoxGeometry(w, h, d, 3, r) : new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; parent.add(m); return m; };
+// ---------- OUTSIDE ----------
+const OUT = new THREE.Group(); scene.add(OUT);
+const W2 = 300, LX = 262, YB0 = -430, NS = 18, PITCH = 23;
+// wall with a window recess (opening x -330..330, y -1000..90), glass + bright sky behind
+box(4000, 1500, 40, M.wall, 0, 840, -80, OUT); box(4000, 1500, 40, M.wall, 0, -1840, -80, OUT);
+box(1700, 1200, 40, M.wall, -1180, -450, -80, OUT); box(1700, 1200, 40, M.wall, 1180, -450, -80, OUT);
+box(20, 1110, 120, M.trim, -340, -455, -40, OUT, 4); box(20, 1110, 120, M.trim, 340, -455, -40, OUT, 4); box(700, 20, 120, M.trim, 0, 100, -40, OUT, 4);
+box(740, 26, 150, M.trim, 0, -1010, -25, OUT, 5);   // sill
+{ const sky = new THREE.Mesh(new THREE.PlaneGeometry(680, 1100), M.sky); sky.position.set(0, -455, -96); OUT.add(sky);
+  const mull = box(30, 1100, 30, M.trim, 0, -455, -88, OUT); void mull; box(680, 26, 30, M.trim, 0, -380, -88, OUT); }
+// headrail + end caps + cord lock nose under the right end
+box(2 * W2, 46, 52, M.rail, 0, 23, 0, OUT, 6); box(10, 48, 54, M.plastic, -W2 - 4, 23, 0, OUT, 3); box(10, 48, 54, M.plastic, W2 + 4, 23, 0, OUT, 3);
+box(26, 10, 22, M.plastic, LX, -4, 6, OUT, 3);
+// slats (gently tilted open), bottom rail, lift cords + ladder strings
+const SL = []; for (let i = 0; i < NS; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(2 * W2 - 6, 1.2, 25), M.slat); s.rotation.x = 0.14; s.castShadow = s.receiveShadow = true; OUT.add(s); SL.push(s); }
+const BR = box(2 * W2 - 2, 14, 28, M.rail, 0, YB0, 0, OUT, 4);
+const cyl = (r, mat) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 10), mat); m.castShadow = true; OUT.add(m); return m; };
+const setSeg = (m, a, b) => { const d = b.clone().sub(a); m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.set(1, d.length(), 1); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); };
+const LIFT = [-200, 200].map(() => cyl(0.9, M.cord)); const LAD = [];
+for (const x of [-200, 200]) for (const z of [-12.5, 12.5]) LAD.push([cyl(0.7, M.cord), x, z]);
+const PC = cyl(2.6, M.cord);   // pull cord
+const TAS = new THREE.Group(); OUT.add(TAS);
+{ const prof = [[0, 0], [6, 2], [9, 10], [9, 22], [7, 32], [4, 38], [2.2, 40], [2.2, 46], [0, 46]].map(p => new THREE.Vector2(p[0], p[1]));
+  const m = new THREE.Mesh(new THREE.LatheGeometry(prof, 32), M.tassel); m.castShadow = true; m.position.y = -46; TAS.add(m); TAS.scale.setScalar(1.7); }
+// ---------- INSIDE: cord lock cutaway at world x = 6000 ----------
+const IN = new THREE.Group(); IN.position.set(6000, 0, 0); scene.add(IN);
+const mm = [M.lockBody, M.lockBody, M.lockBody, M.lockBody, M.sec, M.lockBody];
+let WI = 0; const wallBox = (w, h, d, x, y, z = 0) => { d += (WI++) * 0.25; const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; IN.add(m); return m; };
+// back plate with the slanted slot (dark groove)
+const back = new THREE.Mesh(new THREE.BoxGeometry(120, 110, 2.5), M.lockBody); back.position.set(-10, -20, -8.5); back.receiveShadow = true; IN.add(back);
+{ const A = G.A, B = G.B, r = 2.2; const ang = Math.atan2(A[1] - B[1], A[0] - B[0]), L = Math.hypot(A[0] - B[0], A[1] - B[1]);
+  const sh = new THREE.Shape(); sh.absarc(0, 0, r, Math.PI / 2, Math.PI * 1.5, false); sh.absarc(L + 1.2, 0, r, -Math.PI / 2, Math.PI / 2, false);
+  const slot = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), M.slotDark); slot.position.set(B[0], B[1], -7.2); slot.rotation.z = ang; IN.add(slot);
+  const rim = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), M.chrome); rim.scale.set(1.08, 1.4, 1); slot.add(rim); rim.position.set(-0.08, 0, -0.05); }
+// section walls (red caps face the camera): top, right, bottom with the exit hole, left lower
+wallBox(46, 2.5, 12, 0, 13); wallBox(2.5, 42, 12, 25, -8); wallBox(10, 2.5, 12, -14, -28); wallBox(8, 2.5, 12, 23, -28);
+wallBox(2.5, 22, 12, -21, -17);
+// headrail section the cord comes along (left), drawn as a thin cut channel
+wallBox(40, 1.8, 12, -44, -1.5); wallBox(40, 1.8, 12, -44, 13.2);
+// guide pin (chrome) + toothed roller (brass, knurled) on an axle in the slot
+const GP = new THREE.Mesh(new THREE.CylinderGeometry(G.RG, G.RG, 16, 40), M.machined); GP.rotation.x = Math.PI / 2; GP.castShadow = GP.receiveShadow = true; IN.add(GP);
+{ const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 16.4, 16), M.steel); cap.rotation.x = Math.PI / 2; IN.add(cap); }
+const ROL = new THREE.Group(); IN.add(ROL);
+{ const g = K.spurGear(M.brass, { z: 22, m: 0.44, w: 12, bore: 0 }); g.position.z = -6; ROL.add(g);
+  const ax = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 17, 16), M.steel); ax.rotation.x = Math.PI / 2; ax.position.z = -1.5; ROL.add(ax);
+  for (let k = 0; k < 3; k++) { const d = new THREE.Mesh(new THREE.CircleGeometry(0.7, 12), M.plastic); d.position.set(2.6 * Math.cos(k * 2.09), 2.6 * Math.sin(k * 2.09), 6.05); ROL.add(d); } }
+S.shadowAll(IN); S.shadowAll(OUT);
+// the cord inside: a tube rebuilt from the kin path every frame (texture slides with the cord)
+const CORD = new THREE.Mesh(new THREE.BufferGeometry(), M.cord); CORD.castShadow = true; IN.add(CORD);
+K.backdrop(scene, { floorY: -3000, R: 1200, zBack: -9000, h: 30000, width: 60000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 20000 });
+const RIG = K.lightRig(scene, V(6000, -6, 0), 50); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff3e4, 1.5); f.position.set(-700, 900, 1800); scene.add(f); const g = new THREE.DirectionalLight(0xdbe8ff, 0.8); g.position.set(900, 300, 900); scene.add(g);
+  const amb = new THREE.HemisphereLight(0xfff4e6, 0x6a6058, 0.5); scene.add(amb); }
+// ---------- kinematics ----------
+let KK = null;
+const kin = (t) => KN[Math.max(0, Math.min(KN.length - 1, Math.round(t * G.FPS)))];
+const inside = (t) => t >= T.cutIn && t < T.outEnd;
+function setScene(t) {
+  const k = KK = kin(t); const c = k[1], m = k[4];
+  // outside: bottom rail + slat stack + cords
+  const yb = YB0 + c; BR.position.y = yb;
+  for (let i = 0; i < NS; i++) { const nom = -18 - PITCH * (i + 1), stk = yb + 11 + (NS - 1 - i) * 3.1; SL[i].position.y = Math.max(nom, stk); SL[i].rotation.x = nom >= stk ? 0.14 : 0.02; }
+  LIFT.forEach((cy, j) => setSeg(cy, V(j ? 200 : -200, -2, 0), V(j ? 200 : -200, yb, 0)));
+  for (const [cy, x, z] of LAD) setSeg(cy, V(x, -2, z), V(x, yb, z));
+  const top = V(LX, -9, 6), bot = V(LX - 110 * m, -9 - (300 + c), 6 + 30 * m); setSeg(PC, top, bot); TAS.position.copy(bot);
+  // inside: roller + cord
+  ROL.position.set(k[7], k[8], 0); ROL.rotation.z = k[3];
+  const P = k[10]; const pts = []; for (let i = 0; i < P.length; i += 2) pts.push(V(P[i], P[i + 1], 0));
+  const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal'); const geo = new THREE.TubeGeometry(curve, 160, G.RC, 10, false);
+  CORD.geometry.dispose(); CORD.geometry = geo; let L = 0; for (let i = 1; i < pts.length; i++) L += pts[i].distanceTo(pts[i - 1]);
+  cordTex.repeat.set(L / 3.2, 1); cordTex.offset.x = -c / 3.2;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const OUTK = (d = 2300, az = 14, ty = -150, tx = 40) => [tx, ty, 0, d, 4, az];
+const INK = (dx = 4, d = 170, az = 10, el = 6) => [6000 + dx + 3, -13, 0, d, el, az];
+const CAMK = [k_(0, OUTK(2250, 12)), k_(T.cutIn - 0.01, OUTK(2150, 16, -150)),
+  k_(T.cutIn, INK(4, 182, 14)), k_(T.vo2 - 0.01, INK(3, 168, 8)), k_(T.vo3, INK(3, 160, 4)), k_(T.vo4, INK(5, 150, -4, 7)), k_(T.vo5, INK(5, 142, 2, 6)),
+  k_(T.outEnd - 0.01, INK(0, 165, 10, 6)), k_(T.outEnd, OUTK(2150, 10, -150)), k_(LOOP, OUTK(2250, 12))];
+// ---------- overlay ----------
+const ip = (x, y, z = 6) => S.toScreen(camera, V(6000 + x, y, z));
+const op = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+const YEL = '#ffd21f';
+function arrowC(g2, a, x0, y0, x1, y1, w, color = YEL) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+function gapBar(g2, k, color) {   // yellow bracket across the gap between guide and roller, along the line G -> P
+  const px = k[7], py = k[8], d = Math.hypot(px, py), ux = px / d, uy = py / d; const a = ip(ux * G.RG, uy * G.RG, 9), b = ip(px - ux * G.RR, py - uy * G.RR, 9);
+  g2.save(); g2.strokeStyle = color; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath(); g2.moveTo(...a); g2.lineTo(...b); g2.stroke();
+  const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1; for (const p of [a, b]) { g2.beginPath(); g2.moveTo(p[0] - nx / nl * 18, p[1] - ny / nl * 18); g2.lineTo(p[0] + nx / nl * 18, p[1] + ny / nl * 18); g2.stroke(); } g2.restore(); return b; }
+function blindInset(g2, c, weight) {   // small 2D window icon: the blind's bottom rail follows c
+  const x0 = 100, y0 = 1150, w = 210, h = 250; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.72)'; S.rrect(g2, x0 - 18, y0 - 18, w + 36, h + 36, 20); g2.fill();
+  g2.fillStyle = '#bcd3e8'; g2.fillRect(x0, y0, w, h); g2.fillStyle = '#f1f2f2'; g2.fillRect(x0 - 6, y0, w + 12, 16);
+  const yb = y0 + 16 + (h - 30) * (1 - (c + 10) / 160); g2.fillStyle = '#f6f5f1'; g2.fillRect(x0, y0 + 16, w, yb - y0 - 16); g2.strokeStyle = 'rgba(120,120,120,0.6)'; g2.lineWidth = 2;
+  for (let y = y0 + 26; y < yb; y += 11) { g2.beginPath(); g2.moveTo(x0, y); g2.lineTo(x0 + w, y); g2.stroke(); } g2.fillStyle = '#d9dcde'; g2.fillRect(x0 - 4, yb, w + 8, 10);
+  g2.restore(); S.outlined(g2, 'BLIND', x0 + w / 2, y0 - 34, 46, '#ffffff'); if (weight > 0) arrowC(g2, weight, x0 + w / 2, yb + 4, x0 + w / 2, yb + 95, 20, '#ff8a3a'); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = inside(t);
+  { let fx = 0; for (const c of [T.cutIn, T.outEnd]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
+  // hook
+  const hk = t < T.cutIn ? 1 : 0;
+  if (hk) { K.TXT.hook(g2, 1, "WHY DOESN'T", 'THE BLIND FALL?', 100); const [cx, cy] = op(LX, 0, 8); K.TXT.circle(g2, 1, cx, cy, 85, [-230, 240]);
+    const [qx, qy] = op(LX, -120 - k[1], 6); arrowC(g2, hard(t, T.hp0, T.hp1 + 0.05), qx + 40, qy - 120, qx + 40, qy + 10, 26); }
+  if (ins) blindInset(g2, k[1], hard(t, T.vo3, T.lg1));
+  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outEnd);
+  K.TXT.step(g2, s1, 1, 'CORD PASSES A TOOTHED ROLLER', 56);
+  K.TXT.step(g2, s2, 2, 'PULL: ROLLER DROPS, GAP OPENS', 56);
+  K.TXT.step(g2, s3, 3, 'LET GO: WEIGHT PULLS CORD UP', 56);
+  K.TXT.step(g2, s4, 4, 'ROLLER CLIMBS: GAP CLOSES', 58);
+  K.TXT.step(g2, s5, 5, 'TO LOWER: PULL TOWARD THE MIDDLE', 52);
+  const P = k[10]; const cAt = (i) => ip(P[2 * i], P[2 * i + 1], 3); const NP = P.length / 2;
+  if (s1) { S.tag(g2, 1, 'TOOTHED ROLLER', ...ip(k[7] + 3, k[8] - 3, 7), 70, 250, 50, YEL); S.tag(g2, hard(t, T.cutIn + 0.5, T.vo2), 'GUIDE', ...ip(-2, 2, 9), -150, -170, 48, '#ffffff');
+    S.tag(g2, hard(t, T.cutIn + 1.0, T.vo2), 'CORD', ...cAt(6), -40, 200, 48, '#ffffff'); S.tag(g2, hard(t, T.cutIn + 1.6, T.vo2), 'SLANTED SLOT', ...ip(G.A[0] + 2.5, G.A[1] + 1.0, -6), 160, -170, 46, '#ffffff'); }
+  if (s2) { const [x, y] = cAt(NP - 6); arrowC(g2, hard(t, T.pd0 - 0.2, T.pd1), x + 60, y - 120, x + 60, y + 40, 24); gapBar(g2, k, '#5fe08a'); const g = ip(k[7] * 0.45, k[8] * 0.45, 9);
+    S.tag(g2, hard(t, T.pd0 + 1.2, T.vo3), 'WIDE GAP', ...g, -60, 250, 50, '#5fe08a'); S.tag(g2, 1, 'PULL', x + 60, y - 120, 90, -60, 48, '#ffffff'); }
+  if (s3 || s4) { const [x0, y0] = cAt(3), [x1] = cAt(0); arrowC(g2, hard(t, T.lg0, T.lg1), x0, y0 - 70, x1 - 10, y0 - 70, 24, '#ff8a3a');
+    if (t >= T.lg0) { const gp = gapBar(g2, k, k[6] ? '#ff5a3a' : YEL); void gp; } }
+  if (s3) S.tag(g2, hard(t, T.vo3 + 0.3, T.vo4), "BLIND'S WEIGHT", ...cAt(2), 30, 230, 48, '#ff8a3a');
+  if (s4) { const a = ip(G.B[0] + 5, G.B[1] - 4, 9), b = ip(G.A[0] + 5, G.A[1] - 4, 9); arrowC(g2, k[6] ? 0 : 1, a[0] + 70, a[1] + 40, b[0] + 70, b[1] + 40, 22);
+    if (!k[6]) S.outlined(g2, 'SLOW MOTION', 780, 1360, 44, '#ffffff');
+    S.tag(g2, k[6], 'PINCHED', ...ip(k[7] * 0.5, k[8] * 0.5, 9), 110, 260, 56, '#ff5a3a'); }
+  if (s5) { const [x, y] = cAt(NP - 4); arrowC(g2, hard(t, T.rm0, T.rm1 + 0.3), x + 120, y + 20, x - 70, y + 20, 24); S.tag(g2, hard(t, T.rm1, T.outEnd), 'MISSES THE ROLLER', ...cAt(NP - 12), -40, 230, 48, '#5fe08a'); }
+  K.TXT.answer(g2, hard(t, T.outEnd, LOOP + 1), 'A TINY ROLLING WEDGE', 'HOLDS THE BLIND', 560);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
