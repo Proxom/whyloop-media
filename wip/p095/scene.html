@@ -101,14 +101,14 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 330, az = 18, el = 40, tx = -6) => [tx, 26, 4, d, el, az];
+const OUTK = (d = 600, az = -45, el = 55) => [25, 0, 3, d, el, az];
 const INK = (d = 118, az = 24, el = 24) => [0, 2.5, 12, d, el, az];
-const WIDE = (d = 300, az = 10, el = 58) => [2, 20, 30, d, el, az];
-const CAMK = [k_(0, OUTK(330, 16)), k_(T.cutIn - 0.01, OUTK(300, 22)),
+const WIDE = (d = 560, az = 90, el = 66) => [-20, 0, 30, d, el, az];
+const CAMK = [k_(0, OUTK(610, -45)), k_(T.cutIn - 0.01, OUTK(580, -43)),
   k_(T.cutIn, INK(150, 30, 28)), k_(T.vo2 - 0.01, INK(128, 22, 24)), k_(T.vo2, INK(112, 30, 22)), k_(T.vo3 - 0.01, INK(98, 36, 20)),
-  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.4, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(300, 12, 58)), k_(T.vo5 - 0.01, WIDE(290, 4, 60)),
+  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.4, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(570, 90, 66)), k_(T.vo5 - 0.01, WIDE(545, 86, 68)),
   k_(T.vo5, INK(110, -26, 24)), k_(T.outA - 0.01, INK(96, -32, 22)),
-  k_(T.outA, OUTK(300, -14, 42)), k_(LOOP, OUTK(330, 16))];
+  k_(T.outA, OUTK(580, -47)), k_(LOOP, OUTK(610, -45))];
 // ---------- overlay ----------
 const sp = (x, y, z) => S.toScreen(camera, V(x, y, z));
 const pw = (x, y, z) => S.toScreen(camera, PIV.localToWorld(V(x, y, z)));

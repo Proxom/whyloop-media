@@ -1,3 +1,4 @@
+# SCHEDULING 22 Nov 2026 21:00 (19 Nov 18:13 run). Clarity re-test PASS on v3; visual 5 -> top 3 fixed once (v2); v3 clarity HARD GATE fix + label patch.
 # p091 window blind cord lock "WHY DOESN'T / THE BLIND FALL?" - track A (Kokoro af_heart) - group E - v3 (v1 visual 5 + clarity FAIL; v2 visual accepted, clarity still '14-year-old NO'; v3 = targeted clarity fixes, HARD GATE PASS, clarity re-test pending) (19 Nov 18:13 run) - planned slot 22 Nov 2026 21:00
 topic key: blind cord lock (synonyms: venetian blind cord lock, roman blind cord lock, cord lock roller) - not in learnings/topics-used.md (checked all rows incl. mechanisms: no wedge / floating-roller cord grip; 'ratchet' / 'zip tie' / 'handcuff' = teeth + pawl, different; 'door closer' = oil). One idea: a rolling wedge.
 Principle: the cord passes between a fixed guide and a serrated roller floating in a slanted slot; when released, the blind's weight pulls the cord up, which rolls the roller up the slot into the narrowing gap until the cord is wedged between roller and guide; pulling down (or toward the middle) drops the roller to the wide end and frees the cord.
@@ -26,3 +27,7 @@ v3 HARD GATE: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz, 29.60 s (planned 
 Rebuild audio for v3: master_p091.sh ... mix.wav 4 -5 -15, then ffmpeg volume=-0.8dB on mix.wav.
 Files: blind_reel_v3.mp4, blind_cover_v3.jpg (frame 12); v2 mp4 + cover deleted. Packets: scratchpad p091/clar (c_01..c_60 + transcript.txt), p091/qc (stills, safe_0.5s, sheet, chk.jpg).
 Leftover: in step 1 the TOOTHED ROLLER pill partly covers the small WIDE label; LOOP 29.6 s (inside 20-30 s, under the 35 s cap).
+
+## v3 overlay patch (coordinator: clarity PASS, accepted after patch) - same mix, only affected frames re-rendered
+(1) step 1: TOOTHED ROLLER tag moved to the left of the roller (leader to its lower-left teeth) -> WIDE and NARROW both fully readable. (2) step 3: BLIND'S WEIGHT tag + leader now inside the frame, pointing at the cord where it leaves toward the blind, with an orange arrow along that cord (pulled toward the blind). Re-rendered frames 77-201 and 368-461; blind_reel_v3.mp4 overwritten.
+HARD GATE re-check: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz, 29.60 s; first/last luma 204.2 / 195.3; -15.8 LUFS, -3.8 dBTP, HP4k gap 21.0 dB; 6 stills + patched frames looked at: no glitches, nothing cut off, labels off the subject. Cover + clar/ + qc/ packets rebuilt.
