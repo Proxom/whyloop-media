@@ -148,7 +148,7 @@ function overlay(t) {
   { const a = fade(t, T.vo4 + 0.2, T.vo5 + 0.1, 0.25); if (a > 0) { const [rx, ry] = scr(xr, yr), [lx, ly] = scr(xl, yl);
       S.forceArrow(g2, a, rx + 190, ry - 40, rx + 20, ry - 40, 30); pill(g2, a, 'WIRE PULLS', rx + 60, ry + 110, 48, '#ffffff');
       S.forceArrow(g2, a, lx - 190, ly + 60, lx - 20, ly + 60, 30); pill(g2, a, 'CASING PUSHES', lx - 60, ly + 175, 48, '#ffa114'); } }
-  { const an = fade(t, T.vo3 + 0.2, T.vo5 - 0.1, 0.25); if (an > 0) { S.tag(g2, an, 'CASING', ...scr(xl - 24, yl + 30), -170, 90, 48, '#ffa114'); S.tag(g2, an, 'WIRE', ...scr((xl + xr) / 2, yr), 70, 150, 48, '#ffffff'); } }
+  { const an = fade(t, T.vo3 + 0.2, T.vo5 - 0.1, 0.25); if (an > 0) { S.tag(g2, an, 'CASING', ...scr(xl - 24, yl + 30), -170, 90, 48, '#ffa114'); S.tag(g2, Math.min(an, fade(t, T.vo3, T.vo4 + 0.1, 0.25)), 'WIRE', ...scr((xl + xr) / 2, yr), 70, 150, 48, '#ffffff'); } }
   { const a = fade(t, T.vo4 + 0.6, T.vo5 + 0.1, 0.25); if (a > 0) { for (const sx of [-1, 1]) { const [qx, qy] = scr(sx * G.PX, G.PY, 6); g2.save(); g2.globalAlpha = a; g2.fillStyle = '#000'; g2.beginPath(); g2.arc(qx, qy, 17, 0, 7); g2.fill(); g2.fillStyle = '#ffffff'; g2.beginPath(); g2.arc(qx, qy, 13, 0, 7); g2.fill(); g2.restore(); }
       const [px0, py0] = scr(0, G.PY, 6); pill(g2, a, 'PIVOTS', px0, py0 + 110, 46, '#ffffff'); } }
   // step 3: squeeze marks at the pads

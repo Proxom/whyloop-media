@@ -18,3 +18,11 @@ TODO for v3 (reviewer 2):
     explain the yellow/blue lines with LONG / SHORT pills or remove them; say "small pad move, big force" instead of "2×" (or show force bars).
  3. Opening: label the circled part PAD in the hook; show the lever moving (bigger blade, a hand outline) and drop the SPIN->STOP->SPIN flip (badge off until the friction beat);
     fewer labels at 6-8 s (no TIRE tag; tilt the camera 20-25 deg so the cut tyre reads as a tyre); fix clipped OUTER CASING tag; step header "4 FRICTION STOPS THE WHEEL" at the friction beat.
+
+STATUS (19 Nov 01:09 run, ig-awesome-curie-0109-19nov):
+- v3 (brake_reel_v3.mp4): leverage step REMOVED; VO lines 3-5 new ("Inside the cable, a wire pulls one way, so its casing shoves back the other way." / "The wire drags the right arm in. The casing pushes the left arm in." / "Both pads pinch the rim at once, and friction stops the wheel.");
+  2D strip of wire + casing; PAD pill in the hook; lever blade bigger; parts shot tilted 22 deg, no TIRE tag; badge only at the friction beat. HARD GATE PASS (24.8 s, -15.0 LUFS, -2.9 dBTP, gap 20.1 dB).
+  VISUAL 5/10 (fixes: friction beat stays front with both pads, FRICTION pill off the rim, brake lower under the hook title). CLARITY 14yo NO (borderline: casing push-back not shown).
+- v4 (brake_reel_v4.mp4) = v3 + visual fixes + clarity fixes (see-through CASING (TUBE) strip with both arrows at once, CASING/WIRE tags on the 3D view from step 1, GAP 6 -> 10 mm (bigger swing), PIVOTS marked, wheel 0.4 rev/s + red reflector so the stop is visible).
+  HARD GATE PASS (24.8 s, -15.0 LUFS, -2.9 dBTP, gap 20.1 dB). CLARITY PASS (explanation correct; 14yo YES, "only just").
+- v5 (brake_reel_v5.mp4) = v4 + WIRE tag hidden in step 2 (it overlapped the WIRE PULLS pill). This is the scheduled file.
