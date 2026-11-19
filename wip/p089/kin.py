@@ -121,6 +121,7 @@ assert minclr > 0, ('hook passes through a loop', minclr, worst)
 rels = REL_LOG
 print('release times (s):', [None if r is None else round(r, 2) for r in rels])
 order = [r for r in rels if r is not None]; assert order == sorted(order), 'release order'
+order = [r for r in order if r > T['f0'] + 0.05]   # columns already under the bend at the start (off screen, x <= -54) let go together
 gaps = np.diff(order); print('min gap between rows %.2f s' % gaps.min()); assert gaps.min() > 0.2
 # shear: all hooks caught, none released
 for t, R, _p in rows:

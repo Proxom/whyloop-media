@@ -13,6 +13,7 @@ html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
 // kin.json rows: [t, magAngle, cupAngle(phi), cupLift, omega, overlap, drag]
 import * as K from '/kit/kit.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const { THREE, S } = K;
 const G = await (await fetch('geom.json')).json();
 const KN = await (await fetch('kin.json')).json();
@@ -24,7 +25,7 @@ const phys = (o) => new THREE.MeshPhysicalMaterial(o);
 const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
 const grain = K.grainTex(31, 18); grain.repeat.set(0.02, 0.02);
 M.dash = phys({ color: 0x1b1d21, roughness: 0.62, bumpMap: grain, bumpScale: 0.5, clearcoat: 0.05 });
-M.cupAlu = phys({ side: THREE.DoubleSide, color: 0xd0d4da, metalness: 1, roughness: 0.3, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.35 });
+M.cupAlu = phys({ side: THREE.DoubleSide, color: 0xdfe3e8, metalness: 1, roughness: 0.14, envMapIntensity: 1.6, clearcoat: 0.4, clearcoatRoughness: 0.1 });
 M.magN = phys({ color: 0xc8261e, metalness: 0.2, roughness: 0.35, clearcoat: 0.6 });
 M.magS = phys({ color: 0x2f5fc4, metalness: 0.2, roughness: 0.35, clearcoat: 0.6 });
 M.needle = phys({ color: 0xff5a1a, roughness: 0.35, emissive: 0xff4a10, emissiveIntensity: 0.55 });
@@ -36,15 +37,15 @@ M.caseDS = M.plastic.clone(); M.caseDS.side = THREE.DoubleSide;
 function dialTex(kind) {
   const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); const C = 512;
   const gr = g.createRadialGradient(C, C, 40, C, C, 512); gr.addColorStop(0, '#16181c'); gr.addColorStop(1, '#08090b'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 1024);
-  const max = kind === 'mph' ? 120 : 8, step = kind === 'mph' ? 5 : 0.5, lab = kind === 'mph' ? 20 : 1;
+  const max = kind !== 'rpm' ? 120 : 8, step = kind !== 'rpm' ? 5 : 0.5, lab = kind !== 'rpm' ? 20 : 1;
   for (let v = 0; v <= max + 1e-6; v += step) { const a = (-120 + v / max * 240) * D2R; const major = Math.abs(v / (lab / 2) - Math.round(v / (lab / 2))) < 1e-6; const L = major ? 64 : 34;
     g.strokeStyle = (kind === 'rpm' && v >= 6.5) ? '#ff3b2a' : '#f2f2f2'; g.lineWidth = major ? 9 : 5; g.beginPath(); g.moveTo(C + Math.sin(a) * 470, C - Math.cos(a) * 470); g.lineTo(C + Math.sin(a) * (470 - L), C - Math.cos(a) * (470 - L)); g.stroke();
-    if (Math.abs(v / lab - Math.round(v / lab)) < 1e-6) { g.fillStyle = '#ffffff'; g.font = `${kind === 'mph' ? 74 : 80}px Anton`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(Math.round(v)), C + Math.sin(a) * 345, C - Math.cos(a) * 345); } }
-  g.fillStyle = '#c9cdd3'; g.font = '56px Anton'; g.textAlign = 'center'; g.fillText(kind === 'mph' ? 'MPH' : 'RPM x1000', C, C + 230);
+    if (kind !== 'ticks' && Math.abs(v / lab - Math.round(v / lab)) < 1e-6) { g.fillStyle = '#ffffff'; g.font = `${kind === 'mph' ? 74 : 80}px Anton`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(Math.round(v)), C + Math.sin(a) * 345, C - Math.cos(a) * 345); } }
+  g.fillStyle = '#c9cdd3'; g.font = '56px Anton'; g.textAlign = 'center'; if (kind !== 'ticks') g.fillText(kind === 'mph' ? 'MPH' : 'RPM x1000', C, C + 230);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 await document.fonts.load('40px Anton'); await document.fonts.load('80px Anton');
-const MPH = dialTex('mph'), RPM = dialTex('rpm');
+const MPH = dialTex('mph'), RPM = dialTex('rpm'), TICKS = dialTex('ticks');
 const faceMat = (tex) => new THREE.MeshStandardMaterial({ map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.55 });
 function needleMesh(L = 82) { const s = new THREE.Shape(); s.moveTo(-3.2, -14); s.lineTo(3.2, -14); s.lineTo(1.1, L); s.lineTo(-1.1, L); s.closePath();
   const m = S.extrude(s, 0, 2.2, M.needle, 0.4); const cap = new THREE.Mesh(new THREE.CylinderGeometry(9, 10, 6, 32), M.plastic); cap.rotation.x = Math.PI / 2; cap.position.z = 3; const gN = new THREE.Group(); gN.add(m, cap); return gN; }
@@ -67,8 +68,9 @@ const IN = new THREE.Group(); IN.position.set(3000, 0, 0); scene.add(IN);
 const lathe = (prof, mat, seg = 96, a0 = 0, al = Math.PI * 2) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg, a0, al), mat);
 // case: back half of a black cylinder (cut toward the camera), cut faces red
 { const c = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 112, 96, 1, true, Math.PI / 2, Math.PI), M.caseDS); c.position.y = -58; IN.add(c);
-  const ci = new THREE.Mesh(new THREE.CylinderGeometry(93, 93, 112, 96, 1, true, Math.PI / 2, Math.PI), M.innerDS); ci.position.y = -58; IN.add(ci);
-  for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(3.2, 112, 1.5), M.cut); e.position.set(sx * 94.5, -58, 0.8); IN.add(e); }
+  const ci = new THREE.Mesh(new THREE.CylinderGeometry(90, 90, 112, 96, 1, true, Math.PI / 2, Math.PI), M.innerDS); ci.position.y = -58; IN.add(ci);
+  for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(6, 112, 1.2), M.cut); e.position.set(sx * 93, -58, 0.6); IN.add(e); }
+  const top = new THREE.Mesh(new THREE.RingGeometry(90, 96, 96, 1, Math.PI, Math.PI), M.cut); top.rotation.x = -Math.PI / 2; top.position.y = -2.2; IN.add(top);
   const base = new THREE.Mesh(new THREE.CylinderGeometry(96, 96, 4, 96, 1, false, Math.PI / 2, Math.PI), M.plastic); base.position.y = -116; IN.add(base); }
 // frame plate + bearing boss under the cup
 { const pl = new THREE.Mesh(new RoundedBoxGeometry(150, 5, 60, 3, 2), M.alu); pl.position.set(0, -97, -20); IN.add(pl);
@@ -83,10 +85,11 @@ const CORE = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 60, 24), phys({
 const MAG = new THREE.Group(); IN.add(MAG);
 { const sh = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 70, 20), M.chrome); sh.position.y = -100; MAG.add(sh);
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 6.5, G.MAG_T + 2, 32), M.steel); hub.position.y = (G.MAG_Z[0] + G.MAG_Z[1]) / 2; MAG.add(hub);
-  const L = G.R_MAG; for (const [sx, m] of [[1, M.magN], [-1, M.magS]]) { const b = new THREE.Mesh(new RoundedBoxGeometry(L - 1, G.MAG_T, 13, 3, 2), m); b.position.set(sx * (L + 1) / 2, (G.MAG_Z[0] + G.MAG_Z[1]) / 2, 0); MAG.add(b); } }
+  for (const [a0, m] of [[0.03, M.magN], [Math.PI + 0.03, M.magS]]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(G.R_MAG, G.R_MAG, G.MAG_T, 48, 1, false, a0, Math.PI - 0.06), m); b.position.y = (G.MAG_Z[0] + G.MAG_Z[1]) / 2; MAG.add(b); }
+  const cp = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, G.MAG_T + 1, 32), M.chrome); cp.position.y = (G.MAG_Z[0] + G.MAG_Z[1]) / 2; MAG.add(cp); }
 // speed cup (aluminum, open at the bottom), cut window toward the camera (rotates with the cup), spindle, needle on top, yellow index mark
 const CUP = new THREE.Group(); IN.add(CUP);
-const WIN0 = 35 * D2R, WIN = 220 * D2R;      // window centre (lathe angle) and width; solid part = 140 deg at the back
+const WIN0 = 35 * D2R, WIN = 180 * D2R;      // window centre (lathe angle) and width; solid part = 140 deg at the back
 { const r0 = G.R_CUP_IN, r1 = G.R_CUP_OUT, y0 = G.CUP_RIM, y1 = G.CUP_BASE;
   const prof = [[r0, y0], [r1, y0], [r1, y1 - 0.5], [r1 - 1.5, y1 + 2], [3, y1 + 2], [3, y1], [r0 - 1.5, y1], [r0, y1 - 1.5]];
   const solid = lathe(prof, M.cupAlu, 96, WIN0 + WIN / 2, 2 * Math.PI - WIN); CUP.add(solid);
@@ -96,24 +99,41 @@ const WIN0 = 35 * D2R, WIN = 220 * D2R;      // window centre (lathe angle) and 
   const sp = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, -y1 + 8, 16), M.chrome); sp.position.y = (y1 + 8) / 2 - 1; CUP.add(sp); }
 const NIN = needleMesh(78); NIN.rotation.x = -Math.PI / 2; NIN.position.y = 5; const NINP = new THREE.Group(); NINP.add(NIN); CUP.add(NINP);
 // dial plate (face up, y = 0) - only the far half so the spindle top stays visible
-{ const f = new THREE.Mesh(new THREE.CircleGeometry(92, 96, 0, Math.PI), faceMat(MPH)); f.rotation.x = -Math.PI / 2; f.position.y = 0.5; IN.add(f);
+{ const f = new THREE.Mesh(new THREE.CircleGeometry(92, 96, 0, Math.PI), faceMat(TICKS)); f.rotation.x = -Math.PI / 2; f.position.y = 0.5; IN.add(f);
   const fb = new THREE.Mesh(new THREE.CylinderGeometry(92, 92, 2, 96, 1, false, Math.PI / 2, Math.PI), M.plastic); fb.position.y = -1; IN.add(fb); }
 // bridge + hairspring (flat spiral at y = -20): inner end on the spindle (turns with the cup), outer end on a fixed stud
 { const br = new THREE.Mesh(new RoundedBoxGeometry(150, 4, 14, 2, 1.5), M.alu); br.position.set(0, -26, -30); IN.add(br);
   const arm = new THREE.Mesh(new RoundedBoxGeometry(6, 4, 30, 2, 1.5), M.alu); arm.position.set(18, -26, -17); IN.add(arm);
-  const stud = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 10, 12), M.brass); stud.position.set(17, -21, -3); IN.add(stud); }
-let HAIR = null; const HR0 = 3.2, HR1 = 17.0, HTURNS = 4.5, HY = -20, HOUT = Math.atan2(17, -3);
+  const stud = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 10, 12), M.brass); stud.position.set(19 * Math.sin(Math.atan2(17, -3)), -21, 19 * Math.cos(Math.atan2(17, -3))); IN.add(stud); }
+let HAIR = null; const HR0 = 3.2, HR1 = 19.0, HTURNS = 3.2, HY = -20, HOUT = Math.atan2(17, -3);
 function buildHair(phi) {
   const pts = []; const n = 220; for (let i = 0; i <= n; i++) { const s = i / n; const r = HR0 + (HR1 - HR0) * s; const a = HOUT - (1 - s) * (HTURNS * 2 * Math.PI) - (1 - s) * phi;
     pts.push(V(Math.sin(a) * r, HY, Math.cos(a) * r)); }
-  const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 360, 0.75, 6, false);
+  const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 300, 1.0, 6, false);
   if (!HAIR) { HAIR = new THREE.Mesh(g, M.hair); HAIR.castShadow = true; IN.add(HAIR); } else { HAIR.geometry.dispose(); HAIR.geometry = g; } }
 buildHair(0);
-S.shadowAll(scene);
+// eddy-current loops IN THE CUP WALL (amber, emissive): two nested loops beside each magnet pole, drawn only where the cup wall exists, brightness ~ spin speed
+const EDDY = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffb23a, transparent: true, opacity: 1 })); IN.add(EDDY);
+function buildEddy(mag, phi, w, on) {
+  const geos = []; const mc = (G.MAG_Z[0] + G.MAG_Z[1]) / 2;
+  if (on) for (const off of [0, Math.PI]) for (const [hw, hh] of [[0.5, 15], [0.28, 8.5]]) for (const r of [G.R_CUP_OUT + 0.35, G.R_CUP_IN - 0.35]) {
+    const c = Math.PI / 2 - mag + off; const run = []; const runs = [run];
+    for (let i = 0; i <= 72; i++) { const u = i / 72 * 2 * Math.PI; const a = c + hw * Math.cos(u), y = mc + hh * Math.sin(u);
+      const solid = Math.cos(a - (WIN0 - phi)) < Math.cos(WIN / 2) - 0.02; if (solid) runs[runs.length - 1].push(V(Math.sin(a) * r, y, Math.cos(a) * r)); else if (runs[runs.length - 1].length) runs.push([]); }
+    for (const p of runs) if (p.length >= 4) geos.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p), p.length * 2, 0.8, 5, false)); }
+  EDDY.geometry.dispose(); EDDY.geometry = geos.length ? mergeGeometries(geos) : new THREE.BufferGeometry(); geos.forEach(g => g.dispose());
+  EDDY.material.color.setRGB(1, 0.55 + 0.25 * Math.min(1, w / 1.5), 0.12).multiplyScalar(0.45 + 0.75 * Math.min(1.2, w / 1.5)); }
+// plinth + warm glow behind the gauge, extra rim light
+{ const pl = new THREE.Mesh(new THREE.CylinderGeometry(150, 156, 8, 96), phys({ color: 0x24272d, roughness: 0.35, metalness: 0.3, clearcoat: 0.5 })); pl.position.set(0, -122, 0); IN.add(pl);
+  const gc = document.createElement('canvas'); gc.width = gc.height = 256; const gg = gc.getContext('2d'); const rg = gg.createRadialGradient(128, 128, 0, 128, 128, 128); rg.addColorStop(0, 'rgba(255,170,90,0.55)'); rg.addColorStop(0.5, 'rgba(255,140,70,0.16)'); rg.addColorStop(1, 'rgba(255,140,70,0)'); gg.fillStyle = rg; gg.fillRect(0, 0, 256, 256);
+  const gt = new THREE.CanvasTexture(gc); gt.colorSpace = THREE.SRGBColorSpace; const glw = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshBasicMaterial({ map: gt, transparent: true, depthWrite: false })); glw.position.set(0, -60, -420); IN.add(glw);
+  const flr = new THREE.Mesh(new THREE.PlaneGeometry(520, 520), new THREE.MeshBasicMaterial({ map: gt, transparent: true, depthWrite: false, opacity: 0.8 })); flr.rotation.x = -Math.PI / 2; flr.position.set(0, -117.5, 0); IN.add(flr); }
+S.shadowAll(scene); EDDY.castShadow = false;
 K.backdrop(scene, { floorY: -460, R: 900, zBack: -1600, h: 9000, width: 20000, wall: '#191c21', floor: '#1d2025', pool: false, catcher: 12000 });
 const RIG = K.lightRig(scene, V(3000, -70, 0), 200); RIG.key.shadow.bias = -0.0004; RIG.rim.intensity = 2.6;
 { const a = new THREE.DirectionalLight(0xfff1e0, 1.1); a.position.set(-400, 600, 900); scene.add(a); const b = new THREE.PointLight(0xffe2c0, 1.3, 0, 0); b.position.set(150, 260, 520); scene.add(b);
-  const c = new THREE.DirectionalLight(0xfff1e0, 0.8); c.position.set(3300, 200, 700); scene.add(c); }
+  const c = new THREE.DirectionalLight(0xfff1e0, 0.8); c.position.set(3300, 200, 700); scene.add(c);
+  const rim2 = new THREE.DirectionalLight(0xcfe0ff, 2.4); rim2.position.set(3350, 260, -500); rim2.target.position.set(3000, -60, 0); scene.add(rim2, rim2.target); }
 // ---------- kinematics ----------
 const DT = 1 / G.FPS_K;
 function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
@@ -127,17 +147,17 @@ function setScene(t) {
   NOUT.rotation.z = -needleAng(phi); NRPM.rotation.z = -needleAng(Math.min(7, 0.8 + k[4] * 1.9) / 8 * 240 * D2R);
   MAG.rotation.y = -mag; CUP.rotation.y = -phi; CUP.position.y = lift;
   NINP.rotation.y = -needleAng(0);
-  CORE.rotation.y = -mag; buildHair(phi); K.glow(CUP.children[0], (t >= T.vo3 && t < T.vo4) ? 0.45 : 0);
+  CORE.rotation.y = -mag; buildHair(phi); buildEddy(mag, phi, k[4], insideAt(t) && k[6] > 0.03); K.glow(HAIR, (t >= T.vo4 && t < T.vo5) ? 0.6 : 0);
   K.shoot(st, CAMK, t);
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 640, ty = -40, tx = 20, az = 4, el = 6) => [tx - 5, ty + 45, 0, d * 1.3, el, az];
+const OUTK = (d = 900, az = 4) => [15, 50, 0, d, 6, az];
 const INK = (ty = -70, d = 900, az = 0, el = 12) => [3000, ty, 0, d, el, az];
-const CAMK = [k_(0, OUTK(560, -30, 10, 3)), k_(T.cutIn - 0.01, OUTK(620, -40, 30, 6)),
-  k_(T.cutIn, INK(-95, 760, 8, 12)), k_(T.slideA, INK(-80, 700, 4, 12)), k_(T.slideB, INK(-72, 520, 2, 11)), k_(T.vo3, INK(-70, 420, 0, 10)), k_(T.vo4 - 0.01, INK(-62, 400, -6, 12)),
-  k_(T.vo4, INK(-48, 400, -6, 16)), k_(T.vo5 - 0.01, INK(-46, 390, -10, 18)), k_(T.vo5, INK(-50, 560, -10, 20)), k_(T.out - 0.01, INK(-40, 640, -36, 26)),
-  k_(T.out, OUTK(600, -40, 20, 5)), k_(LOOP, OUTK(560, -30, 10, 3))];
+const CAMK = [k_(0, OUTK(860, 3)), k_(T.cutIn - 0.01, OUTK(900, 5)),
+  k_(T.cutIn, INK(-38, 540, 8, 20)), k_(T.vo2 - 0.01, INK(-40, 500, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-58, 340, 0, 14)), k_(T.vo4 - 0.01, INK(-56, 320, -6, 15)),
+  k_(T.vo4, INK(-36, 330, -6, 24)), k_(T.vo5 - 0.01, INK(-34, 320, -10, 25)), k_(T.vo5, INK(-36, 450, -10, 22)), k_(T.out - 0.01, INK(-34, 480, -34, 25)),
+  k_(T.out, OUTK(900, 5)), k_(LOOP, OUTK(860, 3))];
 // ---------- overlay ----------
 const ip = (x, y, z = 0) => S.toScreen(camera, V(3000 + x, y, z));
 const AMBER = '#ffb23a';
