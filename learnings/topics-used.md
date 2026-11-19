@@ -76,6 +76,7 @@ Update this file every time a video is scheduled.
 | 2026-11-24 01:00 | p086 | What makes the toast pop up | toaster pop-up | pop-up toaster, toaster carriage latch, toaster electromagnet (NOT bimetal; scheduled 19 Nov 15:10 run) |
 | 2026-11-19 21:00 | p087 | Why doesn't the door slam | door closer | overhead/hydraulic door closer, door damper; rack-pinion only as background (p020 = rack and pinion) (scheduled 19 Nov 15:10 run for 24 Nov 17:00; moved by GM to 19 Nov 21:00, Metricool 434572364) |
 | 2026-11-20 21:00 | p089 | Why does Velcro stick | hook and loop | velcro, hook-and-loop fastener, touch fastener (scheduled 19 Nov 18:13 run) |
+| 2026-11-24 17:00 | p093 | How does the radiator knob know the room is warm | thermostatic radiator valve | trv, radiator thermostat head, wax thermostat (NOT bimetal; scheduled 19 Nov 18:13 run) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 

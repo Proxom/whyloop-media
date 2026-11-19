@@ -1,0 +1,148 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p095 flip car key "WHAT FLIPS / THE KEY OUT?" (group V, track A). Built from kit/kit.js. Units mm, y up, fob lying flat.
+// Pivot axis = y at (0, 0, 12). Blade angle theta: 180 folded (points -x), 0 open (points +x); swings through +z.
+// Button (coaxial) legs at swivel-local +-x: up = legs in the case collar notches (locked); pressed = legs only in the swivel (free).
+// kin.json rows: [t, theta, b(press mm), wind, slowmo]
+import * as K from '/kit/kit.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x1c2027, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.soft = phys({ color: 0x232529, roughness: 0.62, roughnessMap: M.plastic.roughnessMap, clearcoat: 0.12, clearcoatRoughness: 0.6 });   // soft-touch black fob plastic
+M.inner = phys({ color: 0x3b3f46, roughness: 0.75, side: THREE.DoubleSide });
+M.btn = phys({ color: 0x3a3d43, roughness: 0.8, bumpMap: M.rubber.bumpMap, bumpScale: 0.2 });
+M.blade = phys({ color: 0xe4e8ee, metalness: 1, roughness: 0.16, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.5 });
+M.groove = phys({ color: 0x9aa1aa, metalness: 1, roughness: 0.38, envMapIntensity: 1.2 });
+M.sec = phys({ color: 0xd2261d, roughness: 0.5, side: THREE.DoubleSide });
+M.leg = phys({ color: 0xe7b85a, metalness: 1, roughness: 0.3, envMapIntensity: 1.2 });
+const PIV = new THREE.Group(); PIV.position.set(0, 0, 12); scene.add(PIV);
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+// ---------- fob body (fixed) ----------
+add(new THREE.Mesh(new RoundedBoxGeometry(96, 16, 24, 5, 6), M.soft)).position.set(-30, 0, -5);
+for (const [x, c] of [[-66, 0x2e3137], [-52, 0x2e3137], [-38, 0x2e3137]]) { const b = add(new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.6, 1.4, 40), M.btn)); b.position.set(x, 8.5, -5); }
+{ const s = add(new THREE.Mesh(new THREE.BoxGeometry(92, 0.6, 20.5), M.chrome)); s.position.set(-30, 0, -5); s.scale.set(1, 1, 1); }   // thin chrome seam line
+{ const r = add(new THREE.Mesh(new THREE.TorusGeometry(9, 1.4, 16, 48), M.chrome)); r.rotation.x = Math.PI / 2; r.position.set(-86, 0, -5); }
+{ const lp = add(new THREE.Mesh(new RoundedBoxGeometry(12, 6, 9, 3, 2.5), M.soft)); lp.position.set(-79, 0, -5); }
+// ---------- pivot head: case shells as lathes (full for outside shots, back half + red section caps for the cutaway) ----------
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const PA = [[8.3, 1.6], [13, 1.6], [13, 8], [5.2, 8], [5.2, 7], [10.6, 7], [10.6, 4], [8.3, 4]];        // top cap + lid (collar below the lid)
+const PB = [[0.01, -8], [13, -8], [13, -1.6], [8.3, -1.6], [8.3, -6.5], [0.01, -6.5]];               // bottom cap with floor
+const PC = [[6.6, 4], [10.6, 4], [10.6, 7], [6.6, 7]];                                               // collar ring with two notches at +-x
+const lathe = (P, mat, a0 = 0, a1 = 2 * Math.PI) => add(new THREE.Mesh(new THREE.LatheGeometry(L2([...P, P[0]]), 96, a0, a1 - a0), mat), PIV);
+const FULL = new THREE.Group(), CUT = new THREE.Group(); PIV.add(FULL); PIV.add(CUT);
+FULL.add(lathe(PA, M.soft)); FULL.add(lathe(PB, M.soft));
+CUT.add(lathe(PA, M.soft, Math.PI / 2, 3 * Math.PI / 2)); CUT.add(lathe(PB, M.soft, Math.PI / 2, 3 * Math.PI / 2));
+const dN = Math.asin((G.NOTCH_W / 2) / 6.6);
+CUT.add(lathe(PC, M.soft, Math.PI / 2 + dN, 3 * Math.PI / 2 - dN));
+FULL.add(lathe(PC, M.soft, Math.PI / 2 + dN, 3 * Math.PI / 2 - dN)); FULL.add(lathe(PC, M.soft, -Math.PI / 2 + dN, Math.PI / 2 - dN));
+for (const g of [FULL, CUT]) g.children.forEach(m => { m.material = m.material.clone(); m.material.side = THREE.DoubleSide; });
+// red section caps on the cut plane (z = 0 local), both sides; notch walls in grey
+const capShape = (P, sx) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(sx * r, y) : sh.moveTo(sx * r, y)); return sh; };
+for (const sx of [1, -1]) for (const P of [PA, PB]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P, sx)), M.sec), CUT); m.position.z = 0.03; }
+for (const phi of [Math.PI / 2 + dN, 3 * Math.PI / 2 - dN]) { const m = add(new THREE.Mesh(new THREE.PlaneGeometry(4, 3), M.inner), CUT); const rm = 8.6; m.position.set(rm * Math.sin(phi), 5.5, rm * Math.cos(phi)); m.rotation.y = phi - Math.PI / 2; }
+// ---------- moving parts ----------
+const SW = new THREE.Group(); PIV.add(SW);                         // swivel + blade (rotation.y = -theta)
+lathe([[5.2, -1.6], [8, -1.6], [8, 1], [5.2, 1]], M.machined).removeFromParent(); SW.add(add(new THREE.Mesh(new THREE.LatheGeometry(L2([[5.2, -1.6], [8, -1.6], [8, 1], [5.2, 1], [5.2, -1.6]]), 64), M.machined), SW));
+const dS = Math.asin((G.NOTCH_W / 2) / 5.3);
+for (const [a0, a1] of [[dS - Math.PI / 2 + Math.PI, Math.PI / 2 - dS + Math.PI], [-Math.PI / 2 + dS, Math.PI / 2 - dS]]) {   // slotted ring, slots at +-x
+  const m = new THREE.Mesh(new THREE.LatheGeometry(L2([[5.3, 1], [8, 1], [8, 4], [5.3, 4], [5.3, 1]]), 48, a0, a1 - a0), M.machined); m.material = M.machined.clone(); m.material.side = THREE.DoubleSide; add(m, SW); }
+// blade: neck + blade with tapered tip, groove inset on top
+{ const sh = new THREE.Shape(); const h = G.BL_W / 2, R1 = G.BL_R1;
+  sh.moveTo(7.5, -3.2); sh.lineTo(G.BL_R0, -h); sh.lineTo(R1 - 6, -h); sh.lineTo(R1, -1.5); sh.lineTo(R1, 1.5); sh.lineTo(R1 - 6, h); sh.lineTo(G.BL_R0, h); sh.lineTo(7.5, 3.2); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 2.5, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 0.25, bevelSegments: 2 }); g.translate(0, 0, -1.25); g.rotateX(Math.PI / 2);   // shape y -> world -z ... flip below
+  const m = add(new THREE.Mesh(g, M.blade), SW);
+  const gs = new THREE.Shape(); gs.moveTo(G.BL_R0 + 3, -1.6); for (let x = G.BL_R0 + 3; x <= R1 - 8; x += 1) gs.lineTo(x, -1.6 + 1.1 * Math.sin(x * 0.55)); gs.lineTo(R1 - 8, 2.3); gs.lineTo(G.BL_R0 + 3, 2.3); gs.closePath();
+  const gg = new THREE.ExtrudeGeometry(gs, { depth: 0.5, bevelEnabled: false }); gg.rotateX(-Math.PI / 2); const gm = add(new THREE.Mesh(gg, M.groove), SW); gm.position.y = 1.3; }
+// button (moves in y) with two legs at swivel-local +-x
+const BTN = new THREE.Group(); SW.add(BTN);
+add(new THREE.Mesh(new THREE.CylinderGeometry(4.9, 4.9, 8.5, 40), M.btn), BTN).position.y = (2 + 9.5) / 2 + 0.5 - 1;
+{ const cap = add(new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.9, 0.8, 40), M.btn), BTN); cap.position.y = 9.6; }
+const LEGS = []; for (const sx of [1, -1]) { const l = add(new THREE.Mesh(new THREE.BoxGeometry(2.9, 6, G.LEG_W), M.leg), BTN); l.position.set(sx * 6.45, 4, 0); LEGS.push(l); }
+const RING = add(new THREE.Mesh(new THREE.TorusGeometry(5.6, 0.45, 12, 48), M.chrome), PIV); RING.rotation.x = Math.PI / 2; RING.position.y = 8.1;
+// springs: torsion spring around the axis (winds with the blade), small return spring under the button
+const TSP = K.spring(M.chrome, { R: 6.6, wire: 0.7, turns: 4, len: 4.4, closed: 0 }); TSP.position.y = -6.4; PIV.add(TSP);
+const TLEG = add(new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 4.2, 12), M.chrome), SW); TLEG.position.set(-6.6, -1.6, 0.6);
+const RSP = K.spring(M.steel, { R: 3, wire: 0.42, turns: 3, len: 6 }); RSP.position.y = -6.5; PIV.add(RSP);
+S.shadowAll(scene);
+K.backdrop(scene, { floorY: -8.2, R: 160, zBack: -900, h: 4000, width: 8000, wall: '#2a3140', floor: '#2b3038', pool: true, catcher: 3000, shadowOpacity: 0.55 });
+K.contactBlob(scene, -30, -8.2, -5, 48, 0.45);
+const RIG = K.lightRig(scene, V(-10, 0, 5), 120, { key: 2.6, rim: 2.6, fill: 0.5 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(200, 500, 600); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.2); g.position.set(-500, 300, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (Math.abs(b[1] - a[1]) > 20) return a; return a.map((v, j) => j >= 4 ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.outA;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const th = k[1], b = k[2];
+  SW.rotation.y = -th * D2R; BTN.position.y = -b; RSP.setLength(7.5 - b);
+  TSP.rotation.y = -th * D2R * 0.35;
+  const ins = inside(t); FULL.visible = !ins; CUT.visible = ins;
+  const wound = (k[3] - 60) / 180;                                   // 1 folded (wound) .. 0 open
+  K.glow(TSP, ins && t < T.snapB + 0.2 && t > T.vo1 + 0.4 ? 0.35 + 0.65 * wound : 0);
+  K.glow(LEGS[0], ins && t >= T.vo2 + 0.6 && t < T.vo4 ? 1 : (ins && t >= T.pop - 0.1 && t < T.outA ? 1 : 0)); K.glow(LEGS[1], ins && t >= T.vo2 + 0.6 && t < T.vo4 ? 1 : (ins && t >= T.pop - 0.1 && t < T.outA ? 1 : 0));
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const OUTK = (d = 330, az = 18, el = 40, tx = -6) => [tx, 26, 4, d, el, az];
+const INK = (d = 118, az = 24, el = 24) => [0, 2.5, 12, d, el, az];
+const WIDE = (d = 300, az = 10, el = 58) => [2, 20, 30, d, el, az];
+const CAMK = [k_(0, OUTK(330, 16)), k_(T.cutIn - 0.01, OUTK(300, 22)),
+  k_(T.cutIn, INK(150, 30, 28)), k_(T.vo2 - 0.01, INK(128, 22, 24)), k_(T.vo2, INK(112, 30, 22)), k_(T.vo3 - 0.01, INK(98, 36, 20)),
+  k_(T.vo3, INK(104, 26, 26)), k_(T.vo4 + 0.4, INK(116, 22, 30)), k_(T.vo4 + 0.7, WIDE(300, 12, 58)), k_(T.vo5 - 0.01, WIDE(290, 4, 60)),
+  k_(T.vo5, INK(110, -26, 24)), k_(T.outA - 0.01, INK(96, -32, 22)),
+  k_(T.outA, OUTK(300, -14, 42)), k_(LOOP, OUTK(330, 16))];
+// ---------- overlay ----------
+const sp = (x, y, z) => S.toScreen(camera, V(x, y, z));
+const pw = (x, y, z) => S.toScreen(camera, PIV.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function arcArrow(g2, a, cx, cy, R, a0, a1, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = color; g2.lineWidth = 14; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10;
+  g2.beginPath(); g2.ellipse(cx, cy, R, R * 0.55, 0, a0, a1, a1 < a0); g2.stroke(); const ex = cx + R * Math.cos(a1), ey = cy + R * 0.55 * Math.sin(a1); const dir = a1 > a0 ? 1 : -1;
+  const tx = -R * Math.sin(a1) * dir, ty = R * 0.55 * Math.cos(a1) * dir; const tl = Math.hypot(tx, ty); const ux = tx / tl, uy = ty / tl;
+  g2.fillStyle = color; g2.beginPath(); g2.moveTo(ex + ux * 30, ey + uy * 30); g2.lineTo(ex - uy * 22, ey + ux * 22); g2.lineTo(ex + uy * 22, ey - ux * 22); g2.closePath(); g2.fill(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t);
+  { let fx = 0; for (const c of [T.cutIn, T.vo4 + 0.55, T.vo5, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.6 * Math.max(0, fx)); }
+  // hook
+  const hk = t < T.cutIn ? 1 : 0;
+  if (hk) { K.TXT.hook(g2, 1, 'WHAT FLIPS', 'THE KEY OUT?', 104); const [cx, cy] = pw(0, 9.5, 0); K.TXT.circle(g2, 1, cx, cy, 70, [210, 190]); }
+  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outA);
+  K.TXT.step(g2, s1, 1, 'A WOUND SPRING PUSHES THE BLADE', 54);
+  K.TXT.step(g2, s2, 2, 'BUTTON TEETH SIT IN NOTCHES', 58);
+  K.TXT.step(g2, s3, 3, 'PRESS: TEETH LEAVE THE NOTCHES', 56);
+  K.TXT.step(g2, s4, 4, 'THE SPRING SNAPS IT OUT', 60);
+  K.TXT.step(g2, s5, 5, 'TEETH POP BACK: LOCKED OPEN', 58);
+  if (s1) { S.tag(g2, 1, 'WOUND SPRING', ...pw(-6.6, -4.5, 3), -170, 230, 50, '#ffb21f'); const [cx, cy] = pw(0, -4.2, 0); arcArrow(g2, hard(t, T.vo1 + 1.2, T.vo2), cx, cy + 6, 230, Math.PI * 0.15, Math.PI * 0.85, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 2.6, T.vo2), 'BLADE', ...sp(-40, 1, 12), 60, 250, 48, '#ffffff'); }
+  if (s2) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, 1, 'TOOTH', lx, ly, 150, -170, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo2 + 1.8, T.vo3), 'NOTCH IN THE CASE', ...pw(8.6, 7.3, 0), 60, -290, 48, '#ffffff'); S.tag(g2, hard(t, T.vo2 + 3.0, T.vo3), 'LOCKED', ...pw(-8.6, 5.5, 0), -150, 250, 52, '#ff6a4a'); }
+  if (s3) { const [bx, by] = pw(0, 10.5 - k[2], 0); arrowC(g2, hard(t, T.press - 0.5, T.press + 0.4), bx, by - 230, bx, by - 40, 30, '#ffd21f'); S.tag(g2, hard(t, T.press + 0.4, T.vo4), 'TEETH OUT: FREE', ...pw(-6.45, 2.5 - k[2], 0), -150, 260, 52, '#7dff9a'); }
+  if (s4) { S.outlined(g2, 'SLOW MOTION', 540, 520, 44, '#ffd21f'); if (t > T.snapB - 0.05) S.tag(g2, 1, 'STOP', ...sp(16, 4, 4), 150, 200, 56, '#ff6a4a'); }
+  if (s5) { const L = LEGS[0].getWorldPosition(V()); const [lx, ly] = S.toScreen(camera, L); S.tag(g2, hard(t, T.pop + 0.15, T.outA), 'BACK IN THE NOTCH', lx, ly, 120, 260, 50, '#ffd21f'); const [bx, by] = pw(0, 12, 0); arrowC(g2, hard(t, T.pop - 0.1, T.pop + 0.9), bx, by - 20, bx, by - 200, 28, '#7dff9a'); }
+  if (t >= T.outA && t < T.foldB + 0.3) { const [ax, ay] = sp(46, 2, 30); arrowC(g2, 1, ax + 40, ay + 120, ax - 120, ay + 220, 26, '#ffd21f'); S.tag(g2, hard(t, T.foldA, T.foldB + 0.3), 'WINDS THE SPRING', ...pw(0, 9, 0), -60, 330, 48, '#ffb21f'); }
+  K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'A WOUND-UP SPRING', 'FLIPS THE KEY OUT', 520);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
