@@ -7,7 +7,7 @@ SEAT = 0.0; WASH_T = 4.0; CUP_T = 8.0; PIN_TOP0 = 104.0; STEM_TOP = 110.0; CAGE_
 SPR_TURNS, SPR_WIRE = 5, 1.8; SPR_BOUND = (SPR_TURNS + 2) * 2 * SPR_WIRE
 D_MAX = 14.0; PUSH_LEN = 22.0; CEIL_SEATED = STEM_TOP + 2.0          # pusher bottom = ceiling - PUSH_LEN; seated -> pusher at 90 -> d = 14
 HEAD_RI, THREAD_R, CAP_RI = 42.0, 40.0, 42.0; CUP_R, LEG_RI, BORE_R, BORE_STEP = 20.0, 22.0, 26.0, -70.0
-CEIL_AWAY = 330.0
+CEIL_AWAY = 700.0
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]; gap = 0.28
 T = {'vo0': 0.3, 'hookEnd': 1.0}
 T['vo1'] = 2.45

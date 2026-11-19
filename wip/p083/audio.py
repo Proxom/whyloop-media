@@ -2,7 +2,7 @@
 # a soft low thread rasp while both caps turn, soft low tocks when the cap lifts off and seats. No high clicks, squeaks or hiss. All SFX are low-passed by the master chain.
 import json, wave, numpy as np, soundfile as sf
 G = json.load(open('geom.json')); SR = 48000; DUR = G['LOOP']; N = int(SR * DUR); rng = np.random.default_rng(830)
-T = G['T']; VO_AT = [T[f'vo{i}'] for i in range(6)]
+T = G['T']; VO_AT = [T[f'vo{i}'] for i in range(7)]
 L = np.zeros(N); R = np.zeros(N); V = np.zeros(N)
 def put(sig, t, pan=0.0, gain=1.0, dst=None):
     i0 = int(round(t * SR)); idx = (np.arange(len(sig)) + i0) % N
@@ -26,7 +26,7 @@ KN = json.load(open('kin.json'))
 kt = np.array([r[0] for r in KN]); kA = np.array([r[1] for r in KN]); kl = np.array([r[3] for r in KN]); kpush = np.array([r[5] for r in KN]); kex = np.array([r[6] for r in KN])
 tt = np.arange(N) / SR
 # tooth drops (the click): lift falls by more than half a tooth in one step, not exploded
-drops = [kt[i + 1] for i in range(len(kt) - 1) if kl[i + 1] < kl[i] - 0.5 * G['H'] and kex[i] == 0 and kex[i + 1] == 0]
+drops = [kt[i + 1] for i in range(len(kt) - 1) if kl[i + 1] < kl[i] - 0.25 * G['H'] and kex[i] == 0 and kex[i + 1] == 0]
 for j, td in enumerate(drops): put(tock(rng.uniform(380, 440), 1.0), td, pan=rng.uniform(-0.15, 0.15), gain=0.42)
 # both caps turning (push + turn, and the closing at the end): soft low thread rasp following the inner cap's turning speed
 mk = np.r_[True, np.diff(kt) > 0]; w = np.abs(np.gradient(kA[mk], kt[mk])); kt2 = kt[mk]; w = np.clip(np.interp(tt, kt2, w) / 2.5, 0, 1)
@@ -35,6 +35,8 @@ L += 0.07 * rasp * w; R += 0.07 * np.roll(rasp, 173) * w
 put(tock(230), T['offa'] + 0.15, gain=0.32)          # the cap comes off the thread
 put(tock(250), T['dnb'] - 0.05, gain=0.3)            # the cap lands back on the neck
 put(tock(220), T['exd'] - 0.05, gain=0.25)           # outer cap drops back on after the exploded view
+put(tock(300), T['pdb'] - 0.05, gain=0.36)           # pushed: the flat lugs drop into place
+put(tock(340), T['cla'] + 0.05, gain=0.3)            # closing: the steep sides catch
 print('clicks', len(drops), [round(d, 2) for d in drops])
 def note(m): return 440 * 2 ** ((m - 69) / 12)
 chords = [[45, 52, 57, 60], [41, 48, 53, 57], [48, 55, 60, 64], [43, 50, 55, 59]] * 2; seg = DUR / 8; mus = np.zeros(N)

@@ -1,0 +1,207 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p084 single-lever mixer tap "ONE LEVER: / HOT OR COLD?" (group E, track A voice). Built from kit/kit.js.
+// Two scenes in one: EXT = chrome mixer tap over a vessel basin; INT = the ceramic disc cartridge (disc plane x-z, v = -z, scaled x6).
+// kin.json rows: [t, s (slide mm), theta (deg, + = toward HOT), hot overlap mm2, cold overlap mm2, outlet overlap mm2]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180, SC = 6;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.ceramic = phys({ color: 0xf1eee6, roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.12, roughnessMap: M.plastic.roughnessMap });
+M.basin = phys({ color: 0xf4f3ef, roughness: 0.12, clearcoat: 1.0, clearcoatRoughness: 0.05 });
+M.ghost = phys({ color: 0xf6f4ee, roughness: 0.25, transparent: true, opacity: 1, depthWrite: true, clearcoat: 0.5 });
+M.black = phys({ color: 0x1a1b1f, roughness: 0.4, clearcoat: 0.3 });
+M.water = phys({ color: 0x3a8cff, roughness: 0.05, transparent: true, opacity: 0.8, emissive: 0x0a2a66, emissiveIntensity: 1 });
+
+K.backdrop(scene, { floorY: 0, R: 300, zBack: -700, h: 4000, width: 8000, wall: '#1d2026', floor: '#2b2d31', pool: false, catcher: 3, shadowOpacity: 0.45 });
+const RIG = K.lightRig(scene, V(0, 150, 0), 220);
+RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.2;
+{ const g = new THREE.DirectionalLight(0xdbe8ff, 2.0); g.position.set(400, 300, -200); scene.add(g); const f = new THREE.DirectionalLight(0xfff0e0, 0.7); f.position.set(-300, 400, 700); scene.add(f); }
+
+// ================= EXT: tap + basin =================
+const EXT = new THREE.Group(); scene.add(EXT);
+const lathe = (prof, mat, seg = 96) => new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg), mat);
+{ // vessel basin in front of the tap (outer + inner skin, rolled rim)
+  const outer = [[0, 0], [62, 0], [70, 4], [120, 40], [142, 92], [146, 112]], inner = [[146, 112], [140, 114], [134, 100], [110, 48], [60, 20], [0, 16]];
+  const b = lathe([...outer, ...inner], M.basin); b.position.set(0, 0, 150); EXT.add(b);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(143, 4.5, 16, 120), M.basin); rim.rotation.x = Math.PI / 2; rim.position.set(0, 113, 150); EXT.add(rim);
+  const drain = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 2, 48), M.chrome); drain.position.set(0, 17, 150); EXT.add(drain);
+  K.contactBlob(scene, 0, 0, 150, 130, 0.6); K.contactBlob(scene, 0, 0, -20, 40, 0.6);
+}
+const TAP = new THREE.Group(); TAP.position.set(0, 0, -20); EXT.add(TAP);
+{ const body = lathe([[0, 0], [36, 0], [37, 3], [37, 9], [30, 12], [26, 16], [24, 40], [24, 330], [25, 332], [25, 338], [0, 338]], M.chrome); TAP.add(body);
+  // spout: tube from the body forward over the basin, ends in a downward aerator
+  const c = new THREE.CatmullRomCurve3([V(0, 300, 0), V(0, 312, 60), V(0, 306, 130), V(0, 286, 168), V(0, 262, 176)]);
+  const sp = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 13, 32), M.chrome); TAP.add(sp);
+  const aer = lathe([[0, 0], [14.5, 0], [14.5, 14], [0, 14]], M.chrome); aer.position.set(0, 250, 176); TAP.add(aer);
+  const mesh = new THREE.Mesh(new THREE.CircleGeometry(10.5, 32), M.black); mesh.rotation.x = Math.PI / 2; mesh.position.set(0, 249.8, 176); TAP.add(mesh);
+}
+// lever: cap turns about y (swing), arm tilts (lift)
+const CAP = new THREE.Group(); CAP.position.set(0, 338, 0); TAP.add(CAP);
+const ARM = new THREE.Group(); ARM.position.set(0, 22, 4); CAP.add(ARM);
+{ const cap = lathe([[0, 0], [25, 0], [25, 20], [22, 26], [0, 26]], M.chrome); CAP.add(cap);
+  const dotH = new THREE.Mesh(new THREE.CircleGeometry(4, 24), phys({ color: 0xe0281e, roughness: 0.3, emissive: 0x400000 })); dotH.position.set(-14, 12, 25.2); CAP.add(dotH);
+  const dotC = new THREE.Mesh(new THREE.CircleGeometry(4, 24), phys({ color: 0x1e6be0, roughness: 0.3, emissive: 0x001040 })); dotC.position.set(14, 12, 25.2); CAP.add(dotC);
+  const arm = new THREE.Mesh(new K.RBox(26, 12, 130, 4, 5), M.chrome); arm.position.set(0, 0, 62); ARM.add(arm);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 30, 32), M.chrome); hub.rotation.z = Math.PI / 2; ARM.add(hub); }
+// water stream (aerator -> basin floor)
+const STREAM = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 32, 1, true), M.water); EXT.add(STREAM);
+const SPL = new THREE.Mesh(new THREE.TorusGeometry(1, 0.25, 12, 48), M.water); SPL.rotation.x = Math.PI / 2; EXT.add(SPL);
+
+// ================= INT: ceramic disc cartridge (scaled x SC) =================
+const INT = new THREE.Group(); scene.add(INT);
+const Y0 = 36, YI = Y0 + 4 * SC;                         // lower disc on a dark base; interface height
+const uv = (u, v) => [u, v];                              // shape coords: x = u, y = v  (then rotate -90 deg about x so y -> -z)
+const circ = (cx, cy, r, n = 64, cw = true) => S.circle(cx, cy, r, n, cw);
+function rrPts(u0, v0, u1, v1, r, n = 8) { const p = []; const C = [[u1 - r, v1 - r, 0], [u0 + r, v1 - r, 90], [u0 + r, v0 + r, 180], [u1 - r, v0 + r, 270]];
+  for (const [cx, cy, a0] of C) for (let i = 0; i <= n; i++) { const a = (a0 + 90 * i / n) * D2R; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return p; }
+const flat = (mesh) => { mesh.rotation.x = -Math.PI / 2; return mesh; };   // shape plane (u, v) -> world (x, -z), extrude along +y
+{ const base = new THREE.Mesh(new THREE.CylinderGeometry(22 * SC, 22 * SC, Y0, 96), M.black); base.position.y = Y0 / 2; INT.add(base);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(22 * SC, 2, 12, 120), M.chrome); lip.rotation.x = Math.PI / 2; lip.position.y = Y0; INT.add(lip);
+  K.contactBlob(scene, 0, 0, 0, 22 * SC, 0.7);
+  const holes = [circ(G.HOT[0] * SC, G.HOT[1] * SC, G.RI * SC), circ(G.COLD[0] * SC, G.COLD[1] * SC, G.RI * SC), rrPts(...G.OUT.map(x => x * SC), 3 * SC).reverse()];
+  const low = flat(S.extrude(S.shapeOf(circ(0, 0, G.RL * SC, 128, false), holes), 0, 4 * SC, M.ceramic, 1.2, 4)); low.position.y = Y0; INT.add(low); }
+// interface texture: holes (dim water), overlaps (bright water), flow arrows
+const TX = document.createElement('canvas'); TX.width = TX.height = 1024; const tg = TX.getContext('2d'); const TEX = new THREE.CanvasTexture(TX); TEX.colorSpace = THREE.SRGBColorSpace;
+const IF = new THREE.Mesh(new THREE.PlaneGeometry(52 * SC, 52 * SC), new THREE.MeshBasicMaterial({ map: TEX, transparent: true, depthWrite: false, toneMapped: false }));
+IF.rotation.x = -Math.PI / 2; IF.position.y = YI + 0.6; IF.renderOrder = 2; INT.add(IF);
+const tp = (u, v) => [(u + 26) / 52 * 1024, (26 - v) / 52 * 1024];
+// upper (control) disc: lever holder turns it (theta), slide s along the holder
+const HOLD = new THREE.Group(); HOLD.position.y = YI; INT.add(HOLD);
+const UP = new THREE.Group(); HOLD.add(UP);
+const elPts = (n = 128) => { const p = []; for (let i = 0; i < n; i++) { const a = i / n * 2 * Math.PI; p.push([(G.EL[0] + G.EL[2] * Math.cos(a)) * SC, (G.EL[1] + G.EL[3] * Math.sin(a)) * SC]); } return p; };
+const pkPts = rrPts(...G.PK.slice(0, 4).map(x => x * SC), G.PK[4] * SC);
+const UPM = [];
+{ const l1 = flat(S.extrude(S.shapeOf(elPts(), [pkPts.slice().reverse()]), 0, 1.4 * SC, M.ghost, 0.6, 3)); UP.add(l1); UPM.push(l1);
+  const l2 = flat(S.extrude(S.shapeOf(elPts()), 1.4 * SC, 4 * SC, M.ghost, 1.2, 4)); UP.add(l2); UPM.push(l2);
+  const ln = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pkPts.map(p => V(p[0], 2, -p[1]))), new THREE.LineBasicMaterial({ color: 0xffd21f, transparent: true, depthTest: false }));
+  ln.renderOrder = 5; UP.add(ln); UP.userData.pk = ln;
+  const ed = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(elPts().map(p => V(p[0], 4 * SC + 0.5, -p[1]))), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 })); UP.add(ed); UP.userData.ed = ed; }
+// lever holder (black) + chrome stem that tilts with the lift and turns with the swing
+const LH = new THREE.Group(); LH.position.y = 4 * SC; HOLD.add(LH);
+const STEM = new THREE.Group(); LH.add(STEM);
+{ const h = new THREE.Mesh(new K.RBox(7 * SC, 3 * SC, 5 * SC, 3, 0.8 * SC), M.black); h.position.set(0, 1.5 * SC, 13 * SC); LH.add(h);
+  STEM.position.set(0, 3 * SC, 13 * SC);
+  const s = new THREE.Mesh(new THREE.CylinderGeometry(1.3 * SC, 1.6 * SC, 15 * SC, 32), M.chrome); s.position.y = 7.5 * SC; STEM.add(s);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(2.0 * SC, 32, 16), M.chrome); knob.position.y = 15 * SC; STEM.add(knob);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.9 * SC, 0.9 * SC, 7.4 * SC, 24), M.chrome); pin.rotation.z = Math.PI / 2; STEM.add(pin); }
+S.shadowAll(scene); IF.castShadow = false; IF.receiveShadow = false;
+for (const m of UPM) m.castShadow = false;
+
+// ---------------- kinematics ----------------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.25) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const H = (t, a, b) => fade(t, a, b, 0.08);
+const isExt = (t) => t < T.inside || t >= T.outside;
+const HOTC = new THREE.Color(0xff3a22), COLDC = new THREE.Color(0x2f8cff);
+const mixCol = (ah, ac) => COLDC.clone().lerp(HOTC, ah + ac > 0 ? ah / (ah + ac) : 0.5);
+const css = (c, a = 1) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+let KK = null;
+// lift of the upper disc during the "two discs" / "bottom disc" explanation (it lifts away, then sits back down as a ghost)
+const upLift = (t) => { const a = S.smooth((t - (T.vo1 + 0.6)) / 0.9) * (1 - S.smooth((t - (T.vo1 + 2.2)) / 0.8)) * 0.5 + S.smooth((t - (T.vo2 - 0.2)) / 0.8) * (1 - S.smooth((t - (T.vo3 + 0.1)) / 0.9)); return a * 26 * SC; };
+const ghostA = (t) => 1 - 0.68 * S.smooth((t - (T.vo2 - 0.3)) / 0.7);
+function drawIF(k, t) {
+  const [_, s, th, ah, ac] = k; const g = tg; g.clearRect(0, 0, 1024, 1024);
+  const hole = (c, col) => { const [x, y] = tp(c[0], c[1]); g.fillStyle = col; g.beginPath(); g.arc(x, y, G.RI / 52 * 1024, 0, 7); g.fill(); };
+  // dim water standing in the inlets (coloured from below), dark outlet
+  hole(G.HOT, 'rgba(150,28,18,0.95)'); hole(G.COLD, 'rgba(18,60,150,0.95)');
+  const [o0x, o0y] = tp(G.OUT[0], G.OUT[3]), [o1x, o1y] = tp(G.OUT[2], G.OUT[1]); g.fillStyle = 'rgba(14,16,20,0.95)'; S.rrect(g, o0x, o0y, o1x - o0x, o1y - o0y, 3 / 52 * 1024); g.fill();
+  // pocket path in world disc coords
+  const c = Math.cos(th * D2R), sn = Math.sin(th * D2R); const P = pkPts.map(p => { const u = p[0] / SC, v = p[1] / SC + s; return tp(u * c - v * sn, u * sn + v * c); });
+  const flow = ah + ac;
+  if (flow > 0.05) { const col = mixCol(ah, ac); const a = Math.min(1, 0.35 + flow / 4);
+    g.save(); g.beginPath(); P.forEach((p, i) => i ? g.lineTo(...p) : g.moveTo(...p)); g.closePath(); g.clip();
+    g.fillStyle = css(col, 0.85 * a); g.fillRect(0, 0, 1024, 1024);                       // mixed water filling the pocket
+    hole(G.HOT, 'rgba(255,70,40,1)'); hole(G.COLD, 'rgba(60,150,255,1)');               // bright where the pocket uncovers a hole
+    g.restore();
+    // animated flow arrows from each open inlet toward the outlet
+    const arrows = (cIn, w, colr) => { if (w < 0.05) return; const [x0, y0] = tp(cIn[0], cIn[1]), [x1, y1] = tp(cIn[0] * 0.25, (G.OUT[1] + G.OUT[3]) / 2);
+      const n = 3; for (let i = 0; i < n; i++) { const u = ((t * 0.9 + i / n) % 1); const x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u; const ang = Math.atan2(y1 - y0, x1 - x0);
+        g.save(); g.globalAlpha = Math.min(1, w / 3) * Math.sin(Math.PI * u); g.translate(x, y); g.rotate(ang); g.fillStyle = colr; g.strokeStyle = '#000'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(26, 0); g.lineTo(-10, -18); g.lineTo(-2, 0); g.lineTo(-10, 18); g.closePath(); g.fill(); g.stroke(); g.restore(); } };
+    arrows(G.HOT, ah, '#ffb09a'); arrows(G.COLD, ac, '#a8d2ff'); }
+  TEX.needsUpdate = true;
+}
+function setScene(t) {
+  const k = KK = kin(t); const [, s, th, ah, ac] = k; const ext = isExt(t);
+  EXT.visible = ext; INT.visible = !ext;
+  // exterior lever: lift tilts the arm up, swing turns the cap (+theta = toward HOT = screen left)
+  CAP.rotation.y = -th * D2R; ARM.rotation.x = -(4 + 20 * s / G.S_OPEN) * D2R;
+  const flow = (ah + ac) / G.AMAX; STREAM.visible = SPL.visible = flow > 0.01; const r = 2 + 6.5 * Math.sqrt(Math.max(0, flow));
+  STREAM.scale.set(r, 250 - 17, r); STREAM.position.set(0, (250 + 17) / 2, 156); SPL.position.set(0, 17.5, 156); SPL.scale.set(r * 2.2, r * 2.2, r * 2.2);
+  const col = mixCol(ah, ac); M.water.color.copy(col); M.water.emissive.copy(col).multiplyScalar(0.35);
+  // interior: holder turns, disc slides along the holder, stem tilts
+  HOLD.rotation.y = th * D2R; UP.position.set(0, upLift(t), -s * SC); LH.position.set(0, 4 * SC + upLift(t), -s * SC); STEM.rotation.x = -(-14 + 26 * s / G.S_OPEN) * D2R;
+  const ga = ghostA(t); M.ghost.opacity = ga; M.ghost.depthWrite = ga > 0.98; UP.userData.ed.material.opacity = (1 - ga) * 1.4;
+  const pkA = Math.max(H(t, T.vo3 + 0.2, T.vo6), 0.0); UP.userData.pk.material.opacity = pkA; UP.userData.pk.visible = pkA > 0.01;
+  K.glow(STEM, H(t, T.vo4 + 0.1, T.vo6 - 0.2) * 0.6);
+  if (!ext) drawIF(k, t);
+  K.shoot(st, CAMK, t);
+}
+// ---------------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------------
+const k_ = (t, a) => [t, ...a];
+const HOOK = [0, 250, 60, 820, 8, 0], HOOK2 = [0, 248, 60, 790, 8, 0], EXTW = [0, 180, 40, 1500, 10, 0], EXTW2 = [0, 182, 40, 1420, 10, 0];
+const SIDE = [0, 80, 20, 1250, 20, 0], SIDE2 = [0, 95, 20, 1320, 22, 0], TOP = [0, 60, 55, 1260, 60, 0], TOP2 = [0, 60, 50, 1200, 64, 0];
+const CAMK = [k_(0, HOOK), k_(T.hookEnd - 0.01, HOOK2), k_(T.hookEnd, EXTW), k_(T.inside - 0.01, EXTW2),
+  k_(T.inside, SIDE), k_(T.vo2 - 0.2, SIDE2), k_(T.vo2 + 0.9, TOP), k_(T.vo4, TOP2), k_(T.outside - 0.01, [0, 60, 50, 1160, 64, 0]),
+  k_(T.outside, EXTW), k_(LOOP - 1.0, [0, 245, 60, 840, 8, 0]), k_(LOOP, HOOK)];
+// ---------------- overlay ----------------
+const scr = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
+const dpt = (u, v, y = YI) => { const p = V(u * SC, y, -v * SC); return S.toScreen(camera, p); };   // interior disc point (world, INT at origin)
+function spoutInset(g2, a, ah, ac) { if (a <= 0) return; const x = 112, y = 1180, w = 250, h = 236; g2.save(); g2.globalAlpha = a;
+  g2.fillStyle = 'rgba(10,12,16,0.86)'; S.rrect(g2, x, y, w, h, 22); g2.fill(); g2.strokeStyle = '#596170'; g2.lineWidth = 4; g2.stroke();
+  // little spout
+  g2.strokeStyle = '#d9dee6'; g2.lineWidth = 22; g2.lineCap = 'round'; g2.beginPath(); g2.moveTo(x + 50, y + 60); g2.lineTo(x + 150, y + 60); g2.quadraticCurveTo(x + 178, y + 60, x + 178, y + 84); g2.stroke();
+  const flow = (ah + ac) / G.AMAX; const col = mixCol(ah, ac);
+  if (flow > 0.01) { const ww = 6 + 30 * Math.sqrt(flow); g2.fillStyle = css(col, 0.95); g2.fillRect(x + 178 - ww / 2, y + 96, ww, 96); }
+  g2.font = '44px Anton'; g2.textAlign = 'left'; g2.textBaseline = 'middle'; g2.fillStyle = flow > 0.01 ? css(col) : '#8a92a0'; g2.fillText(flow > 0.01 ? 'WATER' : 'OFF', x + 22, y + 160);
+  g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const [, s, th, ah, ac] = k; const ext = isExt(t);
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12), fi = Math.max(0, 1 - Math.abs(t - T.inside) / 0.12), fo = Math.max(0, 1 - Math.abs(t - T.outside) / 0.12); K.TXT.flash(g2, 0.75 * Math.max(fx, fi * 0.8, fo * 0.8)); }
+  const hk = t < 3 ? 1 - S.smooth((t - (T.vo0 + 1.6)) / 0.2) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'ONE LEVER:', 'HOT OR COLD?', 104); const [cx0, cy0] = wpt(ARM, 0, 0, 100); K.TXT.circle(g2, (t < T.hookEnd ? 1 : 0), cx0, cy0, 70, [-230, -150]); }
+  if (ext && t > T.hookEnd && t < T.inside) { S.tag(g2, H(t, T.vo0 + 1.75, T.inside), 'HOT', ...wpt(CAP, -14, 12, 26), -150, 120, 50, '#ff5a3a'); S.tag(g2, H(t, T.vo0 + 1.75, T.inside), 'COLD', ...wpt(CAP, 14, 12, 26), 150, 120, 50, '#5aa8ff'); }
+  // interior captions (each held at full opacity, hard cuts)
+  K.TXT.step(g2, H(t, T.vo1 + 0.05, T.vo2 - 0.02), 1, 'TWO FLAT CERAMIC DISCS', 60);
+  K.TXT.step(g2, H(t, T.vo2, T.vo3 - 0.02), 2, 'THE BOTTOM DISC NEVER MOVES', 56);
+  K.TXT.step(g2, H(t, T.vo3, T.vo4 - 0.02), 3, 'WATER ONLY WHERE IT OVERLAPS', 56);
+  K.TXT.step(g2, H(t, T.vo4, T.vo5 - 0.02), 4, 'LIFT: MORE OVERLAP, MORE WATER', 54);
+  K.TXT.step(g2, H(t, T.vo5, T.outside), 5, 'SWING: MORE HOT OR MORE COLD', 54);
+  if (!ext) {
+    S.tag(g2, H(t, T.vo1 + 0.9, T.vo2 + 0.1), 'TOP DISC', ...wpt(UP, 0, 4 * SC, -14 * SC), -200, -120, 50, '#ffffff');
+    S.tag(g2, H(t, T.vo1 + 1.4, T.vo2 + 0.1), 'BOTTOM DISC', ...dpt(0, -19, YI - 2 * SC), 160, 150, 50, '#ffffff');
+    S.tag(g2, H(t, T.vo2 + 1.1, T.vo3 + 0.3), 'HOT', ...dpt(G.HOT[0], G.HOT[1]), -170, -150, 54, '#ff5a3a');
+    S.tag(g2, H(t, T.vo2 + 1.7, T.vo3 + 0.3), 'COLD', ...dpt(G.COLD[0], G.COLD[1]), 150, -150, 54, '#5aa8ff');
+    S.tag(g2, H(t, T.vo2 + 2.5, T.vo3 + 0.3), 'WAY OUT', ...dpt(0, -7), 160, 200, 54, '#ffffff');
+    { const c = Math.cos(th * D2R), sn = Math.sin(th * D2R), u = 0, v = -8 + s; S.tag(g2, H(t, T.vo3 + 0.5, T.vo4 + 0.4), 'POCKET', ...dpt(u * c - v * sn, u * sn + v * c, YI + 2), -190, 230, 54, '#ffd21f'); }
+    S.tag(g2, H(t, T.vo3 + 2.0, T.vo4 - 0.05), 'HOLES COVERED: NO WATER', ...dpt(G.COLD[0], G.COLD[1]), -60, -210, 48, '#ffffff');
+    { const a = H(t, T.vo4 + 0.2, T.lift_b + 0.3); if (a > 0) { const [x0, y0] = wpt(STEM, 0, 26 * SC, 0); S.forceArrow(g2, a, x0 + 120, y0 + 60, x0 + 120, y0 - 70, 16); } }
+    S.tag(g2, H(t, T.vo4 + 0.2, T.vo5 - 0.05), 'LEVER', ...wpt(STEM, 0, 24 * SC, 0), -200, -40, 50, '#ffd21f');
+    S.tag(g2, H(t, T.hot_a + 0.6, T.cold_a + 0.3), 'MORE HOT', ...dpt(G.HOT[0], G.HOT[1]), -150, -170, 54, '#ff5a3a');
+    S.tag(g2, H(t, T.cold_a + 0.9, T.outside), 'MORE COLD', ...dpt(G.COLD[0], G.COLD[1]), 140, -170, 54, '#5aa8ff');
+    spoutInset(g2, H(t, T.vo3 + 0.3, T.outside), ah, ac);
+  }
+  K.TXT.answer(g2, H(t, T.vo6 + 0.05, LOOP - 1.55), 'ONE MOVING POCKET', 'TWO FIXED HOLES', 560);
+  K.TXT.follow(g2, H(t, LOOP - 1.5, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p085 Schrader tire valve "WHY DOESN'T / THE AIR ESCAPE?" (group V, track A voice). Built from kit/kit.js.
+// Valve frame: 1 u = 0.1 mm, stem axis +y (toward the hub), seat = barrel bottom face y = 0. Bike wheel, valve at 6 o'clock, hub at y = 2800.
+// kin.json rows: [t, head ceiling y, pin push d, cut deg, cap off 0..1, pump air flowing 0/1]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180;
+const st = K.makeKit({ fov: 30, bg: 0x15171b, envIntensity: 1.05, near: 2, far: 60000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.nickel = phys({ color: 0xd9dde2, metalness: 1, roughness: 0.22, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.3 });
+M.seal = phys({ color: 0x232326, metalness: 0, roughness: 0.6, sheen: 0.3 });
+M.chuck = phys({ color: 0x1c1e22, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 });
+M.tire = phys({ color: 0x1a1a1b, roughness: 0.82, bumpMap: M.rubber.bumpMap, bumpScale: 0.4 });
+M.capm = phys({ color: 0x141518, roughness: 0.45, clearcoat: 0.3 });
+
+const FLOOR = -950;
+K.backdrop(scene, { floorY: FLOOR, R: 1200, zBack: -5000, h: 16000, width: 40000, wall: '#1b1e24', floor: '#202329', pool: false, catcher: 6000 });
+K.contactBlob(scene, 0, FLOOR, 0, 520, 0.65);
+const RIG = K.lightRig(scene, V(0, 40, 0), 160);
+RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.1;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(-300, 400, 900); scene.add(f);
+  RIG.rim.intensity = 3.0; const g = new THREE.DirectionalLight(0xdbe8ff, 2.0); g.position.set(320, 160, -120); scene.add(g);
+  const g2 = new THREE.DirectionalLight(0xfff0e0, 1.1); g2.position.set(-260, 220, 80); scene.add(g2); }
+
+// ---------- lathe with an animated cutaway (front half removed toward the camera; red section faces) ----------
+const PHC = 25;   // camera azimuth (deg) during the cutaway
+function cutLathe(prof, mat, seg = 96) {
+  const g = new THREE.Group(); let parts = [];
+  const ds = mat.clone(); ds.side = THREE.DoubleSide;
+  g.setCut = (deg) => { for (const p of parts) { g.remove(p); p.geometry.dispose(); } parts = [];
+    const c = Math.max(0, Math.min(359, deg)) * D2R; const ph0 = PHC * D2R + Math.PI + 0; // removed half centred on the camera azimuth
+    const start = PHC * D2R + c / 2, len = 2 * Math.PI - c;
+    const m = new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg, start, len), ds); m.castShadow = m.receiveShadow = true; g.add(m); parts.push(m);
+    if (c > 0.001) for (const ph of [start, start + len]) { const f = new THREE.Mesh(new THREE.ShapeGeometry(S.shapeOf(prof)), M.cut); f.rotation.y = ph - Math.PI / 2; f.castShadow = f.receiveShadow = true; g.add(f); parts.push(f); }
+    void ph0; };
+  g.setCut(0); return g;
+}
+// ---------- bike wheel (hub at y 2800, axis z): tire, rim, spokes ----------
+const WHL = new THREE.Group(); WHL.position.set(0, 2800, 0); scene.add(WHL);
+{ const tire = new THREE.Mesh(new THREE.TorusGeometry(3480, 268, 40, 420), M.tire); WHL.add(tire);
+  for (const z of [-1, 1]) { const tr = new THREE.Mesh(new THREE.TorusGeometry(3480 + 120, 22, 10, 420), M.tire); tr.position.z = z * 205; WHL.add(tr); }
+  const rp = [[3000, -120], [3000, 120], [3020, 130], [3200, 140], [3240, 165], [3262, 160], [3250, 128], [3225, 118], [3225, -118], [3250, -128], [3262, -160], [3240, -165], [3200, -140], [3020, -130]];
+  const rim = new THREE.Mesh(new THREE.LatheGeometry(rp.map(p => new THREE.Vector2(p[0], p[1])), 420), (() => { const m = M.alu.clone(); m.side = THREE.DoubleSide; m.color.set(0x2a2d33); m.metalness = 0.6; m.roughness = 0.45; return m; })());
+  rim.rotation.x = Math.PI / 2; WHL.add(rim);
+  for (let i = 0; i < 28; i++) { const a = (i / 28) * 2 * Math.PI + 0.06, side = i % 2 ? 1 : -1; const p0 = V(320 * Math.cos(a), 320 * Math.sin(a), side * 280), p1 = V(3000 * Math.cos(a + 0.05 * side), 3000 * Math.sin(a + 0.05 * side), side * 40);
+    const d = p1.clone().sub(p0); const sp = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, d.length(), 10), M.steel); sp.position.copy(p0).addScaledVector(d, 0.5); sp.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); WHL.add(sp); }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(160, 160, 640, 48), M.alu); hub.rotation.x = Math.PI / 2; WHL.add(hub); }
+// ---------- valve stem (nickel) with outer thread, bore r 26 down to -70, r 20 below ----------
+const VAL = new THREE.Group(); scene.add(VAL);
+const thr = []; { thr.push([G.BORE_R, G.STEM_TOP], [36, G.STEM_TOP], [G.THREAD_R, G.STEM_TOP - 4]); for (let y = G.STEM_TOP - 4; y > 52; y -= 6) { thr.push([37.4, y - 3], [G.THREAD_R, y - 6]); }
+  thr.push([G.THREAD_R, 46], [41, 44], [41, -200], [20, -200], [20, G.BORE_STEP], [G.BORE_R, G.BORE_STEP + 4]); }
+const STEM = cutLathe(thr, M.nickel, 128); VAL.add(STEM);
+const NUT = cutLathe([[41, -200], [62, -200], [64, -196], [64, -178], [62, -174], [41, -174]], M.nickel, 6); VAL.add(NUT);
+// core: brass barrel (seat = bottom face, bore r 12) + black barrel seal ring
+const BAR = cutLathe([[12, 0], [23, 0], [25, 2], [25, 62], [24, 64], [16, 64], [16, 70], [13, 70], [12, 66]], M.brass, 96); VAL.add(BAR);
+const BSEAL = cutLathe([[25, 6], [26, 6], [26, 14], [25, 14]], M.seal, 64); VAL.add(BSEAL);
+// cage: bottom ring + two legs (phi 90 = +x side, removed by the cut; phi 270 stays)
+const CAGE = cutLathe([[5, G.CAGE_TOP - 6], [18, G.CAGE_TOP - 6], [18, G.CAGE_TOP], [5, G.CAGE_TOP]], M.brass, 64); VAL.add(CAGE);
+const legs = []; for (const ph of [PHC + 90, PHC + 270]) { const lg = new THREE.Mesh(new THREE.LatheGeometry([[G.LEG_RI, G.CAGE_TOP - 6], [24.6, G.CAGE_TOP - 6], [24.6, 0], [G.LEG_RI, 0], [G.LEG_RI, G.CAGE_TOP - 6]].map(p => new THREE.Vector2(p[0], p[1])), 12, (ph - 16) * D2R, 32 * D2R), (() => { const m = M.brass.clone(); m.side = THREE.DoubleSide; return m; })()); VAL.add(lg); legs.push(lg); }
+// moving door: pin + cup + rubber washer (group y = -d)
+const DOOR = new THREE.Group(); VAL.add(DOOR);
+{ const pin = new THREE.Mesh(new THREE.LatheGeometry([[0, -20], [3, -20], [3, G.PIN_TOP0 - 1], [2.4, G.PIN_TOP0], [0, G.PIN_TOP0]].map(p => new THREE.Vector2(p[0], p[1])), 32), M.chrome); DOOR.add(pin); DOOR.userData.pin = pin;
+  const cup = new THREE.Mesh(new THREE.LatheGeometry([[3, -12], [19, -12], [20, -11], [20, -3], [19.2, -2.4], [18.4, -3.2], [18.4, -4], [3, -4]].map(p => new THREE.Vector2(p[0], p[1])), 64), M.brass); DOOR.add(cup);
+  const wash = new THREE.Mesh(new THREE.LatheGeometry([[3, -4], [17.6, -4], [18, -3.4], [18, -0.5], [17.4, 0], [3, 0]].map(p => new THREE.Vector2(p[0], p[1])), 64), M.seal); DOOR.add(wash); DOOR.userData.wash = wash; }
+const SPR = K.spring(M.steel, { R: 10, wire: G.SPR_WIRE, turns: G.SPR_TURNS, len: 48 }); SPR.position.y = G.CAGE_TOP; VAL.add(SPR);
+// valve cap (outside shot only)
+const CAP = new THREE.Group(); VAL.add(CAP);
+{ const c = new THREE.Mesh(new THREE.LatheGeometry([[42, 58], [47, 58], [48, 60], [48, 118], [46, 122], [0, 122], [0, 118], [42, 118]].map(p => new THREE.Vector2(p[0], p[1])), 18), (() => { const m = M.capm.clone(); m.side = THREE.DoubleSide; return m; })()); CAP.add(c); }
+// pump head (chuck) + hose; local y 0 = ceiling; pusher hangs PUSH_LEN below the ceiling
+const HEAD = new THREE.Group(); VAL.add(HEAD);
+const HBODY = cutLathe([[G.HEAD_RI, -60], [56, -60], [60, -56], [60, 80], [48, 96], [20, 104], [20, 900], [8, 900], [8, 0], [G.HEAD_RI, 0]], M.chuck, 96); HEAD.add(HBODY);
+const HRING = cutLathe([[G.HEAD_RI, -30], [G.HEAD_RI + 0.01, -30], [G.HEAD_RI + 0.01, -8], [G.HEAD_RI, -8]], M.seal, 64); HEAD.add(HRING);
+{ const pu = new THREE.Mesh(new THREE.LatheGeometry([[0, -G.PUSH_LEN], [3, -G.PUSH_LEN], [3, 2], [0, 2]].map(p => new THREE.Vector2(p[0], p[1])), 24), M.steel); HEAD.add(pu);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(17, 3, 3), M.steel); bar.position.y = 1.5; bar.rotation.y = (PHC + 90) * D2R; HEAD.add(bar); HEAD.userData.pusher = pu; }
+S.shadowAll(scene);
+
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j === 5 ? a[5] : v + (b[j] - v) * u); }
+const fade = (t, a, b, f = 0.15) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+let KK = null, lastCut = -1;
+function setScene(t) {
+  const k = KK = kin(t); const ceil = k[1], d = k[2], cut = k[3], cap = k[4];
+  DOOR.position.y = -d; SPR.setLength(48 - d);
+  HEAD.position.y = ceil; HEAD.visible = ceil < 690;
+  CAP.visible = t >= T.hookEnd && cap < 0.999; CAP.position.y = 90 * cap; CAP.rotation.y = -cap * 5 * Math.PI;
+  const cr = Math.round(cut); if (cr !== lastCut) { for (const p of [STEM, NUT, BAR, BSEAL, CAGE, HBODY, HRING]) p.setCut(cr); lastCut = cr; }
+  legs[0].visible = cut < 120;
+  K.glow(DOOR.userData.wash, Math.max(fade(t, T.vo1 + 1.9, T.vo2 + 0.2, 0.25), fade(t, T.vo3 + 1.4, T.vo4, 0.25), fade(t, T.lift_a, T.vo7 + 0.3, 0.2)) * 0.9);
+  K.glow(SPR, fade(t, T.vo2, T.vo3, 0.25) * 0.8);
+  K.glow(DOOR.userData.pin, fade(t, T.vo4 + 0.6, T.vo5, 0.25) * 0.8);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const MAC = [8, 30, 0, 820, 7, PHC], MID = [8, 70, 0, 1010, 7, PHC], WIDE = [0, -330, 0, 7600, 9, 34];
+const CAMK = [k_(0, [8, 40, 0, 860, 7, PHC]), k_(T.hookEnd - 0.01, [8, 36, 0, 900, 7, PHC]),
+  k_(T.hookEnd, WIDE), k_(T.vo1 - 0.2, [0, -320, 0, 7300, 9, 33]), k_(T.cap_a + 0.3, [6, 70, 0, 1750, 9, 28]), k_(T.cut_a, [8, 66, 0, 1500, 8, PHC]),
+  k_(T.cut_b + 0.2, MAC), k_(T.vo2 - 0.3, [8, 28, 0, 800, 7, PHC]), k_(T.vo2 + 0.2, [8, 2, 0, 700, 7, PHC]), k_(T.vo3 - 0.3, [8, 0, 0, 690, 7, PHC]),
+  k_(T.vo3 + 0.2, [8, -2, 0, 700, 7, PHC]), k_(T.vo4 - 0.3, [8, 0, 0, 710, 7, PHC]),
+  k_(T.vo4 + 0.3, MID), k_(T.vo5 + 0.2, [8, 66, 0, 990, 7, PHC]), k_(T.vo6 - 0.2, [8, 62, 0, 980, 7, PHC]), k_(T.vo6 + 0.4, [8, 10, 0, 720, 7, PHC]),
+  k_(T.vo7 - 0.2, [8, 10, 0, 720, 7, PHC]), k_(T.vo7 + 0.3, [8, 60, 0, 900, 7, PHC]), k_(LOOP, [8, 58, 0, 880, 7, PHC])];
+// ---------- overlay ----------
+const sp = (u, y) => { const a = (PHC + 90) * D2R; return S.toScreen(camera, V(u * Math.sin(a), y, u * Math.cos(a))); }; // point in the section plane
+const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
+const BLUE = '#45c4ff';
+function airDot(g2, a, x, y, r = 11) { g2.save(); g2.globalAlpha = a; g2.fillStyle = BLUE; g2.strokeStyle = '#0b2a3a'; g2.lineWidth = 4; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.stroke(); g2.restore(); }
+function airPath(s, side, d) { // pump air: down the hose channel, past the pin, out under the seat, down beside the cup into the tube
+  const P = [[5, 330], [5, 110], [8, 70], [8, 4], [16, -4 - d * 0.5], [23, -14 - d], [23, -110], [14, -170]];
+  const L = []; let tot = 0; for (let i = 1; i < P.length; i++) { const l = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); L.push(l); tot += l; }
+  let x = s * tot; for (let i = 1; i < P.length; i++) { if (x <= L[i - 1]) { const u = x / L[i - 1]; return [side * (P[i - 1][0] + (P[i][0] - P[i - 1][0]) * u), P[i - 1][1] + (P[i][1] - P[i - 1][1]) * u]; } x -= L[i - 1]; }
+  return [side * P[P.length - 1][0], P[P.length - 1][1]]; }
+function pressureArrows(g2, a, amt, d) { if (a <= 0) return; for (const u of [-15.5, 15.5]) { const y0 = -58 - d, y1 = -14 - d; const [x0, sy0] = sp(u, y0), [, sy1] = sp(u, y1); const len = (sy0 - sy1) * (0.55 + 0.45 * amt); S.forceArrow(g2, a, x0, sy1 + len, x0, sy1, 16 + 10 * amt); } }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ceil = k[1], d = k[2], flow = k[5];
+  { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.75 * fx); }
+  // pump air (blue dots) only while the door is open and the pump pushes air
+  const fl = t < T.hookEnd ? (t < 0.36 ? 1 : 0) : fade(t, T.flow_a, T.flow_b, 0.12) * flow;
+  if (fl > 0 && d > 0.5) for (let i = 0; i < 18; i++) { const s = ((t * 0.5 + i / 18) % 1); for (const side of [-1, 1]) { const [u, y] = airPath(s, side, d); if (y > ceil - 4) continue; const [x, yy] = sp(u, y); airDot(g2, fl, x, yy, 14); } }
+  // tire air pushes the door up: step 3 (grows), pumping (small, losing), slam (big)
+  const pA = Math.max(fade(t, T.vo3 + 0.2, T.vo4 + 0.2, 0.2), t < T.hookEnd ? S.smooth((t - 0.45) / 0.1) * (t < 0.95 ? 1 : 0) : 0, fade(t, T.lift_a - 0.05, T.vo7 + 1.0, 0.15));
+  const pAmt = t < T.hookEnd ? 1 : (t < T.vo4 + 0.2 ? S.smooth((t - T.vo3 - 0.2) / 2.0) : 1);
+  pressureArrows(g2, pA, pAmt, d);
+  pressureArrows(g2, fade(t, T.flow_a, T.flow_b, 0.15) * 0.75, 0.0, d);
+  const hk = t < 3 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.25) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, "WHY DOESN'T", 'THE AIR ESCAPE?', 100);
+    if (t < T.hookEnd) { const [cx0, cy0] = sp(0, -2 - d); K.TXT.circle(g2, 1, cx0, cy0, 72, [-230, 230]); }
+    else { const [cx0, cy0] = wpt(VAL, 0, 80, 0); K.TXT.circle(g2, hk, cx0, cy0, 70, [-230, -200]); } }
+  const s1 = fade(t, T.vo1 - 0.05, T.vo2 - 0.05), s2 = fade(t, T.vo2, T.vo3 - 0.05), s3 = fade(t, T.vo3, T.vo4 - 0.05), s4 = fade(t, T.vo4, T.vo5 - 0.05), s5 = fade(t, T.vo5, T.vo6 - 0.05), s6 = fade(t, T.vo6, T.vo7 - 0.05);
+  K.TXT.step(g2, s1, 1, 'INSIDE: A TINY DOOR', 60);
+  K.TXT.step(g2, s2, 2, 'A SPRING PUSHES IT UP', 60);
+  K.TXT.step(g2, s3, 3, 'TIRE AIR PUSHES IT UP TOO', 58);
+  K.TXT.step(g2, s4, 4, 'THE PUMP PRESSES THE PIN', 58);
+  K.TXT.step(g2, s5, 5, 'PUMP AIR IS STRONGER', 60);
+  K.TXT.step(g2, s6, 6, 'PUMP OFF: THE DOOR SLAMS', 58);
+  { const a = fade(t, T.cut_b - 0.1, T.vo2, 0.2); if (a > 0) { S.tag(g2, a, 'SEAL', ...sp(-15, -2 - d), -260, 120, 52, '#ffd21f'); S.tag(g2, fade(t, T.cut_b + 0.3, T.vo2, 0.2), 'SEAT', ...sp(-20, 1), -250, -40, 52, '#ffffff');
+      S.tag(g2, fade(t, T.cut_b + 0.6, T.vo2, 0.2), 'PIN', ...sp(0, G.PIN_TOP0 - 6 - d), -280, -60, 52, '#ffffff'); } }
+  { const a = fade(t, T.vo2 + 0.3, T.vo3, 0.2); if (a > 0) { S.tag(g2, a, 'SPRING', ...sp(-10, -36 - d / 2), -250, 70, 52, '#ffd21f'); const [x0, y0] = sp(14, -44), [, y1] = sp(14, -14); S.forceArrow(g2, a, x0 + 70, y0, x0 + 70, y1 - 10, 16); } }
+  { const a = fade(t, T.vo3 + 0.4, T.vo4, 0.2); if (a > 0) S.tag(g2, a, 'TIRE AIR', ...sp(-12, -50), -230, 80, 52, '#ff9a3a'); }
+  { const a = fade(t, T.vo4 + 0.2, T.vo5, 0.2); if (a > 0) { S.tag(g2, a, 'PUMP', ...sp(-58, Math.min(ceil + 40, 320)), -200, -40, 52, '#ffffff');
+      const [x0, y0] = sp(70, Math.min(ceil + 90, 330)), [, y1] = sp(70, Math.min(ceil + 10, 250)); if (t < T.head_b) S.forceArrow(g2, a, x0 + 40, y0, x0 + 40, y1, 16);
+      S.tag(g2, fade(t, T.head_b - 0.2, T.vo5, 0.2), 'OPEN', ...sp(15, -6 - d / 2), 230, 110, 52, '#ffd21f'); } }
+  { const a = fade(t, T.vo5 + 0.3, T.vo6, 0.2); if (a > 0) S.tag(g2, a, 'PUMP AIR', ...sp(-8, 40), -260, -30, 52, BLUE); }
+  { const a = fade(t, T.lift_b, T.vo7, 0.2); if (a > 0) S.tag(g2, a, 'SHUT', ...sp(15, -2), 230, 110, 52, '#ffd21f'); }
+  K.TXT.answer(g2, fade(t, T.vo7 + 0.05, LOOP - 1.3, 0.25), 'THE AIR INSIDE', 'HOLDS THE DOOR SHUT', 560);
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.1, 0.2));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
