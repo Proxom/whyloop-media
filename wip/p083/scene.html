@@ -93,13 +93,13 @@ OUT.add(lathe([[17.6, OC.y_top - 0.0], [OC.r_out, OC.y_top - 1.0], [OC.r_out, OC
     const b = new THREE.BoxGeometry(0.9, OC.y_top - OC.y_bot - 4.2, 0.7); b.translate(0, (OC.y_top + OC.y_bot) / 2 - 0.6, OC.r_out + 0.2); b.rotateY(a); geos.push(b); }
   OUT.add(new THREE.Mesh(mergeGeometries(geos), M.outer)); }
 { const s = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(OC.r_out + 0.08, OC.y_bot + 1.4), new THREE.Vector2(OC.r_out + 0.08, OC.y_top - 1.6)], 6, -0.09, 0.18), M.outerStripe); OUT.add(s); }
-OUT.add(new THREE.Mesh(sawRing(G.R_T0, G.R_T1, h => h + 0.06, h => UND + 0.05), M.outer));
-const LUGO = new THREE.Mesh(lugs(G.R_L0, G.R_L1, -G.WL, 0, UND - G.LO + 0.03, UND + 0.05), M.outer); OUT.add(LUGO);
+const SAWO = new THREE.Mesh(sawRing(G.R_T0, G.R_T1, h => h + 0.06, h => UND + 0.05), M.outer); OUT.add(SAWO); 
+const LUGO = new THREE.Mesh(lugs(G.R_L0, G.R_L1, -G.WL, 0, UND - G.LO + 0.03, UND + 0.05), phys({ color: 0xf2f2ee, roughness: 0.42, clearcoat: 0.25, side: THREE.DoubleSide })); OUT.add(LUGO);   // not clipped: the outer lugs stay visible in the cutaway
 const SPR = K.spring(M.chrome, { R: 3.0, wire: 0.34, turns: 2.6, len: UND + G.G0, closed: 0.5 }); scene.add(SPR);
 // section faces (world-fixed at the wedge edges), cut red
 const secShape = S.shapeOf([[17.6, OC.y_top], [OC.r_out, OC.y_top - 1.0], [OC.r_out, OC.y_bot + 0.6], [OC.r_out - 0.6, OC.y_bot], [OC.lip_r, OC.y_bot], [OC.lip_r, OC.lip_top], [OC.r_in, OC.lip_top], [OC.r_in, UND], [0, UND], [0, OC.y_top]]);
 const SEC = [0, 1].map(() => { const m = new THREE.Mesh(new THREE.ShapeGeometry(secShape), M.cut); scene.add(m); return m; });
-S.shadowAll(scene);
+S.shadowAll(scene); IN.traverse(o => { if (o.isMesh) o.receiveShadow = false; });
 
 // ---------- kinematics ----------
 const DT = 1 / G.FPS_K;
@@ -112,7 +112,7 @@ function setScene(t) {
   IN.rotation.y = Ai; IN.position.y = rise; OUT.rotation.y = Ai + phi; OUT.position.y = rise + lift;
   WEDGE = 0.92 * fade(t, T.exa - 0.3, T.clb + 0.45, 0.6); setWedge(WEDGE);
   { const L = UND + Math.min(lift, H); if (Math.abs(L - (SPR.userData.L || 0)) > 0.01) { SPR.setLength(L); SPR.userData.L = L; } SPR.position.y = rise; SPR.rotation.y = Ai; }
-  SEC[0].visible = SEC[1].visible = WEDGE > 0.01;
+  SEC[0].visible = SEC[1].visible = WEDGE > 0.01; SAWO.visible = WEDGE < 0.02;   // the clipped saw ring would show its inside faces; the strip shows the outer teeth
   SEC[0].rotation.y = WEDGE - Math.PI / 2; SEC[1].rotation.y = -WEDGE - Math.PI / 2; SEC[0].position.y = SEC[1].position.y = rise + lift;
   K.glow(IN, Math.max(fade(t, T.vo3 - 0.1, T.vo4 - 0.1, 0.3), fade(t, T.vo1 + 1.4, T.vo1 + 2.6, 0.3)) * 0.55, 0x4fd1ff);
   K.glow(LUGO, fade(t, T.pda, T.opb, 0.25) * 0.8, 0xff7a1a); K.glow(SPR, fade(t, T.vo1 + 2.7, T.exc + 0.1, 0.25) * 0.8, 0xffb21f);

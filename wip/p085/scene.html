@@ -35,16 +35,23 @@ RIG.key.shadow.bias = -0.0004; RIG.key.shadow.normalBias = 0.1;
   RIG.rim.intensity = 3.0; const g = new THREE.DirectionalLight(0xdbe8ff, 2.0); g.position.set(320, 160, -120); scene.add(g);
   const g2 = new THREE.DirectionalLight(0xfff0e0, 1.1); g2.position.set(-260, 220, 80); scene.add(g2); }
 
+// ---------- shaded section material (u = r / 70: darker toward the bore, lighter at the outer edge) ----------
+const secTex = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 4; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 256, 0);
+  gr.addColorStop(0.0, '#6a0f0a'); gr.addColorStop(0.2, '#8e1610'); gr.addColorStop(0.42, '#b51f17'); gr.addColorStop(0.55, '#c8261d'); gr.addColorStop(0.6, '#d8392d'); gr.addColorStop(0.95, '#d8392d'); g.fillStyle = gr; g.fillRect(0, 0, 256, 4);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.ClampToEdgeWrapping; t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 70, 1); return t; })();
+M.sec = phys({ color: 0xe6e6e6, map: secTex, metalness: 0, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.35, side: THREE.DoubleSide });
+const CLIP = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 112)];   // inside view: the stem ends at y -112 (keeps its base out of the bottom zone)
+if (st.renderer) st.renderer.localClippingEnabled = true;
 // ---------- lathe with an animated cutaway (front half removed toward the camera; red section faces) ----------
 const PHC = 25;   // camera azimuth (deg) during the cutaway
 function cutLathe(prof, mat, seg = 96) {
   const g = new THREE.Group(); let parts = [];
-  const ds = mat.clone(); ds.side = THREE.DoubleSide;
+  const ds = mat.clone(); ds.side = THREE.DoubleSide; const sec = M.sec.clone(); g.mats = [ds, sec];
   g.setCut = (deg) => { for (const p of parts) { g.remove(p); p.geometry.dispose(); } parts = [];
     const c = Math.max(0, Math.min(359, deg)) * D2R; const ph0 = PHC * D2R + Math.PI + 0; // removed half centred on the camera azimuth
     const start = PHC * D2R + c / 2, len = 2 * Math.PI - c;
     const m = new THREE.Mesh(new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), seg, start, len), ds); m.castShadow = m.receiveShadow = true; g.add(m); parts.push(m);
-    if (c > 0.001) for (const ph of [start, start + len]) { const f = new THREE.Mesh(new THREE.ShapeGeometry(S.shapeOf(prof)), M.cut); f.rotation.y = ph - Math.PI / 2; f.castShadow = f.receiveShadow = true; g.add(f); parts.push(f); }
+    if (c > 0.001) for (const ph of [start, start + len]) { const f = new THREE.Mesh(new THREE.ShapeGeometry(S.shapeOf(prof)), sec); f.rotation.y = ph - Math.PI / 2; f.castShadow = f.receiveShadow = true; g.add(f); parts.push(f); }
     void ph0; };
   g.setCut(0); return g;
 }
@@ -69,7 +76,7 @@ const BAR = cutLathe([[12, 0], [23, 0], [25, 2], [25, 62], [24, 64], [16, 64], [
 const BSEAL = cutLathe([[25, 6], [26, 6], [26, 14], [25, 14]], M.seal, 64); VAL.add(BSEAL);
 // cage: bottom ring + two legs (phi 90 = +x side, removed by the cut; phi 270 stays)
 const CAGE = cutLathe([[5, G.CAGE_TOP - 6], [18, G.CAGE_TOP - 6], [18, G.CAGE_TOP], [5, G.CAGE_TOP]], M.brass, 64); VAL.add(CAGE);
-const legs = []; for (const ph of [PHC + 90, PHC + 270]) { const lg = new THREE.Mesh(new THREE.LatheGeometry([[G.LEG_RI, G.CAGE_TOP - 6], [24.6, G.CAGE_TOP - 6], [24.6, 0], [G.LEG_RI, 0], [G.LEG_RI, G.CAGE_TOP - 6]].map(p => new THREE.Vector2(p[0], p[1])), 12, (ph - 16) * D2R, 32 * D2R), (() => { const m = M.brass.clone(); m.side = THREE.DoubleSide; return m; })()); VAL.add(lg); legs.push(lg); }
+const legs = []; for (const ph of [PHC, PHC + 180]) { const lg = new THREE.Mesh(new THREE.LatheGeometry([[G.LEG_RI, G.CAGE_TOP - 6], [24.6, G.CAGE_TOP - 6], [24.6, 0], [G.LEG_RI, 0], [G.LEG_RI, G.CAGE_TOP - 6]].map(p => new THREE.Vector2(p[0], p[1])), 12, (ph - 16) * D2R, 32 * D2R), (() => { const m = M.brass.clone(); m.side = THREE.DoubleSide; return m; })()); VAL.add(lg); legs.push(lg); }
 // moving door: pin + cup + rubber washer (group y = -d)
 const DOOR = new THREE.Group(); VAL.add(DOOR);
 { const pin = new THREE.Mesh(new THREE.LatheGeometry([[0, -20], [3, -20], [3, G.PIN_TOP0 - 1], [2.4, G.PIN_TOP0], [0, G.PIN_TOP0]].map(p => new THREE.Vector2(p[0], p[1])), 32), M.chrome); DOOR.add(pin); DOOR.userData.pin = pin;
@@ -99,6 +106,8 @@ function setScene(t) {
   CAP.visible = t >= T.hookEnd && cap < 0.999; CAP.position.y = 90 * cap; CAP.rotation.y = -cap * 5 * Math.PI;
   const cr = Math.round(cut); if (cr !== lastCut) { for (const p of [STEM, NUT, BAR, BSEAL, CAGE, HBODY, HRING]) p.setCut(cr); lastCut = cr; }
   legs[0].visible = cut < 120;
+  const inside = cut > 60; WHL.visible = !inside; NUT.visible = !inside;
+  for (const m of STEM.mats) { const want = inside ? CLIP : []; if (m.clippingPlanes?.length !== want.length) { m.clippingPlanes = want; m.needsUpdate = true; } }
   K.glow(DOOR.userData.wash, Math.max(fade(t, T.vo1 + 1.9, T.vo2 + 0.2, 0.25), fade(t, T.vo3 + 1.4, T.vo4, 0.25), fade(t, T.lift_a, T.vo7 + 0.3, 0.2)) * 0.9);
   K.glow(SPR, fade(t, T.vo2, T.vo3, 0.25) * 0.8);
   K.glow(DOOR.userData.pin, fade(t, T.vo4 + 0.6, T.vo5, 0.25) * 0.8);
@@ -106,35 +115,42 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const MAC = [8, 30, 0, 820, 7, PHC], MID = [8, 70, 0, 1010, 7, PHC], WIDE = [0, -330, 0, 7600, 9, 34];
-const CAMK = [k_(0, [8, 40, 0, 860, 7, PHC]), k_(T.hookEnd - 0.01, [8, 36, 0, 900, 7, PHC]),
-  k_(T.hookEnd, WIDE), k_(T.vo1 - 0.2, [0, -320, 0, 7300, 9, 33]), k_(T.cap_a + 0.3, [6, 70, 0, 1750, 9, 28]), k_(T.cut_a, [8, 66, 0, 1500, 8, PHC]),
-  k_(T.cut_b + 0.2, MAC), k_(T.vo2 - 0.3, [8, 28, 0, 800, 7, PHC]), k_(T.vo2 + 0.2, [8, 2, 0, 700, 7, PHC]), k_(T.vo3 - 0.3, [8, 0, 0, 690, 7, PHC]),
-  k_(T.vo3 + 0.2, [8, -2, 0, 700, 7, PHC]), k_(T.vo4 - 0.3, [8, 0, 0, 710, 7, PHC]),
-  k_(T.vo4 + 0.3, MID), k_(T.vo5 + 0.2, [8, 66, 0, 990, 7, PHC]), k_(T.vo6 - 0.2, [8, 62, 0, 980, 7, PHC]), k_(T.vo6 + 0.4, [8, 10, 0, 720, 7, PHC]),
-  k_(T.vo7 - 0.2, [8, 10, 0, 720, 7, PHC]), k_(T.vo7 + 0.3, [8, 60, 0, 900, 7, PHC]), k_(LOOP, [8, 58, 0, 880, 7, PHC])];
+// R(y0, y1, top, bot, az): frame world y0..y1 into screen rows top..bot (FOV 30: visible height = 0.5359 x dist)
+const R = (y0, y1, top = 600, bot = 1420, az = PHC) => { const H = (y1 - y0) / ((bot - top) / 1920); const c = (y0 + y1) / 2 + ((top + bot) / 2 - 960) / 1920 * H; return [8, c, 0, H / 0.5359, 7, az]; };
+const WIDE = [0, -330, 0, 7600, 9, 34];
+const CAMK = [k_(0, R(-62, 118, 700, 1420, PHC - 2)), k_(T.hookEnd - 0.01, R(-64, 122, 700, 1420, PHC + 1)),
+  k_(T.hookEnd, WIDE), k_(T.vo1 - 0.2, [0, -320, 0, 7300, 9, 33]), k_(T.cap_a + 0.3, [6, 70, 0, 1750, 9, 28]), k_(T.cut_a, [8, 50, 0, 1300, 8, PHC]),
+  k_(T.cut_b + 0.2, R(-24, 112, 600, 1420, PHC - 3)), k_(T.vo2 - 0.3, R(-22, 110, 600, 1420, PHC + 3)),
+  k_(T.vo2 + 0.3, R(-72, 30, 600, 1420, PHC - 3)), k_(T.vo4 - 0.3, R(-72, 28, 600, 1420, PHC + 4)),
+  k_(T.vo4 + 0.3, R(-30, 175, 600, 1420, PHC - 2)), k_(T.vo6 - 0.1, R(-34, 172, 600, 1420, PHC + 3)),
+  k_(T.vo6 + 0.45, R(-72, 62, 600, 1420, PHC + 1)), k_(T.vo7 - 0.2, R(-72, 60, 600, 1420, PHC - 2)),
+  k_(T.vo7 + 0.35, R(-114, 112, 730, 1330, PHC - 1)), k_(LOOP, R(-114, 112, 730, 1330, PHC + 2))];   // whole valve above the follow line
 // ---------- overlay ----------
 const sp = (u, y) => { const a = (PHC + 90) * D2R; return S.toScreen(camera, V(u * Math.sin(a), y, u * Math.cos(a))); }; // point in the section plane
 const wpt = (obj, x, y, z = 0) => K.screenOf(st, obj, x, y, z);
 const BLUE = '#45c4ff';
 function airDot(g2, a, x, y, r = 11) { g2.save(); g2.globalAlpha = a; g2.fillStyle = BLUE; g2.strokeStyle = '#0b2a3a'; g2.lineWidth = 4; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.stroke(); g2.restore(); }
 function airPath(s, side, d) { // pump air: down the hose channel, past the pin, out under the seat, down beside the cup into the tube
-  const P = [[5, 330], [5, 110], [8, 70], [8, 4], [16, -4 - d * 0.5], [23, -14 - d], [23, -110], [14, -170]];
+  const P = [[5, 330], [5, 110], [8, 70], [8, 4], [16, -4 - d * 0.5], [23, -14 - d], [23, -64], [12, -74], [12, -150]];   // stays inside the air path (checked against the section)
   const L = []; let tot = 0; for (let i = 1; i < P.length; i++) { const l = Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); L.push(l); tot += l; }
   let x = s * tot; for (let i = 1; i < P.length; i++) { if (x <= L[i - 1]) { const u = x / L[i - 1]; return [side * (P[i - 1][0] + (P[i][0] - P[i - 1][0]) * u), P[i - 1][1] + (P[i][1] - P[i - 1][1]) * u]; } x -= L[i - 1]; }
   return [side * P[P.length - 1][0], P[P.length - 1][1]]; }
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#06131c'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
 function pressureArrows(g2, a, amt, d) { if (a <= 0) return; for (const u of [-15.5, 15.5]) { const y0 = -58 - d, y1 = -14 - d; const [x0, sy0] = sp(u, y0), [, sy1] = sp(u, y1); const len = (sy0 - sy1) * (0.55 + 0.45 * amt); S.forceArrow(g2, a, x0, sy1 + len, x0, sy1, 16 + 10 * amt); } }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ceil = k[1], d = k[2], flow = k[5];
   { const fx = Math.max(0, 1 - Math.abs(t - T.hookEnd) / 0.12); K.TXT.flash(g2, 0.75 * fx); }
   // pump air (blue dots) only while the door is open and the pump pushes air
   const fl = t < T.hookEnd ? (t < 0.36 ? 1 : 0) : fade(t, T.flow_a, T.flow_b, 0.12) * flow;
-  if (fl > 0 && d > 0.5) for (let i = 0; i < 18; i++) { const s = ((t * 0.5 + i / 18) % 1); for (const side of [-1, 1]) { const [u, y] = airPath(s, side, d); if (y > ceil - 4) continue; const [x, yy] = sp(u, y); airDot(g2, fl, x, yy, 14); } }
+  if (fl > 0 && d > 0.5) for (let i = 0; i < 16; i++) { const s = ((t * (t < T.hookEnd ? 1.1 : 0.5) + i / 16) % 1); for (const side of [-1, 1]) { const [u, y] = airPath(s, side, d), [u0, y0] = airPath(Math.max(0, s - 0.022), side, d); if (y > ceil - 4) continue;
+    const [x, yy] = sp(u, y), [xa, ya] = sp(u0, Math.min(y0, ceil - 4)); g2.save(); g2.globalAlpha = fl; g2.lineCap = 'round'; g2.strokeStyle = '#06131c'; g2.lineWidth = 19; g2.beginPath(); g2.moveTo(xa, ya); g2.lineTo(x, yy); g2.stroke(); g2.strokeStyle = BLUE; g2.lineWidth = 12; g2.stroke(); g2.restore(); } }
   // tire air pushes the door up: step 3 (grows), pumping (small, losing), slam (big)
   const pA = Math.max(fade(t, T.vo3 + 0.2, T.vo4 + 0.2, 0.2), t < T.hookEnd ? S.smooth((t - 0.45) / 0.1) * (t < 0.95 ? 1 : 0) : 0, fade(t, T.lift_a - 0.05, T.vo7 + 1.0, 0.15));
   const pAmt = t < T.hookEnd ? 1 : (t < T.vo4 + 0.2 ? S.smooth((t - T.vo3 - 0.2) / 2.0) : 1);
   pressureArrows(g2, pA, pAmt, d);
-  pressureArrows(g2, fade(t, T.flow_a, T.flow_b, 0.15) * 0.75, 0.0, d);
+  pressureArrows(g2, fade(t, T.flow_a, T.flow_b, 0.15) * 0.8, -0.5, d);
+  { const a = fade(t, T.flow_a + 0.2, T.flow_b, 0.15); if (a > 0 && d > 0.5) { const [x0, y0] = sp(0, 100), [, y1] = sp(0, 18); arrowC(g2, a, x0, y0, x0, y1, 34, BLUE); } }
   const hk = t < 3 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.25) : 0;
   if (hk > 0) { K.TXT.hook(g2, hk, "WHY DOESN'T", 'THE AIR ESCAPE?', 100);
     if (t < T.hookEnd) { const [cx0, cy0] = sp(0, -2 - d); K.TXT.circle(g2, 1, cx0, cy0, 72, [-230, 230]); }
@@ -147,16 +163,17 @@ function overlay(t) {
   K.TXT.step(g2, s5, 5, 'PUMP AIR IS STRONGER', 60);
   K.TXT.step(g2, s6, 6, 'PUMP OFF: THE DOOR SLAMS', 58);
   { const a = fade(t, T.cut_b - 0.1, T.vo2, 0.2); if (a > 0) { S.tag(g2, a, 'SEAL', ...sp(-15, -2 - d), -260, 120, 52, '#ffd21f'); S.tag(g2, fade(t, T.cut_b + 0.3, T.vo2, 0.2), 'SEAT', ...sp(-20, 1), -250, -40, 52, '#ffffff');
-      S.tag(g2, fade(t, T.cut_b + 0.6, T.vo2, 0.2), 'PIN', ...sp(0, G.PIN_TOP0 - 6 - d), -280, -60, 52, '#ffffff'); } }
+      S.tag(g2, fade(t, T.cut_b + 0.6, T.vo2, 0.2), 'PIN', ...sp(0, G.PIN_TOP0 - 30 - d), -280, -20, 52, '#ffffff');
+      S.tag(g2, fade(t, T.cut_b + 1.0, T.vo2, 0.2), 'OUTSIDE ↑', ...sp(14, 104), 70, -30, 50, '#ffffff'); S.tag(g2, fade(t, T.cut_b + 1.3, T.vo2, 0.2), 'TIRE ↓', ...sp(23, -22), 80, 40, 50, '#ff9a3a'); } }
   { const a = fade(t, T.vo2 + 0.3, T.vo3, 0.2); if (a > 0) { S.tag(g2, a, 'SPRING', ...sp(-10, -36 - d / 2), -250, 70, 52, '#ffd21f'); const [x0, y0] = sp(14, -44), [, y1] = sp(14, -14); S.forceArrow(g2, a, x0 + 70, y0, x0 + 70, y1 - 10, 16); } }
-  { const a = fade(t, T.vo3 + 0.4, T.vo4, 0.2); if (a > 0) S.tag(g2, a, 'TIRE AIR', ...sp(-12, -50), -230, 80, 52, '#ff9a3a'); }
-  { const a = fade(t, T.vo4 + 0.2, T.vo5, 0.2); if (a > 0) { S.tag(g2, a, 'PUMP', ...sp(-58, Math.min(ceil + 40, 320)), -200, -40, 52, '#ffffff');
-      const [x0, y0] = sp(70, Math.min(ceil + 90, 330)), [, y1] = sp(70, Math.min(ceil + 10, 250)); if (t < T.head_b) S.forceArrow(g2, a, x0 + 40, y0, x0 + 40, y1, 16);
-      S.tag(g2, fade(t, T.head_b - 0.2, T.vo5, 0.2), 'OPEN', ...sp(15, -6 - d / 2), 230, 110, 52, '#ffd21f'); } }
+  { const a = fade(t, T.vo3 + 0.4, T.vo4, 0.2); if (a > 0) S.tag(g2, a, 'TIRE AIR', ...sp(-21, -46), -200, 70, 52, '#ff9a3a'); }
+  { const a = fade(t, T.vo4 + 0.2, T.vo5, 0.2); if (a > 0) { S.tag(g2, fade(t, T.head_b - 0.5, T.vo5, 0.2), 'PUMP', ...sp(-60, ceil - 30), -170, 90, 52, '#ffffff');
+      const [x0, y0] = sp(-80, Math.min(ceil + 40, 190)), [, y1] = sp(-80, Math.min(ceil - 40, 150)); if (t < T.head_b - 0.1 && y1 > y0 + 20) S.forceArrow(g2, a, x0 - 30, y0, x0 - 30, y1, 16);
+      S.tag(g2, fade(t, T.head_b - 0.2, T.vo5, 0.2), 'OPEN', ...sp(15, -6 - d / 2), 90, 110, 52, '#ffd21f'); } }
   { const a = fade(t, T.vo5 + 0.3, T.vo6, 0.2); if (a > 0) S.tag(g2, a, 'PUMP AIR', ...sp(-8, 40), -260, -30, 52, BLUE); }
-  { const a = fade(t, T.lift_b, T.vo7, 0.2); if (a > 0) S.tag(g2, a, 'SHUT', ...sp(15, -2), 230, 110, 52, '#ffd21f'); }
+  { const a = fade(t, T.lift_a + 0.42, T.vo7, 0.2); if (a > 0) S.tag(g2, a, 'SHUT', ...sp(15, -2), 90, 110, 52, '#ffd21f'); }
   K.TXT.answer(g2, fade(t, T.vo7 + 0.05, LOOP - 1.3, 0.25), 'THE AIR INSIDE', 'HOLDS THE DOOR SHUT', 560);
-  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP - 0.1, 0.2));
+  K.TXT.follow(g2, fade(t, LOOP - 1.45, LOOP + 1.0, 0.2));   // stays on through the last frame
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;

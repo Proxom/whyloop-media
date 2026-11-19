@@ -17,10 +17,10 @@ Schrader Pacific, Valve Cores (a spring-actuated cartridge-type check valve; the
 OnAllCylinders, Tires 101: What Is a Schrader Valve (a poppet valve opened by a pin in the air fitting; air flows in when the source pressure is higher than the tire; the valve snaps shut when the fitting is removed): https://www.onallcylinders.com/2023/06/02/tires-101-what-is-a-schrader-valve-and-how-to-use-a-tire-valve-core-removal-tool"""
 alt = ("3D animation of a bike tire valve, with a voiceover. Under the question Why doesn't the air escape? a pump is pulled off the valve and a small seal snaps shut. "
        "The bike wheel's valve cap unscrews and the valve is cut open in red to show a brass core, a thin pin, a black rubber seal and a spring. "
-       "1, inside, a tiny door: the seal on the pin sits under its seat. 2, a spring pushes it up. 3, tire air pushes it up too: orange arrows push the seal against the seat. "
-       "4, the pump presses the pin: a pump head slides on and its pusher presses the pin down, opening the seal. 5, pump air is stronger: blue air flows down past the seal into the tire. "
-       "6, pump off, the door slams: the pump lifts, the arrows grow and the seal shuts. The payoff reads The air inside holds the door shut, a follow line appears and the video loops.")
-on = ['INSIDE IT', "WHY DOESN'T", 'THE AIR ESCAPE?', 'INSIDE: A TINY DOOR', 'SEAL', 'SEAT', 'PIN', 'A SPRING PUSHES IT UP', 'SPRING', 'TIRE AIR PUSHES IT UP TOO', 'TIRE AIR',
+       "1, inside, a tiny door: the seal on the pin sits under its seat, with the outside at the top and the tire at the bottom. 2, a spring pushes it up. 3, tire air pushes it up too: orange arrows push the seal against the seat. "
+       "4, the pump presses the pin: a pump head slides on and its pusher presses the pin down, opening the seal. 5, pump air is stronger: a big blue arrow and blue air flow down past the seal into the tire while the orange tire-air arrows shrink. "
+       "6, pump off, the door slams: the pump lifts, the orange arrows grow and the seal snaps up and shuts. The payoff reads The air inside holds the door shut, a follow line appears and the video loops.")
+on = ['INSIDE IT', "WHY DOESN'T", 'THE AIR ESCAPE?', 'INSIDE: A TINY DOOR', 'SEAL', 'SEAT', 'PIN', 'OUTSIDE ↑', 'TIRE ↓', 'A SPRING PUSHES IT UP', 'SPRING', 'TIRE AIR PUSHES IT UP TOO', 'TIRE AIR',
       'THE PUMP PRESSES THE PIN', 'PUMP', 'OPEN', 'PUMP AIR IS STRONGER', 'PUMP AIR', 'PUMP OFF: THE DOOR SLAMS', 'SHUT', 'THE AIR INSIDE', 'HOLDS THE DOOR SHUT', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p085', track='A', group='V', slot='', topicKey='schrader valve',

@@ -13,5 +13,6 @@ Copy spellchecked (flags: howitworks, whyloop, hq).
 Audio PASS: -15.0 LUFS mix (-15.1 in the mp4), -3.0 dBTP, HP4k gap 21.1 dB. SFX: low thumps on cuts and lever moves, low ceramic tocks (250-260 Hz), water = 70-450 Hz rumble following the flow; no hiss/clicks.
 Render: render.js wip/p084/scene.html <out> 30 1 0 798 0.75 0 0 1 1080 1920 1 (0.28 s/frame, ~4 min); encode.sh <out> wip/p084/mix.wav mixer_reel_v1.mp4 26.6 30
 Rebuild: venv python kin.py; vo.py <ttsdir> vo; audio.py; bash master_p084.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; mkpost.py
+qualityAudit (HARD GATE): 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 26.6 s (798 frames); first/last frame luma 60.3 / 57.6 (not black); audio -15.1 LUFS, -3.0 dBTP, HP4k gap 21.1 dB; text: hook 104 px, steps 54-60 px, tags 48-54 px, inside the safe zones (safe_0.5s checked); 6 stills looked at: no glitches, clipping or cut-off text. Cover = frame at 0.4 s (mixer_cover_v1.jpg).
 LEFT: CLARITY GATE + ONE visual review (fork cannot spawn reviewers; inputs in the session scratchpad p084/clar and p084/qc). Rule B after the visual score.
 Known weak spots: the control disc is see-through (x-ray, reviewer of p079 disliked transparency); the lever stem crosses the pocket in the top view during the swing; the overlap at full lift is small (about half of each hole).

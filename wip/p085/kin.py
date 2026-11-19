@@ -16,8 +16,8 @@ for i in range(2, 8): T[f'vo{i}'] = T[f'vo{i-1}'] + dur[i - 1] + gap + EXTRA.get
 LOOP = round(T['vo7'] + dur[7] + 1.9, 2); T['LOOP'] = LOOP
 T['cap_a'] = T['vo1'] + 0.1; T['cap_b'] = T['vo1'] + 1.0; T['cut_a'] = T['vo1'] + 1.15; T['cut_b'] = T['vo1'] + 2.1
 T['head_a'] = T['vo4'] - 0.1; T['head_b'] = T['vo4'] + 1.35                       # pump head comes down and seats
-T['flow_a'] = T['vo5'] - 0.1; T['flow_b'] = T['vo6'] + 0.35                       # pumping
-T['lift_a'] = T['vo6'] + 0.35; T['lift_b'] = T['vo6'] + 0.75                      # pump pulled off (fast)
+T['flow_a'] = T['vo5'] - 0.1; T['flow_b'] = T['vo6'] + 0.55                       # pumping
+T['lift_a'] = T['vo6'] + 0.55; T['lift_m'] = T['lift_a'] + 0.6; T['lift_b'] = T['lift_m'] + 0.35   # pump pulled off: slow first (door visibly follows the pin up and seats), then away
 def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
 def ceil_of(t):
     if t < T['hookEnd']:                                                            # hook replay: seated, then pulled off 0.28-0.55 s
@@ -25,7 +25,8 @@ def ceil_of(t):
     if t < T['head_a']: return CEIL_AWAY
     if t < T['head_b']: return CEIL_AWAY + (CEIL_SEATED - CEIL_AWAY) * ease((t - T['head_a']) / (T['head_b'] - T['head_a']))
     if t < T['lift_a']: return CEIL_SEATED
-    if t < T['lift_b']: return CEIL_SEATED + (CEIL_AWAY - CEIL_SEATED) * ease((t - T['lift_a']) / (T['lift_b'] - T['lift_a']))
+    if t < T['lift_m']: return CEIL_SEATED + 20.0 * ease((t - T['lift_a']) / (T['lift_m'] - T['lift_a']))
+    if t < T['lift_b']: return CEIL_SEATED + 20.0 + (CEIL_AWAY - CEIL_SEATED - 20.0) * ease((t - T['lift_m']) / (T['lift_b'] - T['lift_m']))
     return CEIL_AWAY
 def d_of(ceil): return max(0.0, min(D_MAX, PIN_TOP0 - (ceil - PUSH_LEN)))         # pin pushed only while the pusher touches it
 def flow_of(t, d, ceil):
