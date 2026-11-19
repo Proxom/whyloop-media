@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "What makes the toast pop up?",
+  "dur": 1.387
+ },
+ {
+  "i": 1,
+  "text": "Push the lever down, and a spring stretches.",
+  "dur": 2.24
+ },
+ {
+  "i": 2,
+  "text": "At the bottom, a steel plate meets an electromagnet. It holds the plate down.",
+  "dur": 4.309
+ },
+ {
+  "i": 3,
+  "text": "The toast heats while a timer counts down.",
+  "dur": 2.091
+ },
+ {
+  "i": 4,
+  "text": "Time's up: the timer cuts the magnet's power, so it lets go.",
+  "dur": 3.349
+ },
+ {
+  "i": 5,
+  "text": "Now the stretched spring yanks the toast up.",
+  "dur": 2.091
+ },
+ {
+  "i": 6,
+  "text": "A magnet holds it down. The timer lets it go.",
+  "dur": 2.645
+ }
+]
