@@ -1,4 +1,4 @@
-# p079 winged corkscrew "WHY DO THE / WINGS GO UP?" - track A (Kokoro af_heart) - group E - NOT SCHEDULED (topic-registry question, approval a-041)
+# p079 winged corkscrew "WHY DO THE / WINGS GO UP?" - track A (Kokoro af_heart) - group E - a-041 APPROVED by Erkan 19 Nov 18:15 (not a repeat) - NEXT RUN: rule B top-3 visual fixes once, one re-render, HARD GATE, then the first empty slot
 topic key: wing corkscrew. Registry check (65 rows): no corkscrew/cork/wine row, BUT p020 (31 Oct) = "Rack and pinion (steering)", key "rack and pinion".
 The corkscrew's mechanism IS a rack and pinion (different object, different question). AGENT.md 15 Nov 17:19: "If unsure, treat it as a repeat" -> not scheduled; Erkan asked in approval a-041.
 Built from kit/kit.js (spurGear outline for the wing pinion sectors) + lathe parts: green glass bottle + wine, cork (procedural cork texture, x-ray in steps), chrome body (base cup, 2 pillars, open head plates), shaft (helix worm, shank, revolved rack rings, collar, loop handle), 2 wings (gear sector + arm + paddle).

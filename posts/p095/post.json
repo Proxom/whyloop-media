@@ -2,7 +2,7 @@
  "id": "p095",
  "track": "A",
  "group": "V",
- "slot": "2026-11-21T21:00 Europe/London (planned, coordinator schedules)",
+ "slot": "2026-11-21T21:00 Europe/London",
  "topicKey": "flip key",
  "outlier": "scorecard rule: everyday object you hold + one \"what makes it snap / lock\"; our own model, script, words and sound",
  "topic": "Flip (folding) car key: a torsion spring around the pivot is wound when the blade is folded; the button's teeth sit in notches in the case and lock it; pressing the button frees it, the spring snaps the blade out, and the teeth pop back into the notches to lock it open.",
@@ -55,5 +55,10 @@
  "sources": [
   "https://patents.google.com/patent/US7370501",
   "https://patents.google.com/patent/US8978429"
- ]
+ ],
+ "status": "scheduling",
+ "version": "v2",
+ "qualityAudit": "HARD GATE v2 PASS: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz, 24.50 s; first/last luma 36.3/35.3; -15.0 LUFS, -3.1 dBTP, HP4k gap 20.4 dB; kin.py PASS (unchanged); text and key action in safe zones (safe_0.5s checked); 6 stills looked at, no defects.",
+ "clarity": "fresh reviewer 19 Nov 20:45 (v1 frames + VO): correct, 14yo YES (minor: button turns with blade only implied)",
+ "visualScore": "5/10 (v1) -> rule B: 3 fixes once, no re-score: (1) outside shots closer + centred on the whole fob, (2) hard cut into the top view (v1 camera flew through the housing = grey frame at 14.5 s), (3) CTA clear of the key ring / labels inside the frame"
 }
