@@ -155,7 +155,7 @@ const k_ = (t, a) => [t, ...a];
 const OUTK = (d = 900, az = 4) => [15, 50, 0, d, 6, az];
 const INK = (ty = -70, d = 900, az = 0, el = 12) => [3000, ty, 0, d, el, az];
 const CAMK = [k_(0, OUTK(860, 3)), k_(T.cutIn - 0.75, OUTK(900, 5)), k_(T.cutIn - 0.01, [15, 0, 0, 380, 4, 4]),
-  k_(T.cutIn, INK(-22, 560, 8, 20)), k_(T.vo2 - 0.01, INK(-26, 520, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-47, 360, 0, 14)), k_(T.vo4 - 0.01, INK(-46, 345, -6, 15)),
+  k_(T.cutIn, INK(-22, 560, 8, 20)), k_(T.vo2 - 0.01, INK(-26, 520, 4, 19)), k_(T.vo2, INK(-52, 400, 4, 16)), k_(T.vo3 - 0.01, INK(-55, 370, 2, 15)), k_(T.vo3, INK(-64, 360, 0, 14)), k_(T.vo4 - 0.01, INK(-63, 345, -6, 15)),
   k_(T.vo4, INK(-36, 330, -6, 24)), k_(T.vo5 - 0.01, INK(-34, 320, -10, 25)), k_(T.vo5, INK(-42, 430, -18, 17)), k_(T.out - 0.01, INK(-42, 450, -52, 17)),
   k_(T.out, OUTK(900, 5)), k_(LOOP, OUTK(860, 3))];
 // ---------- overlay ----------
@@ -174,18 +174,18 @@ function inset(g2, mph) { const phi = mph / G.MPH_MAX * G.SWEEP;   // small dial
   g2.fillStyle = '#222'; g2.beginPath(); g2.arc(cx, cy, 12, 0, 7); g2.fill(); g2.restore();
   S.outlined(g2, Math.round(mph) + ' MPH', cx, cy + 82, 46, '#ffffff'); }
 function topView(g2, mag, phi) {   // SEEN FROM ABOVE: magnet N/S halves, cup ring, induced cup poles trailing the magnet poles, attraction arrows
-  const cx = 645, cy = 1255, Rm = 72, R0 = 92, R1 = 112; const P = (a, r) => [cx + Math.sin(a) * r, cy + Math.cos(a) * r];
-  g2.save(); g2.fillStyle = 'rgba(8,9,12,0.86)'; S.rrect(g2, 380, 1070, 530, 368, 22); g2.fill();
+  const cx = 645, cy = 1250, Rm = 84, R0 = 104, R1 = 128; const P = (a, r) => [cx + Math.sin(a) * r, cy + Math.cos(a) * r];
+  g2.save(); g2.fillStyle = 'rgba(8,9,12,0.86)'; S.rrect(g2, 380, 1008, 530, 432, 22); g2.fill();
   g2.fillStyle = '#c9ced6'; g2.beginPath(); g2.arc(cx, cy, R1, 0, 7); g2.arc(cx, cy, R0, 0, 7, true); g2.fill();
   const am = WIN0 + Math.PI - phi; const [mx, my] = P(am, (R0 + R1) / 2); g2.fillStyle = '#ffb21f'; g2.beginPath(); g2.arc(mx, my, 7, 0, 7); g2.fill();
   for (const [off, col, L] of [[0, '#d8352a', 'N'], [Math.PI, '#3466d0', 'S']]) { const c = Math.PI / 2 - mag + off;
     g2.fillStyle = col; g2.beginPath(); g2.moveTo(cx, cy); for (let i = 0; i <= 24; i++) { const a = c - Math.PI / 2 + Math.PI * i / 24; g2.lineTo(...P(a, Rm)); } g2.closePath(); g2.fill();
-    g2.fillStyle = '#fff'; g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; const [lx, ly] = P(c, Rm * 0.55); g2.fillText(L, lx, ly);
-    const ci = c + LAG, [px, py] = P(ci, (R0 + R1) / 2); g2.fillStyle = '#ffb23a'; g2.strokeStyle = '#120a00'; g2.lineWidth = 4; g2.beginPath(); g2.arc(px, py, 22, 0, 7); g2.fill(); g2.stroke();
-    g2.fillStyle = '#120a00'; g2.font = '34px Anton'; g2.fillText(L === 'N' ? 'S' : 'N', px, py + 1);
-    const pts = []; for (let i = 0; i <= 10; i++) pts.push(P(ci - 0.12 - (LAG - 0.12) * 0.75 * i / 10, R1 + 16)); arrowPath(g2, pts, 1, '#ffd21f', 7); }
+    g2.fillStyle = '#fff'; g2.font = '48px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; const [lx, ly] = P(c, Rm * 0.55); g2.fillText(L, lx, ly);
+    const ci = c + LAG, [px, py] = P(ci, (R0 + R1) / 2); g2.fillStyle = '#ffb23a'; g2.strokeStyle = '#120a00'; g2.lineWidth = 4; g2.beginPath(); g2.arc(px, py, 30, 0, 7); g2.fill(); g2.stroke();
+    g2.fillStyle = '#120a00'; g2.font = '46px Anton'; g2.fillText(L === 'N' ? 'S' : 'N', px, py + 1);
+    const pts = []; for (let i = 0; i <= 10; i++) pts.push(P(ci - 0.12 - (LAG - 0.12) * 0.75 * i / 10, R1 + 16)); arrowPath(g2, pts, 1, '#ffd21f', 8); }
   g2.fillStyle = '#ddd'; g2.beginPath(); g2.arc(cx, cy, 8, 0, 7); g2.fill(); g2.restore();
-  S.outlined(g2, 'SEEN FROM ABOVE', cx, 1112, 44, '#ffffff'); S.outlined(g2, 'CUP = WEAK MAGNET, PULLED ALONG', cx, 1425, 38 + 6, '#ffb23a'); }
+  S.outlined(g2, 'SEEN FROM ABOVE', cx, 1056, 44, '#ffffff'); S.outlined(g2, 'CUP = WEAK MAGNET, PULLED ALONG', cx, 1428, 44, '#ffb23a'); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const ins = insideAt(t); const mag = k[1], phi = k[2], drag = k[6];
   { let fx = 0; for (const c of [T.cutIn, T.out]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.7 * Math.max(0, fx)); }
@@ -215,7 +215,7 @@ function overlay(t) {
     if (bal) { g2.save(); g2.fillStyle = 'rgba(10,12,16,0.85)'; S.rrect(g2, 380, 1290, 530, 140, 20); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 4; g2.stroke(); g2.restore();
       S.outlined(g2, 'PULL = SPRING', 645, 1350, 54, '#ffd21f'); S.outlined(g2, '→ NEEDLE STOPS', 645, 1412, 50, '#ffffff'); } }
   if (s5) { arrowPath(g2, arc(26, mc - 14, 1.0, 2.2), 1, '#ffffff', 9 + 5 * Math.min(1, Math.max(0, (k[4] - 0.7) / 0.8)));
-    const fast = t >= T.fastA; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.85)'; S.rrect(g2, 380, 1300, 530, 110, 20); g2.fill(); g2.restore();
+    const fast = k[7] > 25.5; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.85)'; S.rrect(g2, 380, 1300, 530, 110, 20); g2.fill(); g2.restore();
     S.outlined(g2, (fast ? 'FAST SPIN: ' : 'SLOW SPIN: ') + Math.round(k[7]) + ' MPH', 645, 1377, 58, fast ? '#ffd21f' : '#ffffff'); }
   K.TXT.answer(g2, hard(t, T.out, LOOP + 1), 'A SPINNING MAGNET', 'DRAGS THE NEEDLE', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
