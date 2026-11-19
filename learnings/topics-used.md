@@ -66,9 +66,10 @@ Update this file every time a video is scheduled.
 | 2026-11-19 17:00 | p070 | How a click pen works | click pen | retractable pen, ballpoint click mechanism, push-push rotating cam (scheduled 18 Nov 13:07 run) |
 | 2026-11-19 01:00 | p071 | What holds an umbrella open | umbrella catch | umbrella runner, top spring catch, umbrella lock, stick umbrella (scheduled 18 Nov 22:06 run) |
 | 2026-11-20 01:00 | p072 | How does a toilet know it's full | toilet fill valve | ballcock, float valve, cistern fill valve, toilet tank float (scheduled 18 Nov 22:06 run) |
+| 2026-11-20 17:00 | p073 | How one cable squeezes both sides | bike v-brake | v-brake, linear-pull rim brake, bicycle rim brake, brake cable casing, noodle (scheduled 19 Nov 01:09 run) |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
 BLOCKED from the 1M+ list: #7 pin tumbler lock (= p010, 29 Oct). #8 spring scale = p068 (17 Nov). #9 car clutch = p069 (18 Nov). The 1M+ list is finished: next topics come from the scorecard list (learnings/reel-scorecard-2026-11-16.md: retractable pen click next) and new 1M+ finds in reports/outliers.md.
 
-IN PROGRESS: p073 bike v-brake (wip/p073, clarity gate failed twice, NOT scheduled; topic key 'bike v-brake' reserved for it) - 18 Nov 22:06 run.
+IN PROGRESS (not published, keys reserved): p074 nail clipper (wip/p074, visual 4 + clarity NO, NOT scheduled - 19 Nov 01:09 run).

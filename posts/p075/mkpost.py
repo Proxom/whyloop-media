@@ -22,7 +22,7 @@ alt = ("3D animation of a steel electric kettle with a voiceover. Under the ques
        "4, the strip flips the switch: the bending strip lifts a rod, the switch clicks up, the contacts move apart and the badge shows power off. "
        "The payoff reads Steam bends the strip, the strip turns it off, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES A KETTLE KNOW', "IT'S BOILING?", 'METAL STRIP', 'SWITCH', 'POWER:', 'ON', 'OFF', 'STEAM GOES DOWN A TUBE', 'STEAM', 'STEAM TUBE', 'BOILING WATER',
-      'IT HEATS A TWO-METAL STRIP', 'STEEL', 'COPPER', 'COPPER GROWS MORE: IT BENDS', 'STEEL: GROWS A LITTLE', 'COPPER: GROWS MORE', 'HOT!', 'JOINED: IT HAS TO BEND', 'UP!',
+      'IT HEATS A TWO-METAL STRIP', 'STEEL', 'COPPER', 'COPPER GROWS MORE: IT BENDS', 'STEEL: GROWS A LITTLE', 'COPPER: GROWS MORE', 'HOT!', 'JOINED: IT HAS TO BEND', 'BENDS UP!',
       'THE STRIP FLIPS THE SWITCH', 'ROD', 'CONTACTS APART', 'CLICK!', 'STEAM BENDS THE STRIP', 'THE STRIP TURNS IT OFF', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p075', track='A', group='E', slot='', topicKey='kettle switch',
