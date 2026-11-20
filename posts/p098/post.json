@@ -69,7 +69,7 @@
   "cover": "wip/p098/fuelgauge_cover_v2.jpg",
   "duration": 28.04
  },
- "status": "ready",
+ "status": "scheduled",
  "mediaUrls": [
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p098/fuelgauge_reel_v2.mp4"
  ],
@@ -77,5 +77,7 @@
  "reviews": {
   "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gaps: power source/ground, gauge internals) -> v2 adds battery + ground loop",
   "visual": "5/10 -> rule B 3 fixes once + text-overlap fixes, no re-score"
- }
+ },
+ "scheduledAt": "2026-11-25T21:00 Europe/London",
+ "metricoolPostId": 435019329
 }

@@ -1,0 +1,125 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p101 clipless (SPD-style) pedal "HOW DOES THE SHOE / CLICK IN?" (group V, track A). Built from kit/kit.js. Units mm, y up, x = toe, z = outward (crank at -z).
+// kin.json rows: [t, Qx, Qy, phi, theta, psi, slow]  (see kin.py)
+import * as K from '/kit/kit.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, D2R = Math.PI / 180, PIN = G.PIN;
+const st = K.makeKit({ fov: 30, bg: 0x1c2027, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+M.alu = phys({ color: 0xb9bec6, metalness: 1, roughness: 0.32, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.25 });
+M.jaw = phys({ color: 0x8d939c, metalness: 1, roughness: 0.28, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.3 });
+M.spr = phys({ color: 0x2a2c30, metalness: 0.9, roughness: 0.35, envMapIntensity: 1.2 });
+M.cleat = phys({ color: 0xc9a24a, metalness: 1, roughness: 0.3, envMapIntensity: 1.25 });
+M.boss = phys({ color: 0x1d1f23, roughness: 0.55, metalness: 0.4 });
+M.sole = phys({ color: 0x18191c, roughness: 0.85, bumpMap: M.rubber.bumpMap, bumpScale: 0.3, transparent: true });
+M.upper = phys({ color: 0x24324a, roughness: 0.7, sheen: 0.6, sheenColor: new THREE.Color(0x4a6a9a), clearcoat: 0.15, transparent: true });
+M.stripe = phys({ color: 0xe8e8e8, roughness: 0.5, transparent: true });
+M.crank = phys({ color: 0x141518, metalness: 0.6, roughness: 0.35, clearcoat: 0.6 });
+const extrudeZ = (pts, w, mat, bev = 0.4) => { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y)); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: w - 2 * bev, bevelEnabled: bev > 0, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 24 }); g.translate(0, 0, -(w - 2 * bev) / 2); return new THREE.Mesh(g, mat); };
+// ---------- pedal (fixed) ----------
+const PED = new THREE.Group(); scene.add(PED);
+const body = add(extrudeZ([[-46, -20], [30, -20], [36, -12], [36, -2], [30, 0], [-46, 0], [-50, -4], [-50, -16]], 46, M.alu, 1.2), PED);
+add(extrudeZ([[18.3, 0], [27, 0], [27, 7], [19.5, 7], [15.8, 4.2], [18.3, 3.2]], 34, M.jaw, 0.3), PED);                 // front jaw (fixed)
+const post = add(new THREE.Mesh(new RoundedBoxGeometry(5, 10, 34, 2, 1), M.alu), PED); post.position.set(-42.5, 5, 0);   // spring stop
+const REARG = new THREE.Group(); REARG.position.set(PIN[0], PIN[1], 0); PED.add(REARG);
+const REARM = add(extrudeZ([[-18.3, 0], [-21, 0], [-21, -3], [-27, -3], [-27, 8], [-19.5, 8], [-15.8, 5.0], [-15.8, 3.7], [-16.3, 3.2], [-18.3, 3.2]].map(([x, y]) => [x - PIN[0], y - PIN[1]]), 34, M.jaw, 0.3), REARG);
+for (const z of [-24, 24]) { const p = add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 3, 24), M.chrome), PED); p.rotation.x = Math.PI / 2; p.position.set(PIN[0], PIN[1], z); }
+const SPR = []; for (const z of [-9, 9]) { const s = K.spring(M.spr, { R: 3.2, wire: 0.75, turns: 6, len: 13 }); s.rotation.z = -Math.PI / 2; s.position.set(-40, 4, z); PED.add(s); SPR.push(s); }
+{ const ax = add(new THREE.Mesh(new THREE.CylinderGeometry(4.5, 4.5, 30, 32), M.chrome), PED); ax.rotation.x = Math.PI / 2; ax.position.set(0, -10, -36); }
+{ const cr = add(new THREE.Mesh(new RoundedBoxGeometry(34, 200, 14, 4, 6), M.crank), PED); cr.position.set(-18, -100, -56); cr.rotation.z = 0.2; }
+// ---------- cleat + shoe (nested pose groups) ----------
+const GP = new THREE.Group(); scene.add(GP); const GT = new THREE.Group(); GP.add(GT); const GO = new THREE.Group(); GO.position.set(-17.8, -3, 0); GT.add(GO);
+const GW = new THREE.Group(); GW.position.set(2.8, 0, 0); GO.add(GW); const GL = new THREE.Group(); GL.position.set(-2.8, 0, 0); GW.add(GL);
+{ const sh = new THREE.Shape(); sh.moveTo(-17.8, -15); sh.lineTo(2.8, -15); sh.absarc(2.8, 0, 15, -Math.PI / 2, Math.PI / 2, false); sh.lineTo(-17.8, 15); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 2.6, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.3, bevelSegments: 2, curveSegments: 32 }); g.rotateX(Math.PI / 2); g.translate(0, 2.8, 0); add(new THREE.Mesh(g, M.cleat), GL); }
+const BOSS = add(new THREE.Mesh(new RoundedBoxGeometry(22, 6.2, 22, 2, 1.5), M.boss), GL); BOSS.position.set(0, 6, 0);
+for (const x of [-6, 6]) { const b = add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 1.2, 6), M.chrome), GL); b.position.set(x, 9.4, 0); b.visible = false; }
+const SOLE = add(new THREE.Mesh(new RoundedBoxGeometry(270, 13, 96, 4, 5), M.sole), GL); SOLE.position.set(-35, 15.5, 0);
+const UP = add(extrudeZ([[-168, 21], [96, 21], [100, 34], [86, 56], [40, 74], [-60, 92], [-120, 112], [-165, 112], [-176, 70]], 86, M.upper, 10), GL);
+const STR = add(extrudeZ([[-150, 22], [88, 22], [92, 27], [-152, 27]], 98, M.stripe, 0.6), GL);
+S.shadowAll(scene);
+K.backdrop(scene, { floorY: -130, R: 200, zBack: -1400, h: 5000, width: 9000, wall: '#2a3140', floor: '#2b3038', pool: true, catcher: 4000, shadowOpacity: 0.45 });
+const RIG = K.lightRig(scene, V(0, 10, 0), 140, { key: 2.6, rim: 2.8, fill: 0.6 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.9); f.position.set(300, 500, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.1); g.position.set(-500, 300, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j >= 6 ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.vo6;
+let KK = null;
+const rearPt = (x, y, z = 0) => { const p = V(x - PIN[0], y - PIN[1], z).applyAxisAngle(V(0, 0, 1), (KK ? KK[5] : 0) * D2R); return p.add(V(PIN[0], PIN[1], 0)); };
+function setScene(t) {
+  const k = KK = kin(t); GP.position.set(k[1], k[2], 0); GT.rotation.z = k[3] * D2R; GW.rotation.y = k[4] * D2R; REARG.rotation.z = k[5] * D2R;
+  const back = rearPt(-27, 4); for (const s of SPR) s.setLength(Math.max(4, back.x - (-40)));
+  const ins = inside(t); const op = ins ? 0.28 : 1; for (const m of [M.sole, M.upper, M.stripe]) { m.opacity = op; m.depthWrite = !ins; }
+  UP.visible = !(ins && t > T.vo5 - 0.1); STR.visible = !ins;
+  const sq = Math.min(1, k[5] / 10);
+  for (const s of SPR) K.glow(s, ins && t > T.vo2 + 0.3 && t < T.vo4 ? 0.3 + 0.7 * sq : (ins && t > T.vo5 ? sq : 0));
+  K.glow(REARM, ins && ((t > T.vo2 + 0.3 && t < T.vo3 + 1.2) || (t > T.twA && t < T.liftB)) ? 0.5 + 0.5 * sq : 0);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const OUT = (d = 1250, az = 38, el = 22) => [-38, 30, 0, d, el, az];
+const SIDE = (d = 290, x = -6, y = 2, el = 6, az = 4) => [x, y, 0, d, el, az];
+const TW = (d = 330, el = 58, az = 28) => [-8, 4, 0, d, el, az];
+const CAMK = [k_(0, OUT(1260, 36)), k_(T.cutIn - 0.01, OUT(1180, 32)),
+  k_(T.cutIn, SIDE(300, -2)), k_(T.vo2 - 0.01, SIDE(280, 0)), k_(T.vo2, SIDE(270, -10, 3)), k_(T.vo3 + 1.6, SIDE(260, -12, 3)),
+  k_(T.vo4, SIDE(320, -6, 6, 8, 10)), k_(T.vo5 - 0.01, SIDE(310, -6, 6, 8, 10)),
+  k_(T.vo5, TW(360, 52, 20)), k_(T.twA, TW(330, 58, 26)), k_(T.liftB, TW(330, 58, 30)), k_(T.vo6 - 0.01, TW(370, 50, 32)),
+  k_(T.vo6, OUT(1200, 30)), k_(LOOP, OUT(1260, 36))];
+// ---------- overlay ----------
+const sp = (x, y, z) => S.toScreen(camera, V(x, y, z));
+const cw = (x, y, z) => S.toScreen(camera, GL.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t);
+  { let fx = 0; for (const c of [T.cutIn, T.vo5, T.vo6]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); fx = Math.max(fx, t < 1.2 ? 1 - Math.abs(t - 0.75) / 0.06 : 0); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES THE SHOE', 'CLICK IN?', 100); const [cx, cy] = sp(-22, 6, 17); K.TXT.circle(g2, 1, cx, cy, 70, [-200, 170]); }
+  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.vo6);
+  K.TXT.step(g2, s1, 1, 'CLEAT HOOKS UNDER THE FRONT JAW', 54);
+  K.TXT.step(g2, s2, 2, 'HEEL DOWN: CLEAT PUSHES THE BACK JAW', 50);
+  K.TXT.step(g2, s3, 3, 'THE SPRING SNAPS IT SHUT: CLICK', 54);
+  K.TXT.step(g2, s4, 4, 'PULL UP: STILL LOCKED', 60);
+  K.TXT.step(g2, s5, 5, 'TWIST THE HEEL OUT: FREE', 58);
+  if (s1) { S.tag(g2, 1, 'CLEAT', ...cw(-6, 1.5, 15), -40, 330, 50, '#ffd21f'); S.tag(g2, hard(t, T.vo1 + 1.0, T.vo2), 'FRONT JAW', ...sp(23, 6, 17), 60, -260, 48, '#ffffff');
+    S.tag(g2, hard(t, T.vo1 + 1.8, T.vo2), 'BACK JAW', ...sp(-23, 7, 17), -60, -330, 48, '#ffffff'); }
+  if (s2) { const [hx, hy] = cw(-30, 16, 40); arrowC(g2, hard(t, T.vo2 + 0.3, T.vo3 - 0.5), hx, hy - 220, hx, hy - 50, 30, '#ffd21f');
+    S.tag(g2, hard(t, T.vo2 + 1.5, T.vo3), 'SPRING SQUEEZED', ...sp(-34, 4, 9), -60, 300, 50, '#ffb21f');
+    const [jx, jy] = sp(-17, 5, 17); arrowC(g2, hard(t, T.vo2 + 1.2, T.vo3) * (k[5] > 1 ? 1 : 0), jx, jy + 120, jx - 150, jy + 120, 22, '#ff8a3a'); }
+  if (s3) { const a = hard(t, T.snap - 0.05, T.vo4); S.tag(g2, a, 'CLICK: LOCKED', ...sp(-17, 4, 17), -80, 300, 56, '#7dff9a'); S.outlined(g2, 'SLOW MOTION', 300, 640, 46, '#ffd21f'); }
+  if (s4) { const [ax, ay] = cw(-6, 30, 0); const w = 0.5 + 0.5 * Math.sin(t * 8); arrowC(g2, hard(t, T.vo4 + 0.3, T.vo5 - 0.3), ax, ay - 30, ax, ay - 180 - 20 * w, 28, '#ffd21f');
+    S.tag(g2, hard(t, T.vo4 + 1.2, T.vo5), 'HELD HERE', ...sp(17, 3.6, 17), 40, 300, 50, '#7dff9a'); S.tag(g2, hard(t, T.vo4 + 1.2, T.vo5), 'AND HERE', ...sp(-17, 3.6, 17), -40, 300, 50, '#7dff9a'); }
+  if (s5) { const a = hard(t, T.vo5 + 0.5, T.liftA);
+    if (a) { g2.save(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 12; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath();
+      for (let i = 0; i <= 30; i++) { const q = (-6 + 28 * i / 30) * D2R; const [x, y] = sp(2.8 - 120 * Math.cos(q), 10, 120 * Math.sin(q)); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke();
+      const [ex, ey] = sp(2.8 - 120 * Math.cos(22 * D2R), 10, 120 * Math.sin(22 * D2R)), [px, py] = sp(2.8 - 120 * Math.cos(19 * D2R), 10, 120 * Math.sin(19 * D2R)); const an = Math.atan2(ey - py, ex - px);
+      g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.moveTo(ex + 34 * Math.cos(an), ey + 34 * Math.sin(an)); g2.lineTo(ex + 24 * Math.cos(an + 2.2), ey + 24 * Math.sin(an + 2.2)); g2.lineTo(ex + 24 * Math.cos(an - 2.2), ey + 24 * Math.sin(an - 2.2)); g2.closePath(); g2.fill(); g2.restore();
+      S.tag(g2, hard(t, T.vo5 + 0.5, T.twA + 0.6), 'HEEL OUT', ex, ey, 60, 240, 50, '#ffd21f'); }
+    S.tag(g2, hard(t, T.twA + 0.6, T.liftA), 'CORNER PUSHES THE JAW', ...sp(-18.5, 3.5, 12), -40, 300, 48, '#ff8a3a');
+    S.tag(g2, hard(t, T.liftA, T.vo6), 'FREE', ...cw(0, 3, 0), 80, -200, 56, '#7dff9a'); }
+  K.TXT.answer(g2, hard(t, T.vo6, LOOP + 1), 'PUSH DOWN: CLICK IN', 'TWIST HEEL: OUT', 520);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
