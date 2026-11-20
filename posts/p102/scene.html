@@ -1,0 +1,164 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p102 pencil tire gauge "HOW DOES THE STICK / KNOW THE PRESSURE?" (group V, track A). Built from kit/kit.js. Units mm.
+// AX group = valve axis (local +y), tilted 28 deg; gauge group GA inside AX moves along y (gy). Gauge mouth at local y 0.
+// kin.json rows: [t, gy, d (piston travel), s (stick travel), open]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, H = G.H;
+const st = K.makeKit({ fov: 30, bg: 0x1d2129, envIntensity: 1.15, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.tube = phys({ color: 0xe9edf2, metalness: 1, roughness: 0.14, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.45 });
+M.knurl = phys({ color: 0xaab0b8, metalness: 1, roughness: 0.42, envMapIntensity: 1.2 });
+M.inner = phys({ color: 0x7b828c, metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide });
+M.piston = phys({ color: 0x2a2c30, roughness: 0.8, bumpMap: M.rubber.bumpMap, bumpScale: 0.2 });
+M.seal = phys({ color: 0x1a1a1a, roughness: 0.85 });
+M.cap = phys({ color: 0x1f6fd1, roughness: 0.35, clearcoat: 0.5 });
+M.tire = phys({ color: 0x181818, roughness: 0.9, bumpMap: M.rubber.bumpMap, bumpScale: 0.8 });
+M.rim = phys({ color: 0x9ea4ab, metalness: 1, roughness: 0.32, envMapIntensity: 1.2 });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#c92a20'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(80,8,4,0.5)'; g.lineWidth = 6;
+  for (let i = -64; i < 128; i += 20) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.3, 0.3); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.5, side: THREE.DoubleSide });
+// stick texture: white rod, marks every 2 psi, numbers every 10 (mark for P at m = STOP_TOP - (PIST_Y+PIST_H+CAP_H) - P from the rod start)
+const M0 = G.STOP_TOP - (G.PIST_Y + G.PIST_H + G.CAP_H);
+const stickTex = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 4096; const g = c.getContext('2d'); g.fillStyle = '#f4f2ec'; g.fillRect(0, 0, 512, 4096);
+  const py = (m) => (1 - m / G.ROD_L) * 4096; g.fillStyle = '#16181c'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let p = 0; p <= 60; p += 2) { const y = py(M0 - p); const big = p % 10 === 0; g.fillRect(0, y - (big ? 7 : 4), 512, big ? 14 : 8); }
+  g.font = 'bold 64px Anton';
+  for (let p = 10; p <= 60; p += 10) { const y = py(M0 - p) - 40; g.fillStyle = p === 30 ? '#c8231a' : '#16181c'; for (const x of [0, 512]) g.fillText(String(p), x, y); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; })();
+M.stick = phys({ color: 0xffffff, map: stickTex, roughness: 0.38, clearcoat: 0.3 });
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const lathe = (P, mat, p, a0 = 0, a1 = 2 * Math.PI, seg = 96) => { const m = new THREE.Mesh(new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, a1 - a0), mat.side === THREE.DoubleSide ? mat : (() => { const c = mat.clone(); c.side = THREE.DoubleSide; return c; })()); return add(m, p); };
+const capShape = (P, sx) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(sx * r, y) : sh.moveTo(sx * r, y)); return sh; };
+// ---------- wheel lying flat: rim + tire, valve at the rim edge ----------
+const WC = V(175, -48, -10);
+{ const rim = add(new THREE.Mesh(new THREE.CylinderGeometry(205, 205, 16, 160), M.rim)); rim.position.set(WC.x, -48, WC.z);
+  const tire = add(new THREE.Mesh(new THREE.TorusGeometry(262, 62, 48, 200), M.tire)); tire.rotation.x = Math.PI / 2; tire.position.set(WC.x, -52, WC.z);
+  for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2; const b = add(new THREE.Mesh(new THREE.BoxGeometry(14, 6, 30), M.tire)); b.position.set(WC.x + 322 * Math.cos(a), -52, WC.z + 322 * Math.sin(a)); b.rotation.y = -a; } }
+const AX = new THREE.Group(); AX.position.set(0, -40, 0); AX.rotation.z = -28 * Math.PI / 180; scene.add(AX);
+const VB = 42.8;                                                   // valve length below the lip (lip at gauge local 2.8 -> AX y = VB)
+const VAL = new THREE.Group(); VAL.position.y = VB - G.VALVE_TOP; AX.add(VAL);   // valve frame: same local coords as the gauge (engaged)
+lathe([[0.01, -40], [9, -40], [6.5, -26], [4.8, -26], [4.8, -40 + 0.01]], M.tire, VAL);           // rubber snap-in base
+lathe([[3.1, -26], [4.0, -26], [4.0, 2.8], [3.1, 2.8]], M.brass, VAL);                        // brass stem
+for (let y = -6; y < 2.4; y += 1.1) { const r = add(new THREE.Mesh(new THREE.TorusGeometry(4.0, 0.32, 8, 40), M.brass), VAL); r.rotation.x = Math.PI / 2; r.position.y = y; }
+const VPIN = add(new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 10, 16), M.brass), VAL);
+// ---------- gauge (moves along AX y by gy) ----------
+const GA = new THREE.Group(); VAL.add(GA);
+const FULL = new THREE.Group(), CUT = new THREE.Group(); GA.add(FULL); GA.add(CUT);
+const PROF = {
+  chuck: [[4.5, -6.5], [8.2, -6.5], [10.6, -2.5], [11.2, 4], [10.4, 10], [9, 14], [1.6, 14], [1.6, 6], [4.5, 6]],
+  tube: [[G.TUBE_RI, 14], [G.TUBE_RO, 14], [G.TUBE_RO, G.STOP_Y], [G.TUBE_RI, G.STOP_Y]],
+  stop: [[G.HOLE_R, G.STOP_Y], [G.TUBE_RO + 0.2, G.STOP_Y], [G.TUBE_RO + 0.2, G.STOP_TOP], [G.HOLE_R, G.STOP_TOP]],
+  seal: [[1.6, G.SEAL_Y], [4.5, G.SEAL_Y], [4.5, 6], [1.6, 6]],
+};
+const MAT = { chuck: M.tube, tube: M.tube, stop: M.tube, seal: M.seal };
+for (const k in PROF) { lathe(PROF[k], MAT[k], FULL); lathe(PROF[k], MAT[k], CUT, Math.PI / 2, 3 * Math.PI / 2);
+  for (const sx of [1, -1]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(PROF[k], sx)), k === 'seal' ? M.seal : M.sec), CUT); m.position.z = 0.03; } }
+for (const g of [FULL]) { for (let i = 0; i < 16; i++) { const y = 96 + i * 1.1; const r = add(new THREE.Mesh(new THREE.TorusGeometry(G.TUBE_RO + 0.15, 0.32, 6, 64), M.knurl), g); r.rotation.x = Math.PI / 2; r.position.y = y; } }
+{ const back = lathe([[G.TUBE_RI - 0.02, 14], [G.TUBE_RI - 0.01, 14], [G.TUBE_RI - 0.01, G.STOP_Y], [G.TUBE_RI - 0.02, G.STOP_Y]], M.inner, CUT, Math.PI / 2, 3 * Math.PI / 2); }
+const GPIN = add(new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 6.5, 16), M.brass), GA); GPIN.position.y = G.GPIN_BOT + 3.25;
+// pocket clip on the outside
+{ const clip = add(new THREE.Mesh(new THREE.BoxGeometry(3, 46, 1.4), M.tube), FULL); clip.position.set(0, 102, G.TUBE_RO + 1.6); }
+const PIST = new THREE.Group(); GA.add(PIST);
+lathe([[0.01, 0], [G.TUBE_RI - 0.05, 0], [G.TUBE_RI - 0.05, G.PIST_H], [0.01, G.PIST_H]], M.piston, PIST, 0, 2 * Math.PI, 64);
+const SPR = K.spring(M.steel, { R: G.SPR_R, wire: G.SPR_W, turns: G.SPR_TURNS, len: 80 }); GA.add(SPR);
+const STK = new THREE.Group(); GA.add(STK);
+add(new THREE.Mesh(new THREE.CylinderGeometry(G.CAP_R, G.CAP_R, G.CAP_H, 40), M.cap), STK).position.y = G.CAP_H / 2;
+{ const g = new THREE.CylinderGeometry(G.ROD_R, G.ROD_R, G.ROD_L, 40, 1); g.translate(0, G.CAP_H + G.ROD_L / 2, 0); add(new THREE.Mesh(g, M.stick), STK); }
+S.shadowAll(scene);
+K.backdrop(scene, { floorY: -115, R: 200, zBack: -1400, h: 5000, width: 9000, wall: '#2b3240', floor: '#2a2e36', pool: true, catcher: 3000, shadowOpacity: 0.5 });
+const RIG = K.lightRig(scene, V(0, 40, 0), 200, { key: 2.5, rim: 3.0, fill: 0.55 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(300, 500, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.3); g.position.set(-600, 300, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j >= 4 ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.outA;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const gy = k[1], d = k[2], s = k[3];
+  GA.position.y = gy; PIST.position.y = G.PIST_Y + d; STK.position.y = G.PIST_Y + G.PIST_H + s;
+  const pt = G.PIST_Y + G.PIST_H + d; SPR.position.y = pt; SPR.setLength(G.STOP_Y - pt);
+  VPIN.position.y = Math.min(G.VPIN_REST, G.GPIN_BOT + gy) - 5;
+  const ins = inside(t); FULL.visible = !ins; CUT.visible = ins;
+  K.glow(SPR, ins && t > T.vo3 && t < T.vo4 ? 0.9 : 0); K.glow(STK.children[0], ins && t > T.vo4 + 1.6 && t < T.outA ? 1 : 0);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera: targets in gauge-local coords -> world ----------
+AX.updateMatrixWorld(true);
+const LW = (y) => { const v = VAL.localToWorld(V(0, y, 0)); return [v.x, v.y, v.z]; };
+const k_ = (t, y, dist, el, az, dx = 0) => { const w = LW(y); return [t, w[0] + dx, w[1], w[2], dist, el, az]; };
+const CAMK = [k_(0, 124, 570, 12, 22), k_(T.cutIn - 0.01, 124, 550, 12, 18),
+  k_(T.cutIn, 40, 230, 6, 2), k_(T.pressB + 0.4, 34, 200, 6, 0), k_(T.vo2 - 0.01, 40, 205, 6, 0),
+  k_(T.vo2, 62, 250, 6, 0), k_(T.vo3 - 0.01, 70, 262, 6, 0), k_(T.vo3, 74, 268, 6, 0), k_(T.vo4 - 0.01, 76, 272, 6, -2),
+  k_(T.vo4, 98, 340, 6, 0), k_(T.outA - 0.01, 100, 340, 6, 0),
+  k_(T.outA, 150, 150, 8, 14), k_(T.ans - 0.01, 146, 160, 8, 12), k_(T.ans, 150, 560, 10, 18, 20), k_(LOOP, 146, 580, 10, 20, 20)];
+// ---------- overlay ----------
+const pg = (x, y, z = 0) => S.toScreen(camera, GA.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+// air dots: fixed random points in gauge-local cylinder coords, drawn only in the chamber (below the piston) while there is air
+const rnd = (() => { let s = 1021; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const DOTS = Array.from({ length: 70 }, () => [rnd(), rnd(), rnd()]);
+function air(g2, t, k) {
+  const gy = k[1], d = k[2]; let amt = 0;
+  if (inside(t)) { if (t >= T.pressB - 0.1 && t < T.liftA) amt = Math.min(1, (t - (T.pressB - 0.1)) / 0.8); else if (t >= T.liftA && t < T.retB) amt = 1 - (t - T.liftA) / (T.retB - T.liftA); }
+  if (amt <= 0) return; const top = G.PIST_Y + d - 0.6;
+  g2.save(); for (let i = 0; i < DOTS.length * amt; i++) { const [a, b, c] = DOTS[i]; const y = 7 + (top - 7) * b; const r = (y < 14 ? 1.2 : G.TUBE_RI - 1) * Math.sqrt(a) * (c < 0.5 ? -1 : 1);
+    const wob = Math.sin(t * 6 + i) * 0.4; const [x, yy] = pg(r + wob, y, 0.5); g2.fillStyle = 'rgba(120,200,255,0.95)'; g2.beginPath(); g2.arc(x, yy, 7, 0, 7); g2.fill(); g2.strokeStyle = 'rgba(10,30,60,0.8)'; g2.lineWidth = 2; g2.stroke(); }
+  // incoming dots through the valve while it opens
+  if (t >= T.pressB - 0.1 && t < T.vo2 + 1.0) for (let i = 0; i < 10; i++) { const y = -18 + ((t * 30 + i * 3.1) % 22); const [x, yy] = pg(0.2 * Math.sin(i), y, 1); g2.fillStyle = 'rgba(120,200,255,0.95)'; g2.beginPath(); g2.arc(x, yy, 6, 0, 7); g2.fill(); }
+  g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const d = k[2], s = k[3];
+  { let fx = 0; for (const c of [T.cutIn, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  air(g2, t, k);
+  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.outA), s5 = hard(t, T.outA, T.ans);
+  // arrows + tags (drawn before the titles)
+  if (s1) { S.tag(g2, hard(t, T.cutIn + 0.3, T.vo2), 'VALVE', ...S.toScreen(camera, VAL.localToWorld(V(-4, -12, 0))), -170, 120, 50, '#ffffff');
+    S.tag(g2, hard(t, T.pressB, T.vo2), 'PIN OPENS IT', ...pg(0.8, 0.5, 0), 190, 150, 50, '#ffd21f'); S.tag(g2, hard(t, T.pressB + 1.0, T.vo2), 'AIR IN', ...pg(-5, 12, 0), -200, -40, 52, '#78c8ff'); }
+  if (s2) { const [x0, y0] = pg(0, G.PIST_Y + d - 9), [x1, y1] = pg(0, G.PIST_Y + d - 1); arrowC(g2, hard(t, T.vo2 + 0.2, T.vo3), x0 + (x0 - x1) * 2, y0 + (y0 - y1) * 2, x1, y1, 26, '#78c8ff');
+    S.tag(g2, 1, 'RUBBER PISTON', ...pg(G.TUBE_RI, G.PIST_Y + d + 2.5), 170, 90, 50, '#ffd21f'); S.tag(g2, hard(t, T.vo2 + 2.2, T.vo3), 'PUSHES THE STICK', ...pg(-G.ROD_R, G.PIST_Y + G.PIST_H + s + G.CAP_H + 14), -200, -40, 48, '#ffffff'); }
+  if (s3) { const yp = G.PIST_Y + d; const [ax, ay] = pg(-3, yp - 2), [bx, by] = pg(-3, yp - 14); arrowC(g2, 1, bx, by, ax, ay, 24, '#78c8ff');
+    const [cx, cy] = pg(3, yp + G.PIST_H + 14), [dx, dy] = pg(3, yp + G.PIST_H + 1.5); arrowC(g2, hard(t, T.vo3 + 0.1, T.vo4), cx, cy, dx, dy, 24, '#ffffff');
+    S.tag(g2, 1, 'SPRING PUSHES BACK', ...pg(G.SPR_R, yp + 30), 160, -60, 50, '#ffb21f'); S.tag(g2, hard(t, T.vo3 + 2.4, T.vo4), 'BALANCED HERE', ...pg(G.TUBE_RI, yp + 2.5), 150, 120, 50, '#7dff9a'); }
+  if (s4) { S.tag(g2, hard(t, T.liftB, T.outA), 'PISTON BACK', ...pg(G.TUBE_RI, G.PIST_Y + d + 2.5), 160, 110, 50, '#ffffff');
+    S.tag(g2, hard(t, T.retB + 0.4, T.outA), 'STICK STAYS', ...pg(-G.CAP_R, G.PIST_Y + G.PIST_H + s + 1), -180, -40, 52, '#ffd21f');
+    S.tag(g2, hard(t, T.vo4 + 2.6, T.outA), 'FRICTION HOLDS IT', ...pg(-G.HOLE_R, G.STOP_Y - 1), -230, 200, 50, '#ffd21f');
+    { const ym = G.PIST_Y + G.PIST_H + (d + s) / 2; S.tag(g2, hard(t, T.retB + 0.3, T.outA), 'NOT ATTACHED', ...pg(G.CAP_R * 0.3, G.PIST_Y + G.PIST_H + 4 + (s - 4) * 0.45), 200, -120, 48, '#7dff9a'); }
+    const [x0, y0] = pg(9, -1), [x1, y1] = pg(24, -1); arrowC(g2, hard(t, T.liftA + 0.15, T.retB + 0.2), x0, y0, x1, y1, 22, '#78c8ff'); S.tag(g2, hard(t, T.liftA + 0.15, T.retB + 0.2), 'AIR OUT', x1, y1, 120, -90, 48, '#78c8ff');
+    S.tag(g2, hard(t, T.liftA + 0.3, T.retB + 0.6), 'VALVE SHUTS', ...S.toScreen(camera, VAL.localToWorld(V(-4, -6, 0))), -190, -70, 48, '#ffffff'); }
+  if (s5) { const [rx, ry] = pg(G.ROD_R, G.STOP_TOP + 0.6);
+    S.tag(g2, hard(t, T.vo5 + 0.6, T.ans), 'READ IT HERE: 32 PSI', rx, ry, 140, 170, 54, '#ffd21f'); }
+  // hook
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES THE STICK', 'KNOW THE PRESSURE?', 88); const [cx, cy] = pg(0, G.STOP_TOP + 6); K.TXT.circle(g2, 1, cx, cy, 80, [-240, 160]); }
+  // step titles last (on top of everything)
+  K.TXT.step(g2, s1, 1, 'PRESS IT ON: AIR RUSHES IN', 58);
+  K.TXT.step(g2, s2, 2, 'AIR PUSHES THE PISTON UP', 60);
+  K.TXT.step(g2, s3, 3, 'A SPRING PUSHES BACK', 60);
+  K.TXT.step(g2, s4, 4, 'LIFT IT OFF: THE STICK STAYS', 56);
+  K.TXT.step(g2, s5, 5, 'READ THE NUMBER', 60);
+  if (t >= T.ans) { const y = 520; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.72)'; S.rrect(g2, 75, y - 120, 845, 250, 28); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 5; g2.stroke();
+    S.outlined(g2, 'AIR PUSHES, SPRING PUSHES BACK', S.CX, y - 10, 58, '#ffffff'); S.outlined(g2, 'STICK SHOWS THE PSI', S.CX, y + 85, 80, '#ffd21f'); g2.restore(); }
+  if (t >= LOOP - 1.4) { const text = 'FOLLOW → A NEW MACHINE EVERY DAY'; g2.save(); g2.font = '44px Anton'; const w = g2.measureText(text).width + 44; S.rrect(g2, 930 - w, 1395 - 34, w, 68, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = '#ffffff'; g2.lineWidth = 4; g2.stroke();
+    g2.fillStyle = '#fff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, 930 - w / 2, 1397); g2.restore(); }
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
