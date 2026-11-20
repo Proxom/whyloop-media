@@ -171,7 +171,7 @@ function overlay(t) {
   K.TXT.step(g2, s3, 3, 'PEPPERCORNS CRACK SMALLER AND SMALLER', 48);
   K.TXT.step(g2, s4, 4, 'ONLY TINY BITS FIT OUT', 56);
   if (t < T.pushA) S.caption(g2, s5, 'TIGHTEN THE KNOB: SMALLER GAP', 380, 52, '#ffffff', 5); else K.TXT.step(g2, s5, 5, 'TIGHTEN THE KNOB: SMALLER GAP', 54);
-  if (s1) { const [cx, cy] = wp(0, 12 + d); spin(g2, 1, cx, cy, 120); const [qx, qy] = wp(0, 62); spin(g2, hard(t, T.cutB + 0.3, T.vo2), qx, qy, 70); S.tag(g2, hard(t, T.cutB + 0.3, T.vo2), 'SHAFT (TURNS)', qx + 10, qy, 150, -40, 48, '#ffd21f'); S.tag(g2, hard(t, T.cutB, T.vo2), 'CONE (TURNS)', ...wp(-4, 20 + d, -4), -150, 260, 48, '#ffd21f');
+  if (s1) { const [cx, cy] = wp(0, 12 + d); spin(g2, 1, cx, cy, 120); const [qx, qy] = wp(0, 50); spin(g2, hard(t, T.cutB + 0.3, T.vo2), qx, qy, 70); S.tag(g2, hard(t, T.cutB + 0.3, T.vo2), 'SHAFT (TURNS)', qx + 10, qy, 160, 40, 48, '#ffd21f'); S.tag(g2, hard(t, T.cutB, T.vo2), 'CONE (TURNS)', ...wp(-4, 20 + d, -4), -150, 260, 48, '#ffd21f');
     S.tag(g2, hard(t, T.cutB + 0.6, T.vo2), 'RING (FIXED)', ...wp(16, 24), 150, -150, 48, '#ffffff'); }
   if (s2) { dbl(g2, hard(t, T.vo2, T.vo3), wp(-rR(28), 28), wp(-rCl(28 - d), 28)); S.tag(g2, hard(t, T.vo2 + 0.2, T.vo3), 'WIDE GAP', ...wp(-rR(28) - 1, 28), -120, -130, 50, '#ffd21f');
     dbl(g2, hard(t, T.vo2 + 1.4, T.vo3), wp(-rR(5), 5), wp(-rCl(5 - d), 5)); S.tag(g2, hard(t, T.vo2 + 1.6, T.vo3), 'NARROW GAP', ...wp(-rR(5) - 1, 5), -120, 150, 50, '#ffd21f'); }

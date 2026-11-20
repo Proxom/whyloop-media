@@ -22,6 +22,7 @@ def yflight(s): return 31.0 - 27.5 * s ** 1.25
 def piece(y, d):   # child piece radius + spread of the 4 pieces (cluster extent = spread + r)
     g = gap(min(max(y, 4), 30), d); p = (31 - y) / 27.5; r = min(1.6, 0.2 * g); sp = min(0.27 * g, 0.9 + 2.0 * p); return r, sp
 # ---- checks over one loop at 1/120 s ----
+RC = 2.4
 ok = True; mins = []
 for t in np.arange(0, LOOP, 1 / 120):
     d = dz(t)
@@ -34,6 +35,11 @@ for t in np.arange(0, LOOP, 1 / 120):
         if 4 <= y <= 30:
             r, sp = piece(y, d)
             if sp + r > 0.49 * gap(y, d): ok = False; print('piece overlaps', t, i, y, sp + r, gap(y, d))
+            if y <= 27.5 and sp + 1.05 * r > 0.495 * gap(y, d): ok = False; print('v2 shard overlaps', t, i, y)   # v2 shards drawn up to 1.05 r
+            if y > 27.5 and min(RC, 0.38 * gap(min(y, 30), d)) > 0.49 * gap(min(y, 30), d): ok = False; print('v2 whole corn overlaps', t, i, y)
+    # v2: exit bits fall from radius >= mid bottom gap + 0.3 (outward only); the recessed cone (local y 1..34) bottom must stay clear of them
+    gB = gap(4, d); rb = 0.2 * gB * 1.25 * 1.2; rbit = (rR(4) + rC(4, d)) / 2 + 0.3
+    if rbit - rb < rC(min(4, 1 + d + 3), d) + 0.05: ok = False; print('v2 exit bit touches cone', t)
 # static corns in the chamber above the ring (back half only), no overlap with each other / wall (r 14) / cone top / shaft
 rng = np.random.default_rng(97); corns = []; RC = 2.4
 tries = 0

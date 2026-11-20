@@ -14,15 +14,15 @@ Sources:
 Wikipedia, Burr mill (food is ground between two revolving abrasive surfaces separated by a distance set by the user; closer = finer, farther = coarser): https://en.wikipedia.org/wiki/Burr_mill
 US Patent 6,929,201, Adjustable spice grinder (an inner serrated cone inside an outer grinding member forms a tapered annular gap; turning the knob moves the shaft axially to adjust the gap and the coarseness): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/6929201
 Peppermate, Adjusting your pepper mill grind (turning the top knob changes the space between the burrs; tighter = less space = finer grind, looser = coarser): https://www.peppermate.com/blogs/recipes/dialing-in-deliciousness-adjusting-your-pepper-mill-grind"""
-alt = ("3D animation of a wooden pepper mill, with a voiceover. Under the question How does it crush pepper? a red circle marks the bottom of the mill while fine black pepper falls out of it. "
+alt = ("3D animation of a dark walnut pepper mill above a stone countertop, with a voiceover. Under the question How does it crush pepper? a red circle marks the bottom of the mill while fine black pepper falls out of it. "
        "The top of the mill twists, then the mill is cut in half: inside, peppercorns sit in the chamber above a bright grooved steel cone that turns inside a dark grooved steel ring. "
-       "1, a grooved cone turns in a ring: tags mark the cone (turns) and the ring (fixed). "
+       "1, a grooved cone turns in a ring: tags mark the shaft and the cone (both turn) and the ring (fixed). "
        "2, wide at the top, narrow at the bottom: yellow arrows measure a wide gap at the top and a narrow gap at the bottom. "
        "3, peppercorns crack smaller and smaller: dark pieces split apart as they move down the narrowing gap, tagged cracked. "
        "4, only tiny bits fit out: a gap arrow at the bottom, and tiny bits fall out. "
        "5, tighten the knob, smaller gap: the knob on top turns, the cone moves up into the ring, the bottom gap gets smaller, and two cards compare before, coarse pieces, with after, fine pepper. "
        "The payoff reads A narrowing gap crushes the pepper, a follow line appears and the video loops.")
-on = ['INSIDE IT', 'HOW DOES IT', 'CRUSH PEPPER?', 'TWIST THE TOP', 'A GROOVED CONE TURNS IN A RING', 'CONE (TURNS)', 'RING (FIXED)', 'WIDE AT THE TOP, NARROW AT THE BOTTOM', 'WIDE GAP', 'NARROW GAP',
+on = ['INSIDE IT', 'HOW DOES IT', 'CRUSH PEPPER?', 'TWIST THE TOP', 'A GROOVED CONE TURNS IN A RING', 'SHAFT (TURNS)', 'CONE (TURNS)', 'RING (FIXED)', 'WIDE AT THE TOP, NARROW AT THE BOTTOM', 'WIDE GAP', 'NARROW GAP',
       'PEPPERCORNS CRACK SMALLER AND SMALLER', 'CRACKED', 'ONLY TINY BITS FIT OUT', 'GAP', 'TINY BITS FALL OUT', 'TIGHTEN THE KNOB: SMALLER GAP', 'TIGHTEN THE KNOB', 'CONE MOVES UP', 'SMALLER GAP',
       'BEFORE: COARSE', 'AFTER: FINE', 'A NARROWING GAP', 'CRUSHES THE PEPPER', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
