@@ -50,5 +50,20 @@
   "https://slate.com/human-interest/2015/05/whats-that-thing-why-are-there-holes-in-airplane-windows.html",
   "https://www.sciencealert.com/here-s-why-there-s-a-tiny-hole-in-airplane-windows",
   "https://www.afar.com/magazine/why-airplane-windows-have-tiny-holes"
- ]
+ ],
+ "qualityAudit": "HARD GATE v2 (20 Nov 01:58 UTC): 1080x1920 H.264 High yuv420p 30 fps, 791 frames, AAC LC 48 kHz stereo, 26.37 s (VO and timing unchanged, mix.wav reused); first/last frame luma 203.0 / 194.0; audio -15.1 LUFS, -3.0 dBTP, HP4k gap 21.1 dB; kin.py PASS; spell flags only gkn/sciencealert (sources), howitworks/hq/whyloop; text: hook 96 px, steps 54-60 px on a dark plate drawn last (no dot/arrow/tag over titles), tags 48-52 px, OUTSIDE: THIN AIR 50 px, answer 70/84, follow 44; 1 fps contact sheet looked at: no text over text, pane tops sit inside the seal opening (no poke into the red section), no glitches/black frames. PASS",
+ "mediaFiles": [
+  "plane_window_reel_v2.mp4",
+  "plane_window_cover_v2.jpg"
+ ],
+ "status": "ready",
+ "visualScore": "5 (v1) -> rule B: 3 fixes once, no re-score",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p096/plane_window_reel_v2.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p096/plane_window_cover_v2.jpg",
+ "reviews": {
+  "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gap: why the push exists -> v2 adds dense cabin air vs THIN AIR outside)",
+  "visual": "5/10 -> rule B 3 fixes once + text-overlap fixes, no re-score"
+ }
 }
