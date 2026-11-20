@@ -101,12 +101,12 @@ function setScene(t) {
 // ---------- camera: targets in gauge-local coords -> world ----------
 AX.updateMatrixWorld(true);
 const LW = (y) => { const v = VAL.localToWorld(V(0, y, 0)); return [v.x, v.y, v.z]; };
-const k_ = (t, y, dist, el, az) => [t, ...LW(y), dist, el, az];
-const CAMK = [k_(0, 128, 400, 12, 22), k_(T.cutIn - 0.01, 128, 385, 12, 18),
+const k_ = (t, y, dist, el, az, dx = 0) => { const w = LW(y); return [t, w[0] + dx, w[1], w[2], dist, el, az]; };
+const CAMK = [k_(0, 124, 570, 12, 22), k_(T.cutIn - 0.01, 124, 550, 12, 18),
   k_(T.cutIn, 40, 230, 6, 2), k_(T.pressB + 0.4, 34, 200, 6, 0), k_(T.vo2 - 0.01, 40, 205, 6, 0),
   k_(T.vo2, 62, 250, 6, 0), k_(T.vo3 - 0.01, 70, 262, 6, 0), k_(T.vo3, 74, 268, 6, 0), k_(T.vo4 - 0.01, 76, 272, 6, -2),
   k_(T.vo4, 84, 300, 6, 0), k_(T.outA - 0.01, 88, 300, 6, 0),
-  k_(T.outA, 150, 150, 8, 14), k_(T.ans - 0.01, 146, 160, 8, 12), k_(T.ans, 140, 420, 10, 18), k_(LOOP, 136, 440, 10, 20)];
+  k_(T.outA, 150, 150, 8, 14), k_(T.ans - 0.01, 146, 160, 8, 12), k_(T.ans, 150, 560, 10, 18, 20), k_(LOOP, 146, 580, 10, 20, 20)];
 // ---------- overlay ----------
 const pg = (x, y, z = 0) => S.toScreen(camera, GA.localToWorld(V(x, y, z)));
 function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
@@ -151,7 +151,8 @@ function overlay(t) {
   K.TXT.step(g2, s4, 4, 'LIFT IT OFF: THE STICK STAYS', 56);
   K.TXT.step(g2, s5, 5, 'READ THE NUMBER', 60);
   K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'AIR PUSHES, SPRING PUSHES BACK', 'STICK SHOWS THE PSI', 520);
-  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+  if (t >= LOOP - 1.4) { const text = 'FOLLOW → A NEW MACHINE EVERY DAY'; g2.save(); g2.font = '44px Anton'; const w = g2.measureText(text).width + 44; S.rrect(g2, 930 - w, 1395 - 34, w, 68, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = '#ffffff'; g2.lineWidth = 4; g2.stroke();
+    g2.fillStyle = '#fff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, 930 - w / 2, 1397); g2.restore(); }
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;
