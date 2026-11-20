@@ -83,6 +83,7 @@ Update this file every time a video is scheduled.
 | 2026-11-21 21:00 | p095 | What flips the key out | flip key | folding car key, switchblade key, flip key fob (torsion spring + button teeth in case notches; scheduled 19 Nov 18:13 run, resumed; Metricool 434744800) |
 | 2026-11-26 01:00 | Why do a corkscrew's wings go up | wing corkscrew |
 | 2026-11-25 21:00 | How does your car know the tank is empty | fuel gauge |
+| 2026-11-25 01:00 | Why is there a hole in the plane window | plane window hole |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 

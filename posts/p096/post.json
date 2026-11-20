@@ -56,7 +56,7 @@
   "plane_window_reel_v2.mp4",
   "plane_window_cover_v2.jpg"
  ],
- "status": "ready",
+ "status": "scheduled",
  "visualScore": "5 (v1) -> rule B: 3 fixes once, no re-score",
  "mediaUrls": [
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p096/plane_window_reel_v2.mp4"
@@ -65,5 +65,7 @@
  "reviews": {
   "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gap: why the push exists -> v2 adds dense cabin air vs THIN AIR outside)",
   "visual": "5/10 -> rule B 3 fixes once + text-overlap fixes, no re-score"
- }
+ },
+ "scheduledAt": "2026-11-25T01:00 Europe/London",
+ "metricoolPostId": 435023643
 }
