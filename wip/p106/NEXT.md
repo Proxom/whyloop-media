@@ -8,3 +8,6 @@ Audio: Kokoro VO + soft bed + low taps when the weight lands + 60-300 Hz steam r
 Copy spellchecked: flags faq / hyperphysics (source names), howitworks / pressurecooker (hashtags), hq / whyloop (handle), jiggler (term used by Wikipedia), lb (unit).
 Rebuild: python3 kin.py; /tmp/whyloop_tts/venv/bin/python vo.py /tmp/whyloop_tts vo; <venv>/python audio.py; bash master_p106.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; <venv>/python mkpost.py
 Render: node tools/render/render.js wip/p106/scene.html <frames> 30 1 0 720 0.75 0 0 1 1080 1920 1 (~0.54 s/frame); encode.sh <frames> wip/p106/mix.wav media/p106/cooker_reel_v1.mp4 24.0 30
+
+## Fresh review (20 Nov 20:52 UTC, coordinator) - FAIL, NOT scheduled (rule B: visual 4 + clarity NO)
+Reviewer: lift ~10 px of 960 (dance invisible), hook weight static; push/weight arrows never change size (force race not shown); steam drawn as floating bubbles in the air space (wrong picture); no payoff why (higher pressure -> ~120 C boiling -> faster cooking) and thin-pipe area idea unused; flat 2D red-hatched cutaways; white vertical light streak inside the pot (fr 6-40); burner spark artifact; DROPS label leader points at air (fr 32-34); hard cut 5->6.
