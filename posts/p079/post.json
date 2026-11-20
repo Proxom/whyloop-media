@@ -44,7 +44,7 @@
   "https://patents.google.com/patent/US20170043989A1/en",
   "https://www.atelierduvin.com/en/how-to-use-a-corkscrew"
  ],
- "status": "ready",
+ "status": "scheduled",
  "mediaUrls": [
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p079/corkscrew_reel_v2.mp4"
  ],
@@ -52,5 +52,7 @@
  "reviews": {
   "clarity": "20 Nov ~01:35 UTC fresh reviewer: correct, 14yo YES (gaps: body bracing on the lip not said; gear arrows small)",
   "visual": "5/10 (19 Nov) -> rule B 3 fixes once, no re-score"
- }
+ },
+ "scheduledAt": "2026-11-26T01:00 Europe/London",
+ "metricoolPostId": 435010272
 }
