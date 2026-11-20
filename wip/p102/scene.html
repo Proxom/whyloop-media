@@ -102,11 +102,11 @@ function setScene(t) {
 AX.updateMatrixWorld(true);
 const LW = (y) => { const v = VAL.localToWorld(V(0, y, 0)); return [v.x, v.y, v.z]; };
 const k_ = (t, y, dist, el, az) => [t, ...LW(y), dist, el, az];
-const CAMK = [k_(0, 92, 470, 12, 22), k_(T.cutIn - 0.01, 92, 450, 12, 18),
+const CAMK = [k_(0, 128, 400, 12, 22), k_(T.cutIn - 0.01, 128, 385, 12, 18),
   k_(T.cutIn, 40, 230, 6, 2), k_(T.pressB + 0.4, 34, 200, 6, 0), k_(T.vo2 - 0.01, 40, 205, 6, 0),
   k_(T.vo2, 62, 250, 6, 0), k_(T.vo3 - 0.01, 70, 262, 6, 0), k_(T.vo3, 74, 268, 6, 0), k_(T.vo4 - 0.01, 76, 272, 6, -2),
   k_(T.vo4, 84, 300, 6, 0), k_(T.outA - 0.01, 88, 300, 6, 0),
-  k_(T.outA, 150, 150, 8, 14), k_(T.ans - 0.01, 146, 160, 8, 12), k_(T.ans, 120, 360, 10, 18), k_(LOOP, 116, 380, 10, 20)];
+  k_(T.outA, 150, 150, 8, 14), k_(T.ans - 0.01, 146, 160, 8, 12), k_(T.ans, 140, 420, 10, 18), k_(LOOP, 136, 440, 10, 20)];
 // ---------- overlay ----------
 const pg = (x, y, z = 0) => S.toScreen(camera, GA.localToWorld(V(x, y, z)));
 function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
@@ -138,19 +138,19 @@ function overlay(t) {
     S.tag(g2, 1, 'SPRING PUSHES BACK', ...pg(G.SPR_R, yp + 30), 160, -60, 50, '#ffb21f'); S.tag(g2, hard(t, T.vo3 + 2.4, T.vo4), 'BALANCED HERE', ...pg(G.TUBE_RI, yp + 2.5), 150, 120, 50, '#7dff9a'); }
   if (s4) { S.tag(g2, hard(t, T.liftB, T.outA), 'PISTON BACK', ...pg(G.TUBE_RI, G.PIST_Y + d + 2.5), 160, 110, 50, '#ffffff');
     S.tag(g2, hard(t, T.retB + 0.4, T.outA), 'STICK STAYS', ...pg(-G.CAP_R, G.PIST_Y + G.PIST_H + s + 1), -180, -40, 52, '#ffd21f');
-    S.tag(g2, hard(t, T.vo4 + 2.6, T.outA), 'FRICTION HOLDS IT', ...pg(-G.HOLE_R, G.STOP_Y + 2), -170, -150, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo4 + 2.6, T.outA), 'FRICTION HOLDS IT', ...pg(-G.HOLE_R, G.STOP_Y + 2), -230, 160, 50, '#ffd21f');
     const [x0, y0] = pg(0, -2), [x1, y1] = pg(0, 12); arrowC(g2, hard(t, T.liftA - 0.2, T.liftB + 0.3), x0, y0, x1, y1, 24, '#ffd21f'); }
-  if (s5) { const [rx, ry] = pg(G.ROD_R + 0.3, G.STOP_TOP + 0.2); g2.save(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 6; g2.beginPath(); g2.moveTo(rx - 150, ry); g2.lineTo(rx + 70, ry); g2.stroke(); g2.restore();
-    S.tag(g2, hard(t, T.vo5 + 0.6, T.ans), 'READ IT HERE: 32 PSI', rx + 10, ry, 120, 170, 54, '#ffd21f'); }
+  if (s5) { const [rx, ry] = pg(G.ROD_R, G.STOP_TOP + 0.6);
+    S.tag(g2, hard(t, T.vo5 + 0.6, T.ans), 'READ IT HERE: 32 PSI', rx, ry, 140, 170, 54, '#ffd21f'); }
   // hook
-  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES THE STICK', 'KNOW THE PRESSURE?', 92); const [cx, cy] = pg(0, G.STOP_TOP + 18); K.TXT.circle(g2, 1, cx, cy, 80, [-230, 170]); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES THE STICK', 'KNOW THE PRESSURE?', 88); const [cx, cy] = pg(0, G.STOP_TOP + 6); K.TXT.circle(g2, 1, cx, cy, 80, [-240, 160]); }
   // step titles last (on top of everything)
   K.TXT.step(g2, s1, 1, 'PRESS IT ON: AIR RUSHES IN', 58);
   K.TXT.step(g2, s2, 2, 'AIR PUSHES THE PISTON UP', 60);
   K.TXT.step(g2, s3, 3, 'A SPRING PUSHES BACK', 60);
   K.TXT.step(g2, s4, 4, 'LIFT IT OFF: THE STICK STAYS', 56);
   K.TXT.step(g2, s5, 5, 'READ THE NUMBER', 60);
-  K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'AIR PUSHES, SPRING PUSHES BACK', 'THE STICK SHOWS WHERE', 520);
+  K.TXT.answer(g2, hard(t, T.ans, LOOP + 1), 'AIR PUSHES, SPRING PUSHES BACK', 'STICK SHOWS THE PSI', 520);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }
 window.motionPx = (t) => 0;
