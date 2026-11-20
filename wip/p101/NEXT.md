@@ -11,3 +11,8 @@ Facts: Shimano UM-45F0A, UM-L800B, Shimano SPD tech page (Parallel web_search ex
 qualityAudit (HARD GATE v1): 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 27.77 s; first/last luma 44.4 / 42.8; -15.1 LUFS, -2.9 dBTP, HP4k gap 20.2 dB; kin.py PASS; spell flags only terms/brand/handle; text sizes OK; safe_0.5s OK.
 Files: pedal_reel_v1.mp4, pedal_cover_v1.jpg (frame 0.9 s, after the hook click). Review packets: $S/p101/clar (2 fps + transcript.txt), $S/p101/qc (stills + safe_0.5s + sheet). Frames kept in $S/p101/frames.
 Own notes (likely reviewer points): hook is a 3/4 outside view where the pedal sits small under the big shoe (the click is small); shoe upper is a simple smooth shell (no laces/details); side views keep the black crank arm in the lower third; the 'heel down' arrow sits in the dark band above the pedal.
+
+## Review (coordinator, 20 Nov ~02:06 UTC, run ig-awesome-curie-ty3ndo-0110-20nov) - NOT SCHEDULED
+CLARITY: correct, 14yo YES (gaps: cleat never shown going under the front lip; ramp not explained; snap not visible in the SLOW MOTION step; pull-up stop and twist-out not shown, only told).
+VISUAL 4/10 -> rule B: concept wrong (shoe = 'blue loaf', pedal on a vertical post reads as a stool, gold slab cleat, background banding, no contact shadow). ERRORS: back jaw passes through the cleat plate (c_16-20, c_41-44), arrow over the step-2 title, HEEL OUT leader off the left edge, front jaw cut at the right edge, continuity jump c_11 -> c_12.
+Replaced in the 26 Nov 17:00 slot by p102 (pencil tire gauge). Retry only with a real cycling shoe + real pedal on a crank arm, a 3-bolt cleat, one steady camera, every action shown large.
