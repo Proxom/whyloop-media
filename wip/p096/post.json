@@ -2,7 +2,7 @@
  "id": "p096",
  "track": "A",
  "group": "V",
- "slot": "2026-11-24T21:00 Europe/London (planned, coordinator schedules)",
+ "slot": "2026-11-25T01:00 Europe/London",
  "topicKey": "plane window hole",
  "outlier": "scorecard rule: everyday thing people see + one \"why is it there\"; our own model, script, words and sound",
  "topic": "Airplane cabin window breather hole: the hole in the middle pane lets cabin air into the gap, so only the outer pane carries the cabin pressure and the middle pane is the backup; it also vents moisture so the window does not fog.",
@@ -49,5 +49,11 @@
   "https://slate.com/human-interest/2015/05/whats-that-thing-why-are-there-holes-in-airplane-windows.html",
   "https://www.sciencealert.com/here-s-why-there-s-a-tiny-hole-in-airplane-windows",
   "https://www.afar.com/magazine/why-airplane-windows-have-tiny-holes"
- ]
+ ],
+ "qualityAudit": "HARD GATE v1 (20 Nov 01:35 UTC): 1080x1920 H.264 High yuv420p 30 fps, 791 frames, AAC LC 48 kHz stereo, 26.37 s (planned 26.37); first/last frame luma 205.0 / 196.8 (not black); audio -15.1 LUFS, -3.0 dBTP, HP4k gap 21.1 dB; kin.py PASS (no part overlap, every particle path crosses the middle pane only through the hole); spell flags only gkn/sciencealert (sources), howitworks/hq/whyloop (hashtag/handle); text: hook 96 px, steps 54-60 px, tags 48-52 px, answer 70/84 px, follow 44 px; safe zones checked on safe_0.5s (hook, circle inside; only the red arrow tail reaches 40 px into the bottom zone, no text); 6 stills looked at: no glitches, black frames, clipping or cut text. Minor: in step 5 a few air dots pass over the caption letters. PASS",
+ "mediaFiles": [
+  "plane_window_reel_v1.mp4",
+  "plane_window_cover_v1.jpg"
+ ],
+ "status": "ready"
 }

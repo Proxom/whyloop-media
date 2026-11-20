@@ -1,0 +1,212 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p099 airplane oxygen mask "WHY PULL / THE MASK DOWN?" (group V, track A). Built from kit/kit.js. Units mm, y up, side plane x-y, z toward the camera.
+// Overhead passenger service unit (PSU) in the cabin ceiling (y = 0 = ceiling surface). Inside: chemical oxygen generator along x at y = CY.
+// kin.json rows: [t, maskDrop, pinDrop, rodShift, front, flow, bag, slow]
+import * as K from '/kit/kit.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, H = G.H, CY = G.CY;
+const st = K.makeKit({ fov: 30, bg: 0x1d222b, envIntensity: 1.1, near: 5, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const CLIP = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);          // keeps z <= 0 (the back half) in the cut view
+const fine = K.grainTex(31, 10); fine.repeat.set(0.01, 0.01);
+M.cabin = phys({ color: 0xe9e4d8, roughness: 0.62, roughnessMap: fine, bumpMap: fine, bumpScale: 0.15, side: THREE.DoubleSide });   // cabin panel plastic
+M.cabinDk = phys({ color: 0xcfc8b8, roughness: 0.7, side: THREE.DoubleSide });
+M.inner = phys({ color: 0x8b8f96, roughness: 0.8, side: THREE.DoubleSide });
+M.yellow = phys({ color: 0xffc21a, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
+M.bag = phys({ color: 0xe8f4ff, roughness: 0.15, transparent: true, opacity: 0.38, envMapIntensity: 1.6, depthWrite: false, side: THREE.DoubleSide });
+M.hose = phys({ color: 0xeef6ff, roughness: 0.12, transparent: true, opacity: 0.45, envMapIntensity: 1.5, depthWrite: false });
+M.cord = phys({ color: 0xf2f2f0, roughness: 0.9 });
+M.core = phys({ color: 0xece9e2, roughness: 0.95, bumpMap: fine, bumpScale: 0.4, side: THREE.DoubleSide });
+M.ins = phys({ color: 0xd9c9a3, roughness: 0.92, side: THREE.DoubleSide });
+M.green = phys({ color: 0x2a3a2a, roughness: 0.4, emissive: 0x000000 });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#d42a1f'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(90,8,4,0.55)'; g.lineWidth = 7;
+  for (let i = -64; i < 128; i += 22) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.12, 0.12); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+// ---------- cabin ceiling with the PSU (clipped to the back half in the cut view) ----------
+const SHELL = [];
+const shellMat = (m) => { const c = m.clone(); SHELL.push(c); return c; };
+{ const sh = new THREE.Shape(); sh.moveTo(-700, -320); sh.lineTo(700, -320); sh.lineTo(700, 320); sh.lineTo(-700, 320); sh.closePath();
+  const hole = new THREE.Path(); hole.moveTo(-205, -72); hole.lineTo(-205, 72); hole.lineTo(130, 72); hole.lineTo(130, -72); hole.closePath(); sh.holes.push(hole);
+  const g = new THREE.ShapeGeometry(sh); g.rotateX(Math.PI / 2); add(new THREE.Mesh(g, shellMat(M.cabin))); }
+// PSU box above the ceiling (walls), top, ends
+const box = (w, h, d, x, y, z, mat) => { const m = add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat)); m.position.set(x, y, z); return m; };
+const shellIn = shellMat(M.inner);
+box(360, 2, 160, -37, 118, 0, shellIn); box(360, 120, 2, -37, 59, -80, shellIn); box(360, 120, 2, -37, 59, 80, shellIn); box(2, 120, 160, -217, 59, 0, shellIn); box(2, 120, 160, 143, 59, 0, shellIn);
+// ceiling details: reading lights, air nozzles (gaspers), sign strip next to the PSU (z > 72, seen in the front view)
+for (const x of [-150, -60, 30]) { const r = add(new THREE.Mesh(new THREE.CylinderGeometry(15, 17, 6, 40), M.cabinDk)); r.position.set(x, -3, 130);
+  const l = add(new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 2, 32), phys({ color: 0xfff6dd, roughness: 0.3, emissive: 0x332a18 }))); l.position.set(x, -6.2, 130); }
+for (const x of [-105, -15, 75]) { const g = add(new THREE.Mesh(new THREE.CylinderGeometry(11, 15, 10, 40), M.chrome)); g.position.set(x, -5, 130); const n = add(new THREE.Mesh(new THREE.CylinderGeometry(4, 6, 6, 24), M.plastic)); n.position.set(x, -12, 130); }
+{ const s = add(new THREE.Mesh(new RoundedBoxGeometry(150, 6, 40, 3, 2), phys({ color: 0x2a2d33, roughness: 0.5 }))); s.position.set(-40, -3, 200); }
+// PSU door, swung down on its hinge (z = -72 edge), hangs behind the mask
+{ const d = add(new THREE.Mesh(new RoundedBoxGeometry(330, 40, 3, 2, 1.2), shellMat(M.cabin))); d.position.set(-38, -21, -74); }   // door swung down (short flap)
+// ---------- oxygen generator (half lathes for the cut view + full lathes for outside; outside is hidden in the PSU anyway) ----------
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const latheX = (P, mat, half) => { const g = new THREE.LatheGeometry(L2([...P, P[0]]), 72, half ? Math.PI / 2 : 0, half ? Math.PI : 2 * Math.PI); g.rotateZ(-Math.PI / 2); g.translate(0, CY, 0); const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; return m; };
+const capX = (P, mat) => { const grp = new THREE.Group(); for (const sx of [1, -1]) { const sh = new THREE.Shape(); P.forEach(([r, x], i) => i ? sh.lineTo(x, CY + sx * r) : sh.moveTo(x, CY + sx * r)); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat); m.position.z = 0.05; grp.add(m); } return grp; };
+// profiles are [r, x] (lathe 'y' becomes x after rotateZ(-90): lathe y -> world x)
+const C = G.CAN, HS = G.HOUS, CO = G.CORE, CP = G.CAP;
+const P_CAN = [[C.R - C.t, C.x0 + C.t], [C.R - C.t, C.x1 - C.t], [8, C.x1 - C.t], [8, C.x1], [C.R, C.x1], [C.R, C.x0], [CP.R + 0.2, C.x0], [CP.R + 0.2, C.x0 + C.t]];
+const P_HOUS = [[3.8, HS.x1], [HS.R, HS.x1], [HS.R, HS.x0], [0.01, HS.x0], [0.01, HS.x0 + HS.t], [HS.R - HS.t, HS.x0 + HS.t], [HS.R - HS.t, HS.x1 - 2], [3.8, HS.x1 - 2]];
+const P_INS = [[G.INS[0], CO.x0 - 4], [G.INS[1], CO.x0 - 4], [G.INS[1], CO.x1 + 4], [G.INS[0], CO.x1 + 4]];
+const P_OUT = [[3, C.x1], [5, C.x1], [5, G.OUT_X], [3, G.OUT_X]];
+const GEN = new THREE.Group(); scene.add(GEN);
+const CUTG = new THREE.Group(), FULLG = new THREE.Group(); GEN.add(CUTG, FULLG);
+const canMat = M.steel.clone(); canMat.side = THREE.DoubleSide; const housMat = M.alu.clone(); housMat.side = THREE.DoubleSide;
+for (const [P, mat, cap] of [[P_CAN, canMat, M.sec], [P_HOUS, housMat, M.sec], [P_INS, M.ins, M.ins], [P_OUT, canMat, M.sec]]) { CUTG.add(latheX(P, mat, true)); CUTG.add(capX(P, cap)); FULLG.add(latheX(P, mat, false)); }
+// label band on the canister (outside only)
+{ const g = new THREE.CylinderGeometry(C.R + 0.3, C.R + 0.3, 60, 64, 1, true); g.rotateZ(-Math.PI / 2); const m = add(new THREE.Mesh(g, phys({ color: 0x2f6fb0, roughness: 0.5, side: THREE.DoubleSide })), FULLG); m.position.set(-10, CY, 0); }
+// mounting straps
+for (const x of [-90, 50]) { const g = new THREE.TorusGeometry(C.R + 1.2, 1.6, 10, 48); g.rotateY(Math.PI / 2); const m = add(new THREE.Mesh(g, M.machined)); m.position.set(x, CY, 0); }
+// core: 24 slices (half for the cut view) so the reaction front can glow
+const DARK = new THREE.Color(0x3a1000); const NS = 24, SL = (CO.x1 - CO.x0) / NS, SLICES = [];
+for (let i = 0; i < NS; i++) { const x0 = CO.x0 + i * SL, x1 = x0 + SL; const mat = M.core.clone(); const P = [[0.01, x0], [CO.R, x0], [CO.R, x1], [0.01, x1]];
+  const g = new THREE.Group(); g.add(latheX(P, mat, true)); g.add(capX(P, mat)); CUTG.add(g); SLICES.push({ mat, xc: (x0 + x1) / 2 }); }
+// percussion cap (brass) in the end wall
+const CAPM = add(latheX([[0.01, CP.x0], [CP.R, CP.x0], [CP.R, CP.x1], [0.01, CP.x1]], M.brass, false), CUTG);
+// striker: rod + collar (full, it is inside the cut housing), with the cross hole drawn as a dark ring
+const ROD = new THREE.Group(); CUTG.add(ROD);
+{ const R = G.ROD; const tip0 = G.TIP0; const P = [[0.01, tip0], [R.r * 0.55, tip0], [R.r, tip0 - 2.5], [R.r, tip0 - R.L + R.collarL], [R.collarR, tip0 - R.L + R.collarL], [R.collarR, tip0 - R.L], [0.01, tip0 - R.L]];
+  ROD.add(latheX(P, M.steel, false)); const h = add(new THREE.Mesh(new THREE.CylinderGeometry(G.HOLE_R, G.HOLE_R, 2 * R.r + 0.4, 24, 1, true), phys({ color: 0x1a1c20, roughness: 0.8, side: THREE.DoubleSide })), ROD); h.position.set(G.HOLE_X, CY, 0); }
+const SPR = K.spring(M.chrome, { R: 6.5, wire: 0.9, turns: 6, len: 20, closed: 1 }); SPR.rotation.z = -Math.PI / 2; SPR.position.set(HS.x0 + HS.t, CY, 0); CUTG.add(SPR);
+// release pin (vertical, chrome) with a ring at the bottom for the cord
+const PINM = new THREE.Group(); scene.add(PINM);
+add(new THREE.Mesh(new THREE.CylinderGeometry(G.PIN.r, G.PIN.r, G.PIN.L, 24), M.chrome), PINM).position.y = -G.PIN.L / 2;
+{ const r = add(new THREE.Mesh(new THREE.TorusGeometry(4, 1.1, 10, 24), M.chrome), PINM); r.position.y = -G.PIN.L - 4; }
+// ---------- mask: yellow cup (opening faces down/forward), clear reservoir bag above, hose to the outlet, cord to the pin ----------
+const MASK = new THREE.Group(); scene.add(MASK);
+const CUPG = new THREE.Group(); MASK.add(CUPG); CUPG.position.set(0, -98, 6); CUPG.rotation.x = 0.55;
+add(new THREE.Mesh(new THREE.LatheGeometry(L2([[10, 0], [17, 4], [26, 22], [29, 34], [30.5, 36]]), 48), M.yellow), CUPG);
+{ const b = add(new THREE.Mesh(new THREE.TorusGeometry(29.5, 1.6, 10, 48), M.yellow), CUPG); b.rotation.x = Math.PI / 2; b.position.y = 36; }
+{ const v = add(new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 4, 24), phys({ color: 0x3a3c40, roughness: 0.6 })), CUPG); v.position.y = 1; v.rotation.x = 0; }
+{ const s = add(new THREE.Mesh(new THREE.TorusGeometry(31, 0.9, 6, 48, Math.PI), M.rubber), CUPG); s.rotation.set(Math.PI / 2, 0, 0); s.position.y = 30; }   // elastic band
+const BAG = new THREE.Mesh(new THREE.LatheGeometry(L2([[0.01, 0], [9, 2], [16, 12], [19, 30], [17, 48], [10, 60], [4, 64], [0.01, 64.5]]), 40), M.bag); MASK.add(BAG); BAG.position.set(0, -78, 0); BAG.renderOrder = 3;
+// green in-line flow indicator on the hose just above the bag
+const IND = add(new THREE.Mesh(new THREE.CylinderGeometry(5.5, 5.5, 12, 24), M.green), MASK); IND.position.set(0, -6, 0);
+// hose + cord rebuilt per frame
+const HOSE = new THREE.Mesh(new THREE.BufferGeometry(), M.hose); HOSE.renderOrder = 2; scene.add(HOSE);
+const CORD = add(new THREE.Mesh(new THREE.BufferGeometry(), M.cord));
+let hoseCurve = null;
+function buildHose(mtop) {   // outlet (OUT_X, CY) -> out of the PSU -> down to the indicator top
+  const p = [V(G.OUT_X, CY, 0), V(G.OUT_X + 18, CY - 8, 0), V(G.OUT_X + 14, CY - 45, 0), V(90, 10, 0), V(40, -40, 0), V(-40, mtop + 40, 4), V(G.MASK_X + 4, mtop + 1, 0)];
+  hoseCurve = new THREE.CatmullRomCurve3(p, false, 'centripetal'); HOSE.geometry.dispose(); HOSE.geometry = new THREE.TubeGeometry(hoseCurve, 90, 4.2, 12); }
+function buildCord(pb, mtop) {   // pin ring -> bag top; sags while slack
+  const a = V(G.HOLE_X, pb - 4, 0), b = V(G.MASK_X - 3, mtop - 2, 2); const d = a.distanceTo(b); const slack = Math.max(0, G.CORD_L - d);
+  const pts = []; for (let i = 0; i <= 20; i++) { const u = i / 20; const q = a.clone().lerp(b, u); q.x += Math.sin(Math.PI * u) * Math.sqrt(slack * d) * 0.55; pts.push(q); }
+  CORD.geometry.dispose(); CORD.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 1.0, 6); }
+// oxygen particles (soft blue spheres): gap inside the canister -> outlet -> hose -> bag
+const NP = 70, PG = new THREE.SphereGeometry(G.PR, 10, 8), PM = new THREE.MeshBasicMaterial({ color: 0x9fe4ff, transparent: true, opacity: 0.95, toneMapped: false });
+const PARTS = new THREE.InstancedMesh(PG, PM, NP); PARTS.renderOrder = 4; scene.add(PARTS);
+const dummy = new THREE.Object3D();
+S.shadowAll(scene); HOSE.castShadow = false; BAG.castShadow = false; PARTS.castShadow = false;
+K.backdrop(scene, { floorY: -900, R: 300, zBack: -700, h: 5000, width: 9000, wall: '#2a3140', floor: '#2b3038', pool: true, poolY: -150, catcher: 10, shadowOpacity: 0.0 });
+const RIG = K.lightRig(scene, V(-40, -40, 0), 260, { key: 2.2, rim: 2.6, fill: 0.9 }); RIG.key.shadow.bias = -0.0005;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 1.0); f.position.set(100, -500, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 0.9); g.position.set(-500, 200, -400); scene.add(g);
+  const u = new THREE.PointLight(0xfff0d8, 1.2, 0, 0); u.position.set(-40, 100, 40); scene.add(u); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1];
+  if (Math.abs(b[1] - a[1]) > 20 || Math.abs(b[3] - a[3]) > 15) return a; return a.map((v, j) => j === 7 ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.outA;
+let KK = null, flowT0 = 0;
+function setScene(t) {
+  const k = KK = kin(t); const [, md, pd, rod, front, flow, bag] = k; const ins = inside(t);
+  for (const m of SHELL) m.clippingPlanes = ins ? [CLIP] : [];
+  CUTG.visible = ins; FULLG.visible = !ins;
+  ROD.position.x = rod; const collarBack = G.TIP0 - G.ROD.L + rod; SPR.setLength(collarBack - (HS.x0 + HS.t));
+  PINM.position.set(G.HOLE_X, G.PIN.top0 - pd, 0);
+  const mtop = G.MASK_TOP0 - md; MASK.position.set(G.MASK_X, mtop, 0);
+  buildHose(mtop); buildCord(G.PIN_BOT0 - pd, mtop);
+  BAG.scale.set(0.62 + 0.38 * bag, 0.8 + 0.2 * bag, 0.62 + 0.38 * bag);
+  M.green.color.setHex(flow > 0.5 ? 0x2fd15a : 0x2a3a2a); M.green.emissive.setHex(flow > 0.5 ? 0x0c5a1e : 0x000000);
+  // reaction front glow on the core slices
+  for (const s of SLICES) { const d = front < -900 ? 1e9 : s.xc - front; let e = 0, c = 0xece9e2;
+    if (d < 0) { c = 0xd8d2c4; e = Math.max(0, 0.35 + 0.65 * Math.exp(d / 25)); } else if (d < SL) e = 1 - d / SL;
+    s.mat.color.setHex(c).lerp(DARK, Math.min(1, e) * 0.85); s.mat.emissive.setRGB(3.0 * e, 1.0 * e, 0.1 * e); }
+  K.glow(CAPM, ins && t > T.fireB - 0.05 && t < T.fireB + 1.2 ? 1 : 0, 0xff6a1a);
+  K.glow(SPR, ins && t >= T.vo2 + 0.6 && t < T.vo3 ? 0.8 : (ins && t >= T.fireA && t < T.fireB + 0.3 ? 1 : 0));
+  K.glow(PINM, ins && ((t >= T.vo1 + 2.0 && t < T.vo2) || (t >= T.vo2 + 1.4 && t < T.vo3) || (t >= T.pullA && t < T.pullB + 0.3)) ? 1 : 0);
+  K.glow(CORD, ins && t >= T.vo1 + 0.6 && t < T.vo2 + 0.1 ? 1 : 0);
+  // particles: when flowing, march along: gap path inside the canister (from the front to the outlet), then the hose
+  const showIn = ins; let n = 0;
+  if (flow > 0.01) { const L1 = (G.OUT_X - (CO.x0 + 10)), L2 = hoseCurve.getLength(), Ltot = L1 + L2; const v = 70;   // mm/s
+    for (let i = 0; i < NP; i++) { let s = ((i / NP) * Ltot + v * (t - (t < T.cutIn ? H.flowA : T.flowA))) % Ltot; const ph = i * 2.399;
+      if (s < 0) continue; if (s / Ltot > flow * 1.2 + 0.05 && t - T.flowA < 6) {}
+      let p;
+      if (s < L1) { if (!showIn) continue; const x = CO.x0 + 10 + s; p = V(x, CY + G.PATH_R * Math.cos(ph), -Math.abs(G.PATH_R * Math.sin(ph)) * 0.0 - 1.0); p.y = CY + (i % 2 ? 1 : -1) * G.PATH_R; }
+      else { const u = Math.min(1, (s - L1) / L2); p = hoseCurve.getPointAt(u); }
+      dummy.position.copy(p); dummy.scale.setScalar(flow); dummy.updateMatrix(); PARTS.setMatrixAt(n++, dummy.matrix); } }
+  PARTS.count = n; PARTS.instanceMatrix.needsUpdate = true;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const FRONT = (d = 820, el = -16, az = 8) => [-60, -170, 0, d, el, az];
+const WIDE = (d = 1200, el = 4, az = 0) => [-25, -48, 0, d, el, az];
+const HEAD = (d = 300, el = 6, az = 0) => [-158, 52, 0, d, el, az];
+const PULL = (d = 760, el = 4, az = 0) => [-115, -45, 0, d, el, az];
+const CAMK = [k_(0, FRONT(840, -16, 8)), k_(T.cutIn - 0.01, FRONT(800, -16, 6)),
+  k_(T.cutIn, WIDE(1220, 5, 6)), k_(T.vo2 - 0.6, WIDE(1180, 4, 2)),
+  k_(T.vo2 - 0.2, HEAD(320, 6, 4)), k_(T.vo3 - 0.01, HEAD(290, 5, 0)),
+  k_(T.vo3, PULL(740, 4, 0)), k_(T.pullB + 0.4, PULL(780, 4, 0)),
+  k_(T.vo4 + 0.2, HEAD(300, 5, 0)), k_(T.fireB + 0.6, HEAD(290, 5, 0)), k_(T.vo5 - 0.3, [-90, 50, 0, 520, 6, 0]),
+  k_(T.vo5 + 0.4, WIDE(1220, 4, 0)), k_(T.outA - 0.01, WIDE(1190, 4, 4)),
+  k_(T.outA, FRONT(800, -16, 6)), k_(LOOP, FRONT(840, -16, 8))];
+// ---------- overlay ----------
+const sp = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const [, md, pd, rod] = k; const mtop = G.MASK_TOP0 - md;
+  { let fx = 0; for (const c of [T.cutIn, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); fx = Math.max(fx, 1 - t / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'WHY PULL', 'THE MASK DOWN?', 108); const [cx, cy] = sp(G.MASK_X, mtop - 70, 0); K.TXT.circle(g2, t > 0.55 ? 1 : 0, cx, cy, 80, [230, 150]);
+    arrowC(g2, hard(t, 0.02, 0.6), cx + 120, cy - 40, cx + 120, cy + 150, 28, '#ffd21f'); }
+  const s1 = hard(t, T.cutIn, T.vo2 - 0.2), s2 = hard(t, T.vo2 - 0.2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outA);
+  S.caption(g2, s1, 'THE CORD IS TIED TO A PIN', 392, 60, '#ffffff', 1);
+  S.caption(g2, s2, 'THE PIN HOLDS THE STRIKER BACK', 392, 54, '#ffffff', 2);
+  S.caption(g2, s3, 'PULL: THE PIN COMES OUT', 392, 60, '#ffffff', 3);
+  S.caption(g2, s4, 'THE SPRING FIRES THE STRIKER', 392, 56, '#ffffff', 4);
+  S.caption(g2, s5, 'THE CORE MAKES OXYGEN', 392, 60, '#ffffff', 5);
+  if (s1) { S.tag(g2, hard(t, T.vo1 + 0.3, T.vo2), 'OXYGEN CAN', ...sp(30, CY - 28), 40, 150, 50, '#ffffff');
+    S.tag(g2, hard(t, T.vo1 + 0.6, T.vo2), 'CORD', ...sp(-131, -40), -60, 60, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 2.0, T.vo2), 'PIN', ...sp(G.HOLE_X, G.PIN_BOT0 + 4), -60, -150, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 1.2, T.vo2), 'MASK', ...sp(G.MASK_X + 25, mtop - 90), 150, 60, 50, '#ffffff'); }
+  if (s2) { S.tag(g2, hard(t, T.vo2 + 0.2, T.vo3), 'STRIKER', ...sp(-146, CY), 80, -200, 50, '#ffffff');
+    S.tag(g2, hard(t, T.vo2 + 0.6, T.vo3), 'SPRING', ...sp(-191, CY - 4), -40, 230, 50, '#ffb21f');
+    S.tag(g2, hard(t, T.vo2 + 1.4, T.vo3), 'PIN', ...sp(G.HOLE_X, CY - 18), 120, 240, 50, '#ffd21f');
+    const [x0, y0] = sp(-196, CY + 25), [x1, y1] = sp(-170, CY + 25); arrowC(g2, hard(t, T.vo2 + 0.6, T.vo3), x0, y0, x1, y1, 22, '#ffb21f');
+    S.tag(g2, hard(t, T.vo2 + 1.4, T.vo3), 'CAN\'T MOVE', ...sp(-172, CY + 26), 10, -150, 48, '#ff6a4a'); }
+  if (s3) { const [mx, my] = sp(G.MASK_X + 40, mtop - 60); arrowC(g2, hard(t, T.pullA - 0.3, T.pullB + 0.2), mx + 70, my - 120, mx + 70, my + 110, 30, '#ffd21f');
+    S.tag(g2, hard(t, T.pullA - 0.3, T.vo4), 'PULL', mx + 70, my - 120, 60, -40, 54, '#ffd21f');
+    S.tag(g2, hard(t, T.pullB - 0.4, T.vo4), 'PIN OUT', ...sp(G.HOLE_X, G.PIN.top0 - pd - 10), -60, 120, 52, '#7dff9a');
+    if (k[7]) S.outlined(g2, 'SLOW MOTION', 300, 1310, 46, '#ffd21f'); }
+  if (s4) { const [x0, y0] = sp(-182, CY + 24), [x1, y1] = sp(-140, CY + 24); arrowC(g2, hard(t, T.fireA - 0.2, T.fireB + 0.2), x0, y0, x1, y1, 22, '#ffb21f');
+    S.tag(g2, hard(t, T.fireB - 0.05, T.vo5), 'CAP', ...sp(-126, CY), 140, -190, 50, '#ff8a3a');
+    S.tag(g2, hard(t, T.coreA + 0.4, T.vo5), 'CHEMICAL CORE', ...sp(-80, CY - 10), 60, 230, 50, '#ffffff');
+    if (k[7]) S.outlined(g2, 'SLOW MOTION', 300, 1310, 46, '#ffd21f'); }
+  if (s5) { S.tag(g2, hard(t, T.flowA + 0.4, T.outA), 'OXYGEN', ...sp(G.OUT_X + 16, CY - 30), 30, 120, 52, '#9fe4ff');
+    S.tag(g2, hard(t, T.vo5 + 0.3, T.outA), '12-20 MINUTES', ...sp(-60, CY - 20), -40, 170, 52, '#ffd21f');
+    S.tag(g2, hard(t, T.flowA + 2.4, T.outA), 'TO YOUR MASK', ...sp(G.MASK_X + 18, mtop - 50), 160, 60, 50, '#9fe4ff'); }
+  K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'PULL THE MASK', 'TO START THE OXYGEN', 520);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

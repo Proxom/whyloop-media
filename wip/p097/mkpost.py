@@ -26,7 +26,7 @@ on = ['INSIDE IT', 'HOW DOES IT', 'CRUSH PEPPER?', 'TWIST THE TOP', 'A GROOVED C
       'PEPPERCORNS CRACK SMALLER AND SMALLER', 'CRACKED', 'ONLY TINY BITS FIT OUT', 'GAP', 'TINY BITS FALL OUT', 'TIGHTEN THE KNOB: SMALLER GAP', 'TIGHTEN THE KNOB', 'CONE MOVES UP', 'SMALLER GAP',
       'BEFORE: COARSE', 'AFTER: FINE', 'A NARROWING GAP', 'CRUSHES THE PEPPER', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
-P = dict(id='p097', track='A', group='E', slot='2026-11-25T01:00 Europe/London (planned, coordinator schedules)', topicKey='pepper grinder',
+P = dict(id='p097', track='A', group='E', slot='2026-11-25T17:00 Europe/London', topicKey='pepper grinder',
   outlier='scorecard rule: everyday object you touch + one "how does it" question; our own model, script, words and sound',
   topic="Pepper grinder: a grooved cone turns inside a grooved ring; the gap narrows downward, so peppercorns are cracked smaller and smaller until they fit through the bottom gap; tightening the top knob pulls the cone further in -> smaller gap -> finer.",
   hook="HOW DOES IT / CRUSH PEPPER?", title="How Does a Pepper Grinder Crush Pepper? 🧂",

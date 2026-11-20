@@ -32,7 +32,6 @@ L += 0.13 * creak * wv; R += 0.13 * np.roll(creak, 311) * wv
 # soft low gear tocks: one per tooth passing the pinion (every PITCH of shaft travel), outside the hook
 P = G['PITCH']; last = None
 for i in range(1, len(kt)):
-    if kt[i] < T['hookEnd'] + 0.1: continue
     n0, n1 = int(ks[i - 1] // P), int(ks[i] // P)
     if n0 != n1: put(tock(260 + 20 * (n1 % 3)), kt[i], pan=0.15, gain=0.22)
 # cork slides out: low friction rub while the cork rises, then a soft low 'pop' as it leaves the neck
@@ -41,7 +40,7 @@ rub = bandnoise(N, 120, 600); L += 0.10 * rub * cv; R += 0.10 * np.roll(rub, 97)
 def pop(g=1.0):
     n = int(0.3 * SR); t = np.arange(n) / SR; nz = bandnoise(n, 120, 900)
     return (0.8 * np.sin(2 * np.pi * 180 * t * (1 - 0.35 * t / 0.3)) * np.exp(-t / 0.045) + 0.35 * nz * np.exp(-t / 0.02)) * np.clip(t / 0.002, 0, 1) * g
-put(pop(), T['hookEnd'] - 0.06, pan=-0.1, gain=0.22); put(pop(), T['pb'] - 0.05, pan=-0.1, gain=0.25)
+put(pop(), T['pb'] - 0.05, pan=-0.1, gain=0.25)   # v2: no hook flash -> no hook pop
 def note(m): return 440 * 2 ** ((m - 69) / 12)
 chords = [[45, 52, 57, 60], [41, 48, 53, 57], [48, 55, 60, 64], [43, 50, 55, 59]] * 2; seg = DUR / 8; mus = np.zeros(N)
 for ci, ch in enumerate(chords):

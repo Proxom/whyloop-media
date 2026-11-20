@@ -32,7 +32,8 @@ def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
 vo = json.load(open('vo/vo.json')); dur = [d['dur'] for d in vo]
 T = {}
 T['vo0'] = 0.35
-T['hookEnd'] = 0.95                                # flash cut from the payoff clip to the start state
+T['hookEnd'] = 0.95                                # (v2: no flash cut; kept for overlay timing)
+T['hk1'] = 2.3                                     # hook twist ends
 T['vo1'] = 2.75; T['tw1a'] = 2.9; T['tw1b'] = 5.5   # twist: s 0 -> 0.45 D
 T['vo2'] = T['vo1'] + dur[1] + 0.35                 # ghost the head, name the parts (hold)
 T['vo3'] = T['vo2'] + dur[2] + 0.35; T['tw2a'] = T['vo3'] + 0.5; T['tw2b'] = T['vo3'] + dur[3] + 0.6   # slow: s -> D
@@ -41,14 +42,15 @@ T['vo5'] = T['pb'] + 0.35
 T['ans'] = T['vo5']
 LOOP = round(T['vo5'] + dur[5] + 2.3, 2)
 T['LOOP'] = LOOP
-S1 = 0.45 * D
+S1 = 0.6 * D
+H = 0.3 * D                                      # hook: twist part-way, wings visibly rise
 
 def state(t):
     """returns s (shaft travel), c (cork lift), worm depth into the cork, handle angle"""
-    if t < T['hookEnd']:                           # hook: the payoff moment (wings pushed down, cork comes up)
-        u = ease(t / T['hookEnd'] * 0.92 + 0.04); s = D * (0.78 - 0.78 * u); return s, D - s, D - GAP, -2 * math.pi * D / WP
-    if t < T['tw1a']: s = 0
-    elif t < T['tw1b']: s = S1 * ease((t - T['tw1a']) / (T['tw1b'] - T['tw1a']))
+    # hook (v2): no end-state flash; the twist starts at once and the wings rise with the title, then step 1 continues the same twist
+    if t < T['hk1']: s = H * ease(t / T['hk1'])
+    elif t < T['tw1a']: s = H
+    elif t < T['tw1b']: s = H + (S1 - H) * ease((t - T['tw1a']) / (T['tw1b'] - T['tw1a']))
     elif t < T['tw2a']: s = S1
     elif t < T['tw2b']: s = S1 + (D - S1) * ease((t - T['tw2a']) / (T['tw2b'] - T['tw2a']))
     else: s = None

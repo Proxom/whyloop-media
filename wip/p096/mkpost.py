@@ -27,7 +27,7 @@ on = ['INSIDE IT', 'WHY IS THERE A', 'HOLE IN THE WINDOW?', 'THREE PANES', 'CABI
       'CABIN AIR IN THE GAP', 'SAME PUSH ON BOTH SIDES', 'ONLY THE OUTER PANE TAKES IT', 'OUTER PANE: FULL LOAD', 'MIDDLE PANE: BACKUP', 'IT ALSO LETS MOISTURE OUT', 'MOISTURE OUT',
       'ONE TINY HOLE:', 'OUTER PANE DOES THE WORK', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
-P = dict(id='p096', track='A', group='V', slot='2026-11-24T21:00 Europe/London (planned, coordinator schedules)', topicKey='plane window hole',
+P = dict(id='p096', track='A', group='V', slot='2026-11-25T01:00 Europe/London', topicKey='plane window hole',
   outlier='scorecard rule: everyday thing people see + one "why is it there"; our own model, script, words and sound',
   topic="Airplane cabin window breather hole: the hole in the middle pane lets cabin air into the gap, so only the outer pane carries the cabin pressure and the middle pane is the backup; it also vents moisture so the window does not fog.",
   hook="WHY IS THERE A / HOLE IN THE WINDOW?", title="Why Is There a Hole in the Plane Window? ✈️",

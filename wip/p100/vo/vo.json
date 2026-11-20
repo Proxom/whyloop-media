@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "How does it pull the soap up?",
+  "dur": 1.323
+ },
+ {
+  "i": 1,
+  "text": "Inside: a piston, a spring, and two little balls. Each ball is a one-way door.",
+  "dur": 4.587
+ },
+ {
+  "i": 2,
+  "text": "Press down, and the piston squeezes the soap. That shuts the bottom ball and lifts the top ball, so the soap goes up and out.",
+  "dur": 6.635
+ },
+ {
+  "i": 3,
+  "text": "Let go, and the spring pushes the piston back up.",
+  "dur": 2.539
+ },
+ {
+  "i": 4,
+  "text": "That sucks on the chamber. The top ball drops shut, and the bottom ball lifts.",
+  "dur": 4.139
+ },
+ {
+  "i": 5,
+  "text": "Because the top is shut, new soap can only come up the tube.",
+  "dur": 2.965
+ },
+ {
+  "i": 6,
+  "text": "Two one-way balls: soap only goes up.",
+  "dur": 2.304
+ }
+]

@@ -1,0 +1,37 @@
+[
+ {
+  "i": 0,
+  "text": "Why do you have to pull the mask down?",
+  "dur": 1.728
+ },
+ {
+  "i": 1,
+  "text": "The mask hangs from a cord. The cord is tied to a pin in a small can above you.",
+  "dur": 4.117
+ },
+ {
+  "i": 2,
+  "text": "That pin holds back a striker, pushed by a spring.",
+  "dur": 2.688
+ },
+ {
+  "i": 3,
+  "text": "Pull the mask, and the cord yanks the pin out.",
+  "dur": 2.304
+ },
+ {
+  "i": 4,
+  "text": "Now the spring snaps the striker into a tiny cap, and that starts the chemical core.",
+  "dur": 4.416
+ },
+ {
+  "i": 5,
+  "text": "The core makes oxygen for about twelve to twenty minutes, and it flows down the tube to your mask.",
+  "dur": 4.864
+ },
+ {
+  "i": 6,
+  "text": "Pull the mask, start the oxygen.",
+  "dur": 1.835
+ }
+]

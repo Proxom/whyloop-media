@@ -1,0 +1,200 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p100 lotion / soap pump "HOW DOES IT PULL / THE SOAP UP?" (group E, track A). Built from kit/kit.js. Units mm, y up, pump axis = y.
+// All pump parts are lathes: FULL (outside shots) and back half + red section caps on z = 0 (cutaway).
+// kin.json rows: [t, p (press mm), lowLift, topLift, flowOut, flowIn]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, H = G.H;
+const st = K.makeKit({ fov: 30, bg: 0x1d222b, envIntensity: 1.15, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.white = phys({ color: 0xf3f2ee, roughness: 0.3, roughnessMap: M.plastic.roughnessMap, clearcoat: 0.35, clearcoatRoughness: 0.35 });
+M.pp = phys({ color: 0xe6e9ea, roughness: 0.45, clearcoat: 0.15 });
+M.seal = phys({ color: 0x3d434b, roughness: 0.6 });
+M.bottle = phys({ color: 0xf4f8fa, roughness: 0.04, transparent: true, opacity: 0.2, envMapIntensity: 1.8, depthWrite: false, side: THREE.DoubleSide, clearcoat: 1, clearcoatRoughness: 0.05 });
+M.soap = phys({ color: 0x27b39c, roughness: 0.06, transparent: true, opacity: 0.62, envMapIntensity: 1.3, depthWrite: false, side: THREE.DoubleSide, clearcoat: 1, clearcoatRoughness: 0.05 });
+M.soapIn = phys({ color: 0x3fd1b8, roughness: 0.1, transparent: true, opacity: 0.5, depthWrite: false, emissive: 0x0b3a33, emissiveIntensity: 0.6 });
+M.tube = phys({ color: 0xf1f4f4, roughness: 0.2, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+M.skin = phys({ color: 0xd99a7c, roughness: 0.5, sheen: 0.6, sheenColor: 0xffc9b0, sheenRoughness: 0.6, clearcoat: 0.08 });
+M.nail = phys({ color: 0xf0c9bb, roughness: 0.25, clearcoat: 0.6 });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#d42a1f'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(90,8,4,0.55)'; g.lineWidth = 7;
+  for (let i = -64; i < 128; i += 22) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.3, 0.3); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
+M.secB = phys({ color: 0xbfe6f2, roughness: 0.2, clearcoat: 0.6, side: THREE.DoubleSide });          // clear bottle wall section (pale blue)
+const add = (m, p = scene, sh = true) => { m.castShadow = m.receiveShadow = sh; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const latheG = (P, a0 = 0, a1 = 2 * Math.PI, seg = 96) => new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, a1 - a0);
+const capShape = (P, sx) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(sx * r, y) : sh.moveTo(sx * r, y)); return sh; };
+const FULL = new THREE.Group(), CUT = new THREE.Group(); scene.add(FULL, CUT);
+// part(P, mat, parentFull, parentCut, capMat): full lathe into FULL parent, back half + both caps into CUT parent
+function part(P, mat, pf, pc, capMat = M.sec, caps = null) {
+  const mf = add(new THREE.Mesh(latheG(P), mat), pf); const m2 = mat.clone(); m2.side = THREE.DoubleSide; const mc = add(new THREE.Mesh(latheG(P, Math.PI / 2, 3 * Math.PI / 2), m2), pc);
+  for (const sx of [1, -1]) { const Q = caps ? caps(sx) : [capShape(P, sx)]; for (const sh of Q) { const c = add(new THREE.Mesh(new THREE.ShapeGeometry(sh), capMat), pc); c.position.z = 0.02; } }
+  return [mf, mc]; }
+// ---------- counter + bottle + soap ----------
+const wt = S.woodTex(31, 0); wt.repeat.set(0.0016, 0.0016); const counterM = phys({ map: wt, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.25 });
+{ const bg = new THREE.BoxGeometry(900, 30, 520); const uv = bg.attributes.uv, pz = bg.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, pz.getX(i) + 450, pz.getZ(i) + 260); const c = add(new THREE.Mesh(bg, counterM)); c.position.set(0, -165, -60); }
+const BOT = [[0.01, -150], [27, -150], [31.5, -147], [32, -142], [32, -38], [27, -26], [16.5, -16], [15.5, -12], [15.5, 2], [13.9, 2], [13.9, -11.4], [15, -14.6], [25.4, -24.3], [30.4, -36.8], [30.4, -142], [29.9, -146.2], [26.6, -148.4], [0.01, -148.4]];
+part(BOT, M.bottle, FULL, CUT, M.secB);
+const SOAP = [[0.01, -148.3], [26.5, -148.3], [29.8, -146.1], [30.3, -142], [30.3, -45], [0.01, -45]];
+add(new THREE.Mesh(latheG(SOAP), M.soap), FULL, false); add(new THREE.Mesh(latheG(SOAP, Math.PI / 2, 3 * Math.PI / 2), M.soap), CUT, false);
+{ const lab = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const g = c.getContext('2d'); g.fillStyle = '#f6f1e7'; g.fillRect(0, 0, 1024, 256);
+    g.fillStyle = '#2a8f7e'; g.fillRect(0, 34, 1024, 10); g.fillRect(0, 212, 1024, 10); g.fillStyle = 'rgba(42,143,126,0.25)'; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(60 + i * 115, 128, 26, 0, 7); g.fill(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  const lm = phys({ map: lab, roughness: 0.55, side: THREE.DoubleSide });
+  add(new THREE.Mesh(new THREE.CylinderGeometry(32.25, 32.25, 46, 96, 1, true, Math.PI * 0.62, Math.PI * 0.95), lm), FULL).position.y = -100; }
+// ---------- pump body (fixed) ----------
+const COL = [[3.3, 16], [16.2, 16], [16.8, 15], [16.8, -6], [15.6, -6], [15.6, 12], [3.3, 12]];
+part(COL, M.white, FULL, CUT);
+for (let i = 0; i < 48; i++) { const a = i / 48 * 2 * Math.PI; const r = add(new THREE.Mesh(new THREE.BoxGeometry(0.8, 18, 0.9), M.white), new THREE.Group()); r.parent.rotation.y = a; r.position.set(0, 4.8, 16.9); FULL.add(r.parent);
+  if (Math.cos(a) < 0) { const r2 = r.parent.clone(); CUT.add(r2); } }
+const CHB = [[7.5, 4.5], [13.8, 4.5], [13.8, 2], [9, 2], [9, -56], [4, -63.5], [4, -70], [2.7, -70], [2.7, -64.5], [2.2, -64.5], [2.2, -62], [7.5, -56]];
+part(CHB, M.pp, FULL, CUT);
+part([[2.5, -53.5], [7.5, -53.5], [7.5, -52], [2.5, -52]], M.pp, FULL, CUT);
+part([[1.8, -146], [2.6, -146], [2.6, -64.6], [1.8, -64.6]], M.tube, FULL, CUT);
+// fills (soap inside the pump; full lathes, always 'inside')
+const fillTube = add(new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 146 - 64.6, 24), M.soapIn), scene, false); fillTube.position.y = (-146 - 64.6) / 2;
+add(new THREE.Mesh(latheG([[0.01, -64.6], [2.15, -64.6], [2.15, -62], [7.4, -56.05], [7.4, -56], [0.01, -56]]), M.soapIn), CUT, false);
+const fillCh = add(new THREE.Mesh(new THREE.CylinderGeometry(7.4, 7.4, 1, 64).translate(0, 0.5, 0), M.soapIn), CUT, false); fillCh.position.y = -56;
+// ---------- moving: piston + pocket + stem + head (MOV y = -p) ----------
+const MOV = new THREE.Group(), MOVF = new THREE.Group(), MOVC = new THREE.Group(); scene.add(MOV); MOV.add(MOVF, MOVC);
+const PB0 = G.PIST_Y0, HY = G.HEAD_Y0;
+const PIS = [[1.6, PB0], [7.45, PB0], [7.15, PB0 + 1.2], [7.15, PB0 + 4.8], [7.45, PB0 + 6], [1.6, PB0 + 6]];
+part(PIS, M.seal, MOVF, MOVC);
+const POC = [[3.4, PB0 + 6], [4.4, PB0 + 6], [4.4, PB0 + 14.5], [2.0, PB0 + 14.5], [2.0, PB0 + 13], [3.4, PB0 + 13]];
+part(POC, M.pp, MOVF, MOVC);
+const STM = [[2.0, PB0 + 14.5], [3.0, PB0 + 14.5], [3.0, HY + 0.5], [2.0, HY + 0.5]];
+part(STM, M.pp, MOVF, MOVC);
+const HEAD = [[2.0, HY], [12, HY], [12.5, HY + 0.8], [12.5, HY + 14.5], [11.6, HY + 17.2], [9, HY + 18], [0.01, HY + 18], [0.01, HY + 13.2], [2.0, HY + 13.2]];
+const NY = HY + G.NOZ_Y;
+part(HEAD, M.white, MOVF, MOVC, M.sec, (sx) => sx > 0 ? [capShape([[2.0, HY], [12, HY], [12.5, HY + 0.8], [12.5, NY - 2.2], [2.0, NY - 2.2]], 1), capShape([[0.01, NY + 2.2], [12.5, NY + 2.2], [12.5, HY + 14.5], [11.6, HY + 17.2], [9, HY + 18], [0.01, HY + 18]], 1)]
+  : [capShape([[2.0, HY], [12, HY], [12.5, HY + 0.8], [12.5, HY + 14.5], [11.6, HY + 17.2], [9, HY + 18], [0.01, HY + 18], [0.01, HY + 13.2], [2.0, HY + 13.2]], -1)]);
+// nozzle: lathe around its own axis, then turned so the axis is +x
+const NOZ = [[2.2, 11.5], [3.6, 11.5], [3.6, 41.5], [3.1, G.NOZ_X1], [2.2, G.NOZ_X1]];
+{ const gf = new THREE.Group(), gc = new THREE.Group(); gf.rotation.z = -Math.PI / 2; gc.rotation.z = -Math.PI / 2; gf.position.y = NY; gc.position.y = NY; MOVF.add(gf); MOVC.add(gc); part(NOZ, M.white, gf, gc);
+  const nf = add(new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.15, G.NOZ_X1, 24).translate(0, G.NOZ_X1 / 2, 0), M.soapIn), gc, false); }
+// moving fills: piston bore, pocket, stem, head channel
+for (const [r, y0, y1] of [[1.55, PB0, PB0 + 6], [3.35, PB0 + 6, PB0 + 13], [1.95, PB0 + 13, HY], [1.95, HY, NY + 2.1]]) { const f = add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, y1 - y0, 32), M.soapIn), MOVC, false); f.position.y = (y0 + y1) / 2; }
+// balls + spring
+const BLO = add(new THREE.Mesh(new THREE.SphereGeometry(G.BALL_LO, 40, 24), M.chrome));
+const BTO = add(new THREE.Mesh(new THREE.SphereGeometry(G.BALL_TOP, 40, 24), M.chrome));
+const SPR = K.spring(M.steel, { R: 5.8, wire: 0.7, turns: 8, len: 44 }); SPR.position.y = G.LEDGE[1]; scene.add(SPR);
+// finger (pad presses the head top), 120 mm long, lies over the head toward -x
+const FIN = new THREE.Group(); scene.add(FIN);
+{ const f = add(new THREE.Mesh(new THREE.CapsuleGeometry(8.5, 110, 12, 32), M.skin), FIN); f.rotation.z = Math.PI / 2 - 0.22; f.position.set(-55 * Math.cos(0.22), 55 * Math.sin(0.22), 0); f.scale.set(1, 1, 0.92);
+  const n = add(new THREE.Mesh(new THREE.SphereGeometry(6.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2.4), M.nail), FIN); n.position.set(-3, 7.2, 0); n.scale.set(1.2, 0.35, 1); n.rotation.z = 0.22; }
+// stream of soap out of the nozzle
+const NS = 40; const DROP = new THREE.InstancedMesh(new THREE.SphereGeometry(2.3, 16, 12), phys({ color: 0x2fc0a8, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.92 }), NS); scene.add(DROP);
+S.shadowAll(scene); fillTube.castShadow = false;
+K.backdrop(scene, { floorY: -181, R: 200, zBack: -700, h: 4000, width: 8000, wall: '#323a48', floor: '#2b3038', pool: true, catcher: 10, shadowOpacity: 0 });
+K.contactBlob(scene, 0, -150, 0, 40, 0.5);
+const RIG = K.lightRig(scene, V(0, -40, 0), 170, { key: 2.5, rim: 3.0, fill: 0.6 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.7); f.position.set(300, 400, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.4); g.position.set(-500, 300, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => j >= 4 ? a[j] : v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.outA;
+T.lowA = T.vo2 + 2.5; T.topA = T.vo2 + 3.75; T.outM = T.vo2 + 5.0; T.top2 = T.vo4 + 1.25; T.low2 = T.vo4 + 2.55;
+// emission times of the stream (flowOut on): hook every 0.018 s, cutaway every 0.07 s
+const EMIT = []; { let last = -9; for (const r of KN) if (r[4]) { const dt = r[0] < T.cutIn ? 0.018 : 0.07; if (r[0] - last >= dt) { EMIT.push(r[0]); last = r[0]; } } }
+const lift = (t) => (t > T.outA ? Math.sin(Math.PI * Math.min(1, (t - T.outA) / (LOOP - 0.25 - T.outA))) ** 0.6 : 0);
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const p = k[1];
+  MOV.position.y = -p; const ins = inside(t); FULL.visible = !ins; CUT.visible = ins; MOVF.visible = !ins; MOVC.visible = ins;
+  BLO.position.set(0, G.LO_Y0 + k[2], 0); BTO.position.set(0, PB0 - p + G.TOP_DY0 + k[3], 0); BTO.visible = ins; BLO.visible = ins; SPR.visible = ins;
+  SPR.setLength(PB0 - p - G.LEDGE[1]); fillCh.scale.y = PB0 - p + 56;
+  FIN.position.set(0, HY + 18 - p + 8.5 + 0.3 + 70 * lift(t), 0); FIN.rotation.z = 0;
+  // glow: active parts
+  K.glow(BLO, ins && ((t > T.pressA && t < T.pressB + 0.3) || (t > T.vo4 && t < T.vo5 + 1.5)) ? 0.9 : 0, t > T.vo4 ? 0x5dff8a : 0xff4a3a);
+  K.glow(BTO, ins && ((t > T.pressA && t < T.pressB) || (t > T.vo4 && t < T.vo5 + 1.5)) ? 0.9 : 0, t > T.vo4 ? 0xff4a3a : 0x5dff8a);
+  K.glow(SPR, ins && t > T.vo3 && t < T.vo4 ? 0.8 : 0);
+  // stream
+  const v = t < T.cutIn ? 420 : 34, life = t < T.cutIn ? 0.35 : 2.2; const tip = V(G.NOZ_X1 + 1, NY - p, 0); const dm = new THREE.Matrix4(); let n = 0;
+  for (const e of EMIT) { const age = t - e; if (age < 0 || age > life || n >= NS) continue; if ((e < T.cutIn) !== (t < T.cutIn)) continue; const s = v * age;
+    const x = tip.x + Math.min(s, 5) + 0.18 * Math.max(0, s - 5), y = tip.y - 0.95 * Math.max(0, s - 5) - 0.004 * Math.max(0, s - 5) ** 2; const sc = 0.85 + 0.25 * Math.sin(e * 77);
+    dm.compose(V(x, y, 0), new THREE.Quaternion(), V(sc, sc * (s > 5 ? 1.25 : 1), sc)); DROP.setMatrixAt(n++, dm); }
+  DROP.count = n; DROP.instanceMatrix.needsUpdate = true;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const k_ = (t, a) => [t, ...a];
+const HOOK = [12, 46, 0, 360, 12, -24];
+const WIDE = (ty = -38, d = 560, az = -16) => [9, ty, 0, d, 7, az];
+const MID = (d = 395, az = -16, ty = -8) => [10, ty, 0, d, 6, az];
+const HERO = [8, -12, 0, 650, 10, -26];
+const pbAt = (t) => PB0 - kin(t)[1];
+const LOW = (d = 175, az = -14) => [4, G.LO_Y0 + 6, 0, d, 6, az];
+const TOPV = (t, d = 175, az = -14) => [4, pbAt(t) + 11, 0, d, 6, az];
+const CAMK = [k_(0, HOOK), k_(T.cutIn - 0.01, [12, 44, 0, 345, 12, -24]),
+  k_(T.cutIn, WIDE(-40, 500, -12)), k_(T.vo2 - 0.3, MID(415, -18, -12)),
+  k_(T.vo2 + 0.4, MID(400, -16)), k_(T.lowA - 0.6, MID(395, -16)), k_(T.lowA, LOW(180)), k_(T.topA - 0.5, LOW(170, -18)), k_(T.topA, TOPV(T.topA)), k_(T.outM - 0.5, TOPV(T.outM - 0.5, 170, -18)), k_(T.outM, MID(395, -16)), k_(T.vo3 - 0.01, MID(385, -20)),
+  k_(T.vo3, MID(380, -14, -14)), k_(T.vo4 + 0.9, MID(376, -16, -14)), k_(T.top2, TOPV(T.top2)), k_(T.low2 - 0.4, TOPV(T.low2 - 0.4, 170, -18)), k_(T.low2, LOW(180)), k_(T.vo5 - 0.2, LOW(170, -18)),
+  k_(T.vo5 + 0.3, WIDE(-52, 560, -14)), k_(T.outA - 0.01, WIDE(-50, 540, -18)),
+  k_(T.outA, HERO), k_(LOOP - 1.5, [8, -6, 0, 600, 11, -25]), k_(LOOP, HOOK)];
+// ---------- overlay ----------
+const sp = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#06110f'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+// flow dots along a 3D polyline, moving 'speed' mm/s, spacing 'gap' mm
+function flowDots(g2, a, pts, t0, t, speed, gap = 9) { if (a <= 0) return; const seg = []; let L = 0; for (let i = 1; i < pts.length; i++) { const d = pts[i].distanceTo(pts[i - 1]); seg.push([L, d, pts[i - 1], pts[i]]); L += d; }
+  const off = ((t - t0) * speed) % gap; g2.save(); g2.globalAlpha = a; g2.fillStyle = '#d9fff6'; g2.strokeStyle = '#06332c'; g2.lineWidth = 4; g2.shadowColor = 'rgba(0,0,0,0.5)'; g2.shadowBlur = 6;
+  for (let s = off; s < L; s += gap) { const q = seg.find(([l0, d]) => s >= l0 && s <= l0 + d); if (!q) continue; const P = q[2].clone().lerp(q[3], (s - q[0]) / q[1]); const [x, y] = S.toScreen(camera, P);
+    g2.beginPath(); g2.arc(x, y, 9, 0, 7); g2.fill(); g2.stroke(); } g2.restore(); }
+function ring(g2, a, P, r, color) { if (a <= 0) return; const [x, y] = S.toScreen(camera, P), [x2] = S.toScreen(camera, P.clone().add(V(r, 0, 0))); const R = Math.abs(x2 - x) + 9;
+  g2.save(); g2.globalAlpha = a; g2.strokeStyle = color; g2.lineWidth = 6; g2.shadowColor = 'rgba(0,0,0,0.7)'; g2.shadowBlur = 8; g2.beginPath(); g2.arc(x, y, R, 0, 7); g2.stroke(); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const p = k[1], pb = PB0 - p;
+  { let fx = 0; for (const c of [T.cutIn, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT PULL', 'THE SOAP UP?', 100); const [cx, cy] = sp(6, NY - p - 4); K.TXT.circle(g2, 1, cx, cy, 86, [-230, 190]); }
+  const s1 = hard(t, T.cutIn, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.outA);
+  K.TXT.step(g2, s1, 1, 'A PISTON, A SPRING, 2 BALLS', 58);
+  K.TXT.step(g2, s2, 2, 'PRESS: SOAP GOES UP AND OUT', 56);
+  K.TXT.step(g2, s3, 3, 'LET GO: THE SPRING PUSHES UP', 56);
+  K.TXT.step(g2, s4, 4, 'TOP BALL SHUTS, BOTTOM LIFTS', 56);
+  K.TXT.step(g2, s5, 5, 'NEW SOAP COMES UP THE TUBE', 56);
+  if (inside(t) && t > T.pressA - 0.3 && t < T.riseB) S.outlined(g2, 'SLOW MOTION', 300, 525, 44, '#ffd21f');
+  const OUTP = [V(0, -46), V(0, pb + 2), V(0, pb + 9), V(0, HY - p + 4), V(0, NY - p), V(G.NOZ_X1, NY - p)];
+  const INP = [V(0, -140), V(0, -63), V(0, -54), V(0, Math.min(-30, pb - 4))];
+  if (s1) { const d = T.vo2 - T.vo1;
+    S.tag(g2, hard(t, T.vo1 + 0.5, T.vo2), 'PISTON', ...sp(-7, pb + 3), -150, -60, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 1.0, T.vo2), 'SPRING', ...sp(-5.8, -30), -150, 40, 50, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 1.6, T.vo2), 'TOP BALL', ...sp(2.6, pb + G.TOP_DY0), 160, -110, 50, '#ffffff');
+    S.tag(g2, hard(t, T.vo1 + 2.0, T.vo2), 'BOTTOM BALL', ...sp(3.2, G.LO_Y0), 160, 70, 50, '#ffffff');
+    S.tag(g2, hard(t, T.vo1 + 2.6, T.vo2), 'EACH BALL = A ONE-WAY DOOR', ...sp(0, -100), 0, 120, 46, '#7dff9a'); }
+  if (s2) { const [hx, hy] = sp(-4, HY + 18 - p + 30); arrowC(g2, hard(t, T.vo2, T.pressB), hx - 120, hy - 60, hx - 120, hy + 70, 28, '#ffd21f');
+    const bS = hard(t, T.lowA, T.topA) || hard(t, T.outM, T.vo3); S.tag(g2, bS, 'SHUT', ...sp(-3.2, G.LO_Y0), -160, 10, 52, '#ff5a4a'); ring(g2, bS, V(0, G.LO_Y0 + k[2]), G.BALL_LO, '#ff5a4a'); ring(g2, hard(t, T.topA, T.vo3), V(0, pb + G.TOP_DY0 + k[3]), G.BALL_TOP, '#5dff8a');
+    S.tag(g2, hard(t, T.topA, T.vo3), 'OPEN', ...sp(-2.6, pb + G.TOP_DY0 + k[3]), -170, -20, 52, '#5dff8a');
+    S.tag(g2, hard(t, T.vo2 + 0.8, T.lowA - 0.6) || hard(t, T.outM, T.vo3), 'SQUEEZED', ...sp(-6, (pb - 56) / 2 - 2), -150, 0, 48, '#ffb21f');
+    flowDots(g2, hard(t, T.pressA, T.pressB + 0.2), OUTP, T.pressA, t, 16, 8);
+    { const [ax, ay] = sp(10, pb + 12), [bx, by] = sp(10, HY - p + 2); arrowC(g2, hard(t, T.outM, T.pressB), ax + 30, ay, bx + 30, by, 26, '#3fe0c4'); }
+    { const [ax, ay] = sp(16, NY - p + 9), [bx, by] = sp(40, NY - p + 9); arrowC(g2, hard(t, T.outM, T.pressB), ax, ay, bx, by, 24, '#3fe0c4'); } }
+  if (s3) { const [sx, sy] = sp(9, -28); arrowC(g2, hard(t, T.riseA, T.vo4), sx + 40, sy + 120, sx + 40, sy - 110, 28, '#ffb21f'); S.tag(g2, 1, 'SPRING', ...sp(-5.8, -32), -160, 20, 52, '#ffb21f');
+    const [fx, fy] = sp(-30, HY + 30 - p); S.tag(g2, hard(t, T.vo3, T.vo4), 'FINGER OFF', fx, fy, -40, -60, 48, '#ffffff'); }
+  if (s4) { S.tag(g2, hard(t, T.top2 - 0.2, T.low2 - 0.4), 'SHUT', ...sp(-2.6, pb + G.TOP_DY0 + k[3]), -170, -20, 52, '#ff5a4a'); ring(g2, hard(t, T.top2 - 0.2, T.low2 - 0.4), V(0, pb + G.TOP_DY0 + k[3]), G.BALL_TOP, '#ff5a4a'); ring(g2, hard(t, T.low2, T.vo5), V(0, G.LO_Y0 + k[2]), G.BALL_LO, '#5dff8a'); S.tag(g2, hard(t, T.low2, T.vo5), 'OPEN', ...sp(-3.2, G.LO_Y0 + k[2]), -160, 10, 52, '#5dff8a');
+    const [cx, cy] = sp(0, (pb - 53) / 2); S.tag(g2, hard(t, T.vo4 + 0.2, T.top2 - 0.2), 'SUCTION', cx, cy, 150, 0, 50, '#ffb21f');
+    for (const s of [-1, 1]) { const [ax, ay] = sp(s * 5, (pb - 53) / 2 - 8), [bx, by] = sp(s * 5, (pb - 53) / 2 + 6); arrowC(g2, hard(t, T.vo4 + 0.2, T.top2 - 0.2), ax, ay, bx, by, 18, '#ffb21f'); } }
+  if (s5) { flowDots(g2, 1, INP, T.riseA, t, 14, 8); const [ax, ay] = sp(5, -132), [bx, by] = sp(5, -72); arrowC(g2, hard(t, T.vo5 + 0.2, T.outA), ax + 26, ay, bx + 26, by, 28, '#3fe0c4');
+    S.tag(g2, hard(t, T.vo5 + 0.4, T.outA), 'ONLY WAY IN', ...sp(-2.6, -110), -170, 0, 52, '#3fe0c4'); S.tag(g2, 1, 'SHUT', ...sp(-2.6, pb + G.TOP_DY0 + k[3]), -170, -20, 50, '#ff5a4a'); }
+  if (s4 && t > T.low2) flowDots(g2, 1, INP, T.riseA, t, 14, 8);
+  K.TXT.answer(g2, hard(t, T.outA, LOOP - 1.25), 'TWO ONE-WAY BALLS', 'SOAP ONLY GOES UP', 520);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

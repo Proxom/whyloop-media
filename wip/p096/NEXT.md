@@ -1,4 +1,4 @@
-# p096 plane window breather hole "WHY IS THERE A / HOLE IN THE WINDOW?" - track A (Kokoro af_heart) - group V - v1 (19 Nov 18:13 run, fork)
+# p096 plane window breather hole "WHY IS THERE A / HOLE IN THE WINDOW?" - track A (Kokoro af_heart) - group V - v1 FINAL rendered 20 Nov 01:35 UTC, HARD GATE PASS; clarity + visual review pending (coordinator) - slot 25 Nov 2026 01:00
 topic key: plane window hole (synonyms: breather hole, bleed hole, airplane window) - not in learnings/topics-used.md (coordinator checked; no window/pressure topic in the registry).
 Principle: the breather (bleed) hole in the middle pane equalizes pressure between the cabin and the gap in front of the outer pane, so the cabin pressure acts only on the outer pane; the middle pane is the fail-safe backup; the hole also vents moisture so the panes do not fog/frost.
 Built from kit/kit.js (makeKit, materials, lightRig, glow, TXT) + scene-local: beige cabin wall panel + bezel, three acrylic panes (extruded rounded rects, bevelled), grey rubber seal, aluminium skin, sky plane behind; a clipping plane at x = 0 cuts the whole assembly (red section caps on solid parts, pale-blue caps on the acrylic panes, middle-pane cap split at the hole).
@@ -9,3 +9,9 @@ Copy spellchecked (flags: gkn, sciencealert = sources; howitworks, hq, whyloop =
 Audio: Kokoro VO + soft bed + low thumps + 60-300 Hz air rumble while air/moisture moves. -15.1 LUFS, -3.1 dBTP, HP4k gap 21.1 dB (mix.wav).
 Rebuild: python3 kin.py; <venv>/python vo.py <ttsdir> vo; <venv>/python audio.py; bash master_p096.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; <venv>/python mkpost.py
 Render: node tools/render/render.js wip/p096/scene.html <out> 30 1 0 791 0.75 0 0 1 1080 1920 1 (~0.7 s/frame on the shared CPU); encode.sh <out> wip/p096/mix.wav plane_window_reel_v1.mp4 26.37 30
+
+## STATUS 20 Nov 01:35 UTC (run ig-awesome-curie-ty3ndo-0110-20nov, fork)
+Final: wip/p096/plane_window_reel_v1.mp4 (26.37 s) + cover wip/p096/plane_window_cover_v1.jpg (frame 15 = 0.5 s, hook + red circle). Render 954 s (1.2 s/frame, shared CPU).
+qualityAudit: HARD GATE v1 (20 Nov 01:35 UTC): 1080x1920 H.264 High yuv420p 30 fps, 791 frames, AAC LC 48 kHz stereo, 26.37 s (planned 26.37); first/last frame luma 205.0 / 196.8 (not black); audio -15.1 LUFS, -3.0 dBTP, HP4k gap 21.1 dB; kin.py PASS (no part overlap, every particle path crosses the middle pane only through the hole); spell flags only gkn/sciencealert (sources), howitworks/hq/whyloop (hashtag/handle); text: hook 96 px, steps 54-60 px, tags 48-52 px, answer 70/84 px, follow 44 px; safe zones checked on safe_0.5s (hook, circle inside; only the red arrow tail reaches 40 px into the bottom zone, no text); 6 stills looked at: no glitches, black frames, clipping or cut text. Minor: in step 5 a few air dots pass over the caption letters. PASS
+Review packets (session scratchpad): clarity = p096/clar/c_01..c_54.jpg (2 fps, 360x640) + p096/clar/transcript.txt; visual = p096/qc/still_0..still_100.png + safe_0.5s.png + sheet.jpg.
+Left: coordinator runs clarity + visual review, then media/p096 + schedule 25 Nov 01:00.
