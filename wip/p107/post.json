@@ -49,5 +49,21 @@
   "https://patents.google.com/patent/US20050067837A1/en",
   "https://www.eleyhosereels.com/products/garden-hose-quick-connectors",
   "https://kindseed.com/hose-quick-connect-fittings"
- ]
+ ],
+ "version": "v1",
+ "status": "ready (HARD GATE PASS, awaiting coordinator fresh review)",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_reel_v1.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_cover_v1.jpg",
+ "visualScore": null,
+ "reviews": [],
+ "qualityAudit": {
+  "technical": "PASS: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 24.0 s as planned; first/last frame luma 135.5/130.5 (not black)",
+  "mechanism": "PASS: principle = resilient claws deflect over the plug nose and snap into its groove, the groove shoulder blocks pull-out, the collar tube pushes the claws out to release. kin.py (1/120 s): hooks never inside the plug, claws inside the chamber (max shift 4.40 mm vs 5.7 mm room), tube never inside a claw, plug only leaves with the claws open past the groove depth, claws move only when the plug or the collar tube pushes them, 0.95 mm tug keeps the hook in the groove",
+  "facts": "PASS: LSU AgCenter (push until it snaps, pull back the collar), garden hose connectors patent application (resilient engaging fingers driven back on insertion and returning when fully engaged, O-ring on the male part, spring-loaded sleeve retracts the fingers), US 2005/0067837 (balls + spring-biased sleeve), Eley (brass: locking pins click, slide sleeve releases); model-specific collar-tube detail flagged as simplified in the first comment",
+  "text": "PASS: US English; pyspellchecker flags agcenter, lsu (source name), howitworks (hashtag), hq, whyloop (handle) = justified; hook 104 px, steps 54-62 px, tags 46-54 px; safe zones checked on the 0.5 s frame",
+  "audio": "PASS: -15.0 LUFS, -3.1 dBTP, 4 kHz high-pass gap 20.6 dB; low thumps on the two snaps, collar pull/release and tug, low 70-300 Hz rub on push/pull, no hiss/beeps/clinks; low-pass 7 kHz + -4 dB shelf + de-esser (master_p107.sh, private /tmp/p107_m1.wav)",
+  "look": "PASS: 6 stills + 0.5 s safe-zone frame checked; fixed before final: hook text over the plug/collar joint (camera target lowered), red-circle arrow out of the right band, PLUG tag over the step title, PULL arrow off-frame, claws glow blue instead of orange (contrast), spring clipped to its back half in the cutaway. Known nit: FOLLOW pill sits over the connector body in the last 1.4 s"
+ }
 }

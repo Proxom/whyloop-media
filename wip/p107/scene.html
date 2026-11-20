@@ -114,7 +114,7 @@ function setScene(t) {
 }
 // ---------- camera (still during every key motion) ----------
 const ck = (t, p, dist, el, az) => [t, p[0], p[1], p[2], dist, el, az];
-const WIDE = [0, -10, 0], CLOSE = [0, -2, 0];
+const WIDE = [0, 15, 0], CLOSE = [0, -2, 0];
 const CAMK = [ck(0, WIDE, 360, 6, 24), ck(T.cutA, WIDE, 360, 6, 24), ck(T.cutB + 0.2, CLOSE, 190, 4, 16), ck(T.backA, CLOSE, 190, 4, 16), ck(T.backB, WIDE, 360, 6, 24), ck(LOOP, WIDE, 360, 6, 24)];
 // ---------- overlay ----------
 const sc = (v) => S.toScreen(camera, v);
@@ -144,7 +144,7 @@ function overlay(t) {
     S.tag(g2, hard(t, T.s4 + 0.2, T.ans), 'COLLAR', ...fs(24, -12, 0), 110, 120, 54, '#ffffff');
     S.tag(g2, hard(t, T.colA + 0.3, T.ans), 'ITS TUBE PUSHES THE CLAWS OPEN', ...fs(-10, -21, 0), -60, 330, 46, '#ffd21f');
     const [ox, oy] = fs(-30, -60); arrowC(g2, hard(t, T.outA - 0.2, T.outB), ox - 70, oy - 40, ox - 70, oy + 100, 24, '#7dff9a'); }
-  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT', 'CLICK ON?', 104); const [cx, cy] = fs(24, -9, 0); K.TXT.circle(g2, 1, cx, cy, 70, [210, 170]);
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT', 'CLICK ON?', 104); const [cx, cy] = fs(24, -9, 0); K.TXT.circle(g2, 1, cx, cy, 70, [120, 200]);
     burst(g2, Math.max(0, 1 - Math.abs(t - T.hookB - 0.1) / 0.35), ...fs(0, -10, 24)); }
   K.TXT.step(g2, s1, 1, 'PUSH IT ON', 62);
   K.TXT.step(g2, s2, 2, 'THE NOSE PUSHES THE CLAWS OUT', 54);
