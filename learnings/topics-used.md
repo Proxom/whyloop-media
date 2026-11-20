@@ -86,6 +86,7 @@ Update this file every time a video is scheduled.
 | 2026-11-25 01:00 | Why is there a hole in the plane window | plane window hole |
 | 2026-11-26 21:00 | How does it pull the soap up | lotion pump |
 | 2026-11-25 17:00 | How does a pepper grinder crush pepper | pepper grinder |
+| 2026-11-26 17:00 | How does the stick know your tire pressure | tire pressure gauge |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
