@@ -22,7 +22,7 @@ alt = ("3D animation of a soap pump bottle, with a voiceover. Under the question
        "The payoff reads Two one-way balls, soap only goes up, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES IT PULL', 'THE SOAP UP?', 'A PISTON, A SPRING, 2 BALLS', 'PISTON', 'SPRING', 'TOP BALL', 'BOTTOM BALL', 'EACH BALL = A ONE-WAY DOOR',
       'PRESS: SOAP GOES UP AND OUT', 'SLOW MOTION', 'SHUT', 'OPEN', 'SQUEEZED', 'LET GO: THE SPRING PUSHES UP', 'FINGER OFF', 'TOP BALL SHUTS, BOTTOM LIFTS', 
-      'NEW SOAP COMES UP THE TUBE', 'ONLY WAY IN', 'BIGGER CHAMBER = SUCTION', 'TWO ONE-WAY BALLS', 'SOAP ONLY GOES UP', 'FOLLOW → A NEW MACHINE EVERY DAY']
+      'NEW SOAP COMES UP THE TUBE', 'ONLY WAY IN', 'CHAMBER GETS BIGGER', 'TWO ONE-WAY BALLS', 'SOAP ONLY GOES UP', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p100', track='A', group='E', slot='2026-11-26T21:00 Europe/London (planned, coordinator schedules)', topicKey='lotion pump',
   outlier='scorecard rule: everyday object you hold + one "why does it only go one way"; our own model, script, words and sound',

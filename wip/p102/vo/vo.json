@@ -1,0 +1,32 @@
+[
+ {
+  "i": 0,
+  "text": "How does the stick know your tire pressure?",
+  "dur": 1.792
+ },
+ {
+  "i": 1,
+  "text": "Press the gauge on. A pin opens the tire's valve, so air rushes in.",
+  "dur": 3.947
+ },
+ {
+  "i": 2,
+  "text": "The air pushes a rubber piston up the tube, and the piston pushes the stick out.",
+  "dur": 4.011
+ },
+ {
+  "i": 3,
+  "text": "But a spring pushes back. More pressure pushes it further, until the two balance.",
+  "dur": 4.075
+ },
+ {
+  "i": 4,
+  "text": "Lift it off. The spring pushes the piston back, but the stick stays, because friction holds it.",
+  "dur": 4.608
+ },
+ {
+  "i": 5,
+  "text": "So the number at the end shows your tire pressure.",
+  "dur": 2.496
+ }
+]

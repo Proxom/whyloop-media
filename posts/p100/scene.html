@@ -199,7 +199,7 @@ function overlay(t) {
   if (s3) { const [sx, sy] = sp(9, -28); arrowC(g2, hard(t, T.riseA, T.vo4), sx + 40, sy + 120, sx + 40, sy - 110, 28, '#ffb21f'); S.tag(g2, 1, 'SPRING', ...sp(-5.8, -32), -160, 20, 52, '#ffb21f');
     const [fx, fy] = sp(-6, HY + 18 - p + 48); S.tag(g2, hard(t, T.riseA - 0.05, T.vo4), 'FINGER OFF', fx, fy, 200, 360, 48, '#ffffff'); }
   if (s4) { S.tag(g2, hard(t, T.top2 - 0.2, T.low2 - 0.4), 'SHUT', ...sp(-2.6, pb + G.TOP_DY0 + k[3]), -170, -20, 52, '#ff5a4a'); ring(g2, hard(t, T.top2 - 0.2, T.low2 - 0.4), V(0, pb + G.TOP_DY0 + k[3]), G.BALL_TOP, '#ff5a4a'); ring(g2, hard(t, T.low2, T.vo5), V(0, G.LO_Y0 + k[2]), G.BALL_LO, '#5dff8a'); S.tag(g2, hard(t, T.low2, T.vo5), 'OPEN', ...sp(-3.2, G.LO_Y0 + k[2]), -160, 10, 52, '#5dff8a');
-    const [cx, cy] = sp(0, (pb - 53) / 2); S.tag(g2, hard(t, T.vo4 + 0.2, T.top2 - 0.2), 'BIGGER CHAMBER = SUCTION', cx, cy, 150, 0, 48, '#ffb21f');
+    const [cx, cy] = sp(0, (pb - 53) / 2); S.tag(g2, hard(t, T.vo4 + 0.2, T.top2 - 0.2), 'SUCTION', cx, cy, 150, 0, 50, '#ffb21f'); if (hard(t, T.vo4 + 0.2, T.top2 - 0.2)) S.outlined(g2, 'CHAMBER GETS BIGGER', S.CX, 1415, 52, '#ffb21f');
     for (const s of [-1, 1]) { const [ax, ay] = sp(s * 5, (pb - 53) / 2 - 8), [bx, by] = sp(s * 5, (pb - 53) / 2 + 6); arrowC(g2, hard(t, T.vo4 + 0.2, T.top2 - 0.2), ax, ay, bx, by, 18, '#ffb21f'); } }
   if (s5) { flowDots(g2, 1, INP, T.riseA, t, 14, 8); const [ax, ay] = sp(5, -132), [bx, by] = sp(5, -72); arrowC(g2, hard(t, T.vo5 + 0.2, T.outA), ax + 26, ay, bx + 26, by, 28, '#3fe0c4');
     S.tag(g2, hard(t, T.vo5 + 0.4, T.outA), 'ONLY WAY IN', ...sp(-2.6, -110), -170, 0, 52, '#3fe0c4'); }

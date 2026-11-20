@@ -32,7 +32,7 @@
   "TOP BALL SHUTS, BOTTOM LIFTS",
   "NEW SOAP COMES UP THE TUBE",
   "ONLY WAY IN",
-  "BIGGER CHAMBER = SUCTION",
+  "CHAMBER GETS BIGGER",
   "TWO ONE-WAY BALLS",
   "SOAP ONLY GOES UP",
   "FOLLOW → A NEW MACHINE EVERY DAY"
@@ -50,5 +50,14 @@
   "https://patents.google.com/patent/US11267009B1",
   "https://patents.google.com/patent/US8863989B2",
   "https://patents.google.com/patent/US10875043B1"
- ]
+ ],
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p100/pump_reel_v2.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p100/pump_cover_v2.jpg",
+ "reviews": {
+  "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gap: chamber gets bigger not shown -> v2 adds it)",
+  "visual": "5/10 -> rule B 3 fixes once + text-overlap fixes, no re-score"
+ }
 }
