@@ -81,5 +81,12 @@
  "media": {
   "mp4": "media/p105/dynamo_reel_v2.mp4",
   "cover": "media/p105/dynamo_cover_v2.jpg"
- }
+ },
+ "status": "scheduled",
+ "scheduledAt": "2026-11-27T01:00:00 Europe/London",
+ "metricoolPostId": 436083618,
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p105/dynamo_reel_v2.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p105/dynamo_cover_v2.jpg"
 }
