@@ -1,0 +1,153 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p106 pressure cooker weight "WHY DOES THIS / WEIGHT DANCE?" (group E, track A). Built from kit/kit.js. Units mm, pot axis +y, pot bottom y 0.
+// kin.json rows: [t, h (weight lift), tilt deg, p (steam push / weight)]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x22262d, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.pot = phys({ color: 0xd9dde2, metalness: 1, roughness: 0.22, roughnessMap: M.steel.roughnessMap, anisotropy: 0.4, envMapIntensity: 1.35 });
+M.potIn = phys({ color: 0x8a9098, metalness: 0.9, roughness: 0.42, roughnessMap: M.steel.roughnessMap, envMapIntensity: 0.55 });
+M.weight = phys({ color: 0x45484e, metalness: 0.85, roughness: 0.38, roughnessMap: M.alu.roughnessMap, envMapIntensity: 1.3 });
+M.bake = phys({ color: 0x141518, metalness: 0, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+M.water = phys({ color: 0x6fa8d6, metalness: 0, roughness: 0.1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+M.cooktop = phys({ color: 0x0b0c0e, metalness: 0, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.2 });
+M.burner = new THREE.MeshBasicMaterial({ color: 0xff5a1a, toneMapped: false, transparent: true, opacity: 0.95 });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#c92a20'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(80,8,4,0.5)'; g.lineWidth = 6;
+  for (let i = -64; i < 128; i += 20) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.12, 0.12); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.5, side: THREE.DoubleSide });
+M.waterSec = new THREE.MeshBasicMaterial({ color: 0x3f7fb8, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const dsm = (mat) => { if (mat.side === THREE.DoubleSide) return mat; const c = mat.clone(); c.side = THREE.DoubleSide; return c; };
+const lathe = (P, mat, p, a0 = 0, a1 = 2 * Math.PI, seg = 128) => add(new THREE.Mesh(new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, a1 - a0), dsm(mat)), p);
+const capShape = (P, sx) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(sx * r, y) : sh.moveTo(sx * r, y)); return sh; };
+// part = full lathe in FULL, back half + hatched section faces in CUT
+const FULL = new THREE.Group(), CUT = new THREE.Group(); scene.add(FULL); scene.add(CUT);
+function part(P, mat, parentFull = FULL, parentCut = CUT, secMat = M.sec, cutMat = mat) {
+  lathe(P, mat, parentFull); lathe(P, cutMat, parentCut, Math.PI / 2, 3 * Math.PI / 2);
+  for (const sx of [1, -1]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P, sx)), secMat), parentCut); m.position.z = 0.05; }
+}
+// ---------- pot ----------
+const RI = G.POT_RI, RO = G.POT_RO;
+part([[0.01, 0], [RO - 6, 0], [RO, 6], [RO, 146], [RO + 2.5, 149.5], [RO + 2.5, 152], [RI, 152], [RI, 7], [RI - 4, 5], [0.01, 5]], M.pot, FULL, CUT, M.sec, M.potIn);
+// lid: shallow dome, flange on the rim, skirt inside the pot, hole for the vent pipe
+const dome = (r) => 154 + 14 * (1 - (r / 108) ** 2);
+const LID = []; for (let r = G.PIPE_RO; r <= 108.01; r += 6) LID.push([Math.min(r, 108), dome(Math.min(r, 108))]);
+LID.push([RO + 3.5, 153.2], [RO + 3.5, 151.2], [RI - 0.6, 151.2], [RI - 0.6, 145], [RI - 2.6, 145], [RI - 2.6, 150]);
+for (let r = 102; r >= G.PIPE_RO - 0.01; r -= 6) LID.push([Math.max(r, G.PIPE_RO), dome(Math.max(r, G.PIPE_RO)) - 2.2]);
+part(LID, M.pot, FULL, CUT, M.sec, M.potIn);
+// vent pipe + boss on the lid
+part([[G.PIPE_RI, G.PIPE_Y0 - 6], [G.PIPE_RO, G.PIPE_Y0 - 6], [G.PIPE_RO, G.PT - 0.6], [G.PIPE_RO - 0.6, G.PT], [G.PIPE_RI, G.PT]], M.pot);
+part([[G.PIPE_RO, G.LID_TOP - 1], [9.5, G.LID_TOP - 1], [9.5, G.LID_TOP + 2.2], [8.5, G.LID_TOP + 3], [G.PIPE_RO, G.LID_TOP + 3]], M.pot);
+// water (cut view only)
+lathe([[0.01, 5.2], [RI - 0.4, 5.2], [RI - 0.4, G.WATER], [0.01, G.WATER]], M.water, CUT, Math.PI / 2, 3 * Math.PI / 2);
+for (const sx of [1, -1]) { const m = new THREE.Mesh(new THREE.ShapeGeometry(capShape([[0.01, 5.2], [RI - 0.4, 5.2], [RI - 0.4, G.WATER], [0.01, G.WATER]], sx)), M.waterSec); m.position.z = 0.04; CUT.add(m); }
+// ---------- weight (moves) ----------
+const WF = new THREE.Group(), WC = new THREE.Group(); FULL.add(WF); CUT.add(WC);
+const WP = [[G.W_BORE, -G.W_DEPTH], [G.W_R - 2.5, -G.W_DEPTH], [G.W_R, -G.W_DEPTH + 2.5], [G.W_R, 7], [G.W_R - 3.5, 11], [9, 13.5], [7, 15], [7, 19.5], [8.5, 21], [8.5, 24], [7.5, G.W_H - 0.5], [0.01, G.W_H], [0.01, 0], [G.W_BORE, 0]];
+part(WP, M.weight, WF, WC);
+for (const g of [WF]) for (let i = 0; i < 3; i++) { const r = add(new THREE.Mesh(new THREE.TorusGeometry(G.W_R + 0.05, 0.45, 8, 96), M.weight), g); r.rotation.x = Math.PI / 2; r.position.y = -4 + i * 4; }
+// ---------- handles (bakelite) ----------
+const HM = M.bake, HMc = dsm(M.bake); HMc.clippingPlanes = [new THREE.Plane(V(0, 0, -1), 0)];
+const handles = [];
+function handle(w, h, d, x, y, rz = 0) { for (const [g, m] of [[FULL, HM]]) { const b = add(new THREE.Mesh(new K.RBox(w, h, d, 4, 6), m), g); b.position.set(x, y, 0); b.rotation.z = rz; } }
+handle(150, 24, 32, RO + 88, 112, 0.05);                 // long body handle
+handle(70, 22, 30, -(RO + 40), 118);                      // helper handle
+handle(140, 18, 28, RO + 78, 160, 0.03);                  // lid handle (closes over the body handle)
+for (const [g, m] of [[FULL, M.pot]]) { const b1 = add(new THREE.Mesh(new THREE.BoxGeometry(26, 14, 22), m), g); b1.position.set(RO + 10, 112, 0);
+  const b2 = add(new THREE.Mesh(new THREE.BoxGeometry(22, 8, 20), m), g); b2.position.set(100, 158, 0); const b3 = add(new THREE.Mesh(new THREE.BoxGeometry(14, 12, 22), m), g); b3.position.set(-(RO + 4), 118, 0);
+  if (m !== M.pot) for (const b of [b1, b2, b3]) { b.material = m.clone(); b.material.clippingPlanes = [new THREE.Plane(V(0, 0, -1), 0)]; } }
+// ---------- cooktop + burner glow ----------
+{ const top = add(new THREE.Mesh(new K.RBox(1300, 14, 760, 3, 4), M.cooktop)); top.position.set(60, -7, 0);
+  for (const [R, w, o] of [[118, 5, 0.95], [96, 3, 0.7], [140, 2.5, 0.35]]) { const ring = new THREE.Mesh(new THREE.RingGeometry(R - w, R + w, 160), M.burner.clone()); ring.material.opacity = o; ring.rotation.x = -Math.PI / 2; ring.position.y = 0.35; scene.add(ring); }
+  const glowC = document.createElement('canvas'); glowC.width = glowC.height = 256; const gg = glowC.getContext('2d'); const gr = gg.createRadialGradient(128, 128, 60, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,90,30,0.55)'); gr.addColorStop(0.6, 'rgba(255,70,20,0.18)'); gr.addColorStop(1, 'rgba(255,60,20,0)'); gg.fillStyle = gr; gg.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(glowC); const gl = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })); gl.rotation.x = -Math.PI / 2; gl.position.y = 0.3; scene.add(gl);
+  const pl = new THREE.PointLight(0xff6a2a, 4000, 500, 2); pl.position.set(0, 18, 60); scene.add(pl); }
+S.shadowAll(scene);
+K.backdrop(scene, { floorY: -14, R: 300, zBack: -900, h: 5000, width: 9000, wall: '#39404b', floor: '#2f2b28', pool: true, catcher: 3000, shadowOpacity: 0.45 });
+const RIG = K.lightRig(scene, V(0, 120, 0), 260, { key: 2.6, rim: 3.0, fill: 0.6 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.9); f.position.set(300, 600, 900); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.2); g.position.set(-700, 400, -500); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const inside = (t) => t >= T.cutIn && t < T.outA;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const h = k[1], tl = k[2] * Math.PI / 180;
+  for (const w of [WF, WC]) { w.position.set(0, G.PT + h, 0); w.rotation.z = tl; }
+  const ins = inside(t); FULL.visible = !ins; CUT.visible = ins;
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
+const EXT = (t, az = 24) => [t, 18, 150, 0, 1050, 20, az];
+const MID = (t) => [t, 0, 128, 0, 840, 7, 0];
+const CLOSE = (t) => [t, 0, G.PT + 4, 0, 390, 5, 0];
+const CAMK = [EXT(0, 26), EXT(T.cutIn - 0.01, 22), MID(T.cutIn), MID(T.s2), CLOSE(T.s2 + 0.8), CLOSE(T.outA - 0.01), EXT(T.outA, 20), EXT(LOOP, 26)];
+// ---------- overlay ----------
+const sc = (x, y, z = 0) => S.toScreen(camera, V(x, y, z));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#10141c'; g2.lineWidth = 5; const hw = Math.min(w * 2, L * 0.45); g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - hw, -w / 2); g2.lineTo(L - hw, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - hw, w * 1.25); g2.lineTo(L - hw, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function puff(g2, x, y, r, a) { if (a <= 0.01) return; const gr = g2.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(255,255,255,${0.85 * a})`); gr.addColorStop(0.55, `rgba(240,246,252,${0.45 * a})`); gr.addColorStop(1, 'rgba(240,246,252,0)'); g2.fillStyle = gr; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); }
+const rnd = (() => { let s = 4106; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const IN = Array.from({ length: 90 }, () => [rnd(), rnd(), rnd(), rnd()]);
+const OUTP = Array.from({ length: 16 }, () => [rnd(), rnd(), rnd()]);
+const pxPerMm = () => { const a = sc(0, G.PT), b = sc(10, G.PT); return Math.hypot(b[0] - a[0], b[1] - a[1]) / 10; };
+// steam trapped in the pot (cut plane z = 0): density follows p
+function steamInside(g2, t, p) {
+  const n = Math.round(IN.length * Math.min(1, p)); const s = pxPerMm();
+  for (let i = 0; i < n; i++) { const [a, b, c, d] = IN[i]; const r = (a * 2 - 1) * 95; const top = Math.min(149, 152 + 14 * (1 - (r / 108) ** 2) - 6); const y0 = G.WATER + 6;
+    const y = y0 + ((b * (top - y0) + t * (6 + 10 * c)) % (top - y0)); const x = r + Math.sin(t * 1.3 + d * 9) * 3; const [X, Y] = sc(x, y, 0.5); puff(g2, X, Y, (3.2 + 2.2 * c) * s, 0.55 + 0.3 * d); }
+}
+// steam going up the pipe and out under the weight skirt while it is lifted
+function steamOut(g2, t, h, ext) {
+  const L = G.LIFT; const a = Math.min(1, h / (0.35 * L)); if (a <= 0) return; const s = pxPerMm();
+  if (!ext) for (let i = 0; i < 6; i++) { const y = G.PIPE_Y0 - 4 + ((t * 40 + i * 4) % (G.PT - G.PIPE_Y0 + 4)); const [X, Y] = sc(0, y, 0.5); puff(g2, X, Y, 2.0 * s, a); }
+  for (let i = 0; i < OUTP.length; i++) { const [q, w, e] = OUTP[i]; const u = (t * 1.5 + q) % 1; const side = i % 2 ? 1 : -1;
+    const x = side * (G.W_R + 2 + u * 34 * (0.7 + 0.5 * w)); const y = G.PT - G.W_DEPTH + h + 1 + u * u * 26 * (0.5 + e); const [X, Y] = sc(x, y, ext ? 6 : 0.5);
+    puff(g2, X, Y, (2.5 + u * 9) * s, Math.min(1, a * (1 - u) * 1.5)); }
+}
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const h = k[1], p = k[3]; const ins = inside(t);
+  { let fx = 0; for (const c of [T.cutIn, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  if (ins) steamInside(g2, t, t < T.s2 + 0.8 ? p : Math.max(p, 0.9));
+  steamOut(g2, t, h, !ins);
+  const s1 = hard(t, T.cutIn, T.s2), s2 = hard(t, T.s2, T.s3), s3 = hard(t, T.s3, T.s4), s4 = hard(t, T.s4, T.outA);
+  const yS = G.PT + h; // weight seat
+  if (s1) { K.TXT.tag(g2, hard(t, T.vo1 + 0.3, T.s2), 'WEIGHT', ...sc(G.W_R, yS + 6), 150, -110, '#ffd21f');
+    K.TXT.tag(g2, hard(t, T.vo1 + 1.3, T.s2), 'THIN PIPE', ...sc(-G.PIPE_RO, G.PIPE_Y0 + 8), -170, -150, '#ffffff');
+    K.TXT.tag(g2, hard(t, T.vo1 + 2.6, T.s2), 'STEAM TRAPPED', ...sc(-55, 118), -60, 170, '#ffffff'); }
+  if (s2 || s3 || s4) { const s = pxPerMm(); const [sx, sy] = sc(0, yS - 1.0); const Lp = 26 * s * Math.min(1.08, p); const [wx, wy] = sc(0, yS + G.W_H + 1);
+    const Lw = 26 * s; arrowC(g2, 1, sx, sy + Lp, sx, sy, 30, '#8fd3ff'); arrowC(g2, 1, wx, wy - Lw, wx, wy, 30, '#ffb21f');
+    K.TXT.tag(g2, 1, 'STEAM PUSH', sx - 18, sy + Lp * 0.55, -150, 40, '#8fd3ff'); K.TXT.tag(g2, 1, 'WEIGHT', wx + 18, wy - Lw * 0.55, 150, -20, '#ffb21f');
+    if (s3) K.TXT.tag(g2, hard(t, T.liftB, T.s4), 'STEAM OUT', ...sc(G.W_R + 14, G.PT - G.W_DEPTH + h + 6), 150, 150, '#ffffff');
+    if (s4) K.TXT.tag(g2, hard(t, T.dropA, T.dropB + 1.2), 'PUSH < WEIGHT: DROPS', ...sc(G.W_R, yS - 6), 130, 190, '#ffffff'); }
+  // hook
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'WHY DOES THIS', 'WEIGHT DANCE?', 112); const [cx, cy] = sc(0, G.PT + 10); K.TXT.circle(g2, 1, cx, cy, 82, [-250, 170]); }
+  K.TXT.step(g2, s1, 1, 'THE WEIGHT PLUGS THE PIPE', 60);
+  K.TXT.step(g2, s2, 2, 'STEAM PUSHES UP', 62);
+  K.TXT.step(g2, s3, 3, 'PUSH BEATS WEIGHT: IT LIFTS', 58);
+  K.TXT.step(g2, s4, 4, 'STEAM OUT, IT DROPS BACK', 60);
+  if (t >= T.ans) K.TXT.answer(g2, 1, 'THE WEIGHT SETS', 'THE TOP PRESSURE', 560);
+  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

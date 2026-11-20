@@ -1,0 +1,195 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p105 bicycle bottle dynamo "HOW DOES THE WHEEL / LIGHT THE LAMP?" (group V, track A). Built from kit/kit.js. Units mm.
+// Wheel in the xy plane (axis z), hub at the origin, bike rides to +x. Dynamo axis along the radial direction at TH deg, roller on the +z sidewall.
+// kin.json rows: [t, wheelAngle, rollerAngle, omegaWheel, brightness, cut]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x1d2129, envIntensity: 1.15, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const D2R = Math.PI / 180;
+M.body = phys({ color: 0xdfe3e8, metalness: 1, roughness: 0.2, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.4 });
+M.cap = phys({ color: 0x1b1d21, roughness: 0.4, clearcoat: 0.4 });
+M.inner = phys({ color: 0x7b828c, metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide });
+M.copper = phys({ color: 0xd2763a, metalness: 1, roughness: 0.3, envMapIntensity: 1.3, side: THREE.DoubleSide });
+M.magN = phys({ color: 0xd8302a, roughness: 0.45, clearcoat: 0.3 });
+M.magS = phys({ color: 0x2f6fd6, roughness: 0.45, clearcoat: 0.3 });
+M.fork = phys({ color: 0x1f5a48, metalness: 0.2, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08 });
+M.rim = phys({ color: 0xb9bec4, metalness: 1, roughness: 0.3, envMapIntensity: 1.2 });
+M.spoke = phys({ color: 0xd0d4d8, metalness: 1, roughness: 0.25 });
+M.wire = phys({ color: 0x18191c, roughness: 0.5, clearcoat: 0.3 });
+M.lens = new THREE.MeshBasicMaterial({ color: 0x333333 });
+M.roller = phys({ color: 0x202226, roughness: 0.75, bumpMap: M.rubber.bumpMap, bumpScale: 0.3 });
+M.stripe = phys({ color: 0xffd21f, roughness: 0.4 });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#c92a20'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(80,8,4,0.5)'; g.lineWidth = 6;
+  for (let i = -64; i < 128; i += 20) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.15, 0.15); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.5, side: THREE.DoubleSide });
+// tire texture: u = around the wheel, v = around the tube (v=0 outer tread, 0.25 = +z sidewall). Black tread, tan gumwall with dark marks (shows the spin).
+const tireTex = (() => { const c = document.createElement('canvas'); c.width = 4096; c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#c9a26b'; g.fillRect(0, 0, 4096, 256);
+  const band = (v0, v1, col) => { g.fillStyle = col; g.fillRect(0, v0 * 256, 4096, (v1 - v0) * 256); };
+  band(0, 0.14, '#17181a'); band(0.86, 1, '#17181a'); band(0.40, 0.60, '#3a3530');
+  g.fillStyle = '#2a2420'; for (let i = 0; i < 48; i++) { const x = i * 4096 / 48; g.fillRect(x, 0.17 * 256, 22, 0.17 * 256); g.fillRect(x + 40, 0.66 * 256, 22, 0.17 * 256); }
+  g.fillStyle = '#26282b'; for (let i = 0; i < 160; i++) { const x = i * 4096 / 160; g.fillRect(x, 0, 12, 0.13 * 256); g.fillRect(x, 0.87 * 256, 12, 0.13 * 256); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.wrapS = THREE.RepeatWrapping; return t; })();
+M.tire = phys({ color: 0xffffff, map: tireTex, roughness: 0.85, bumpMap: M.rubber.bumpMap, bumpScale: 0.4 });
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const latheG = (P, a0, len, seg = 96) => new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, len);
+const dbl = (mat) => { if (mat.side === THREE.DoubleSide) return mat; const c = mat.clone(); c.side = THREE.DoubleSide; return c; };
+const lathe = (P, mat, p, a0 = 0, len = 2 * Math.PI, seg = 96) => add(new THREE.Mesh(latheG(P, a0, len, seg), dbl(mat)), p);
+const capShape = (P) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(r, y) : sh.moveTo(r, y)); return sh; };
+// ---------- wheel ----------
+const WH = new THREE.Group(); scene.add(WH);
+{ const tire = add(new THREE.Mesh(new THREE.TorusGeometry(G.RT, G.RTUBE, 48, 360), M.tire), WH);
+  const rim = lathe([[286, -10], [302, -10], [303, -7], [298, -6], [298, 6], [303, 7], [302, 10], [286, 10], [284, 0]], M.rim, WH, 0, 2 * Math.PI, 240); rim.rotation.x = Math.PI / 2;
+  const hub = lathe([[6, -52], [12, -52], [12, -36], [24, -34], [24, -30], [12, -28], [16, 0], [12, 28], [24, 30], [24, 34], [12, 36], [12, 52], [6, 52]], M.rim, WH, 0, 2 * Math.PI, 48); hub.rotation.x = Math.PI / 2;
+  const axle = add(new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 110, 16), M.steel), WH); axle.rotation.x = Math.PI / 2;
+  for (let i = 0; i < 32; i++) { const side = i % 2 ? 1 : -1; const a0 = i / 32 * 2 * Math.PI, a1 = a0 + (side > 0 ? 0.35 : -0.35);
+    const p0 = V(22 * Math.cos(a0), 22 * Math.sin(a0), side * 32), p1 = V(287 * Math.cos(a1), 287 * Math.sin(a1), side * 3);
+    const d = p1.clone().sub(p0); const s = add(new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, d.length(), 6), M.spoke), WH);
+    s.position.copy(p0.clone().add(p1).multiplyScalar(0.5)); s.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); } }
+// ---------- fork (two blades, crown, steerer) ----------
+const FA = G.FORK_TH * D2R, fu = V(Math.cos(FA), Math.sin(FA), 0);
+for (const z of [G.FORK_Z, -G.FORK_Z]) { const g = new THREE.CylinderGeometry(G.FORK_R, 7, 520, 24); g.translate(0, 260, 0); const b = add(new THREE.Mesh(g, M.fork)); b.position.set(0, 0, z); b.quaternion.setFromUnitVectors(V(0, 1, 0), fu);
+  const d = add(new THREE.Mesh(new THREE.BoxGeometry(14, 22, 6), M.fork)); d.position.set(0, 0, z); }
+{ const cr = add(new THREE.Mesh(new K.RBox(40, 26, 2 * G.FORK_Z + 22, 2, 6), M.fork)); cr.position.copy(fu.clone().multiplyScalar(530)); cr.rotation.z = FA - Math.PI / 2;
+  const sg = new THREE.CylinderGeometry(13, 13, 260, 32); sg.translate(0, 130, 0); const s = add(new THREE.Mesh(sg, M.fork)); s.position.copy(fu.clone().multiplyScalar(540)); s.quaternion.setFromUnitVectors(V(0, 1, 0), fu); }
+// ---------- dynamo ----------
+const TH = G.TH * D2R; const uu = V(Math.cos(TH), Math.sin(TH), 0);
+const DY = new THREE.Group(); DY.position.set(G.RT * Math.cos(TH), G.RT * Math.sin(TH), G.ZOFF); DY.rotation.z = TH - Math.PI / 2; scene.add(DY);
+const BODYP = [[4, 14], [14, 15], [17, 20], [17, 94], [14.5, 100], [5, 101.5], [5, 99.5], [13.5, 98], [15.5, 93], [15.5, 21], [13, 17], [4, 16]];
+const COILP = (() => { const P = [[G.COIL_RI, G.COIL_Y0]]; for (let y = G.COIL_Y0; y <= G.COIL_Y1 + 1e-6; y += 0.8) P.push([((y - G.COIL_Y0) / 0.8) % 2 ? 15.0 : 15.5, y]); P.push([G.COIL_RI, G.COIL_Y1]); return P; })();
+const COILC = [[G.COIL_RI, G.COIL_Y0], [15.2, G.COIL_Y0], [15.2, G.COIL_Y1], [G.COIL_RI, G.COIL_Y1]];
+const DYN = new THREE.Group(); DY.add(DYN); let lastCut = -1;
+function buildDyn(cut) {   // cut 0..1 -> removed sector 0..160 deg facing local +z, with red section caps
+  if (Math.abs(cut - lastCut) < 1e-4) return; lastCut = cut;
+  for (const c of [...DYN.children]) { DYN.remove(c); c.geometry.dispose(); }
+  const c = cut * 160 * D2R; const a0 = c / 2, len = 2 * Math.PI - c;
+  lathe(BODYP, M.body, DYN, a0, len); lathe(COILP, M.copper, DYN, a0, len);
+  lathe([[G.COIL_RI - 0.4, G.COIL_Y0], [G.COIL_RI, G.COIL_Y0], [G.COIL_RI, G.COIL_Y1], [G.COIL_RI - 0.4, G.COIL_Y1]], M.inner, DYN, a0, len);
+  if (c > 1e-3) for (const ph of [a0, a0 + len]) {
+    for (const [P, mat] of [[BODYP, M.sec], [COILC, M.copper]]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P)), mat), DYN); m.rotation.y = ph - Math.PI / 2; } }
+}
+buildDyn(0);
+// black end cap + terminal + clamp band (do not need the cut)
+lathe([[4, 101.5], [9, 101.5], [8, 106], [3, 107]], M.cap, DY);
+const TERM = add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 6, 16), M.brass), DY); TERM.position.set(5, 108, 0);
+lathe([[17.1, 50], [18.6, 50], [18.6, 60], [17.1, 60]], M.steel, DY, 100 * D2R, 260 * D2R);
+// roller + shaft + magnet (spin about local y)
+const ROT = new THREE.Group(); DY.add(ROT);
+lathe([[3, -G.RL], [G.RR - 0.6, -G.RL], [G.RR, -G.RL + 0.6], [G.RR, G.RL - 0.6], [G.RR - 0.6, G.RL], [3, G.RL]], M.roller, ROT, 0, 2 * Math.PI, 64);
+for (let i = 0; i < 16; i++) { const a = i / 16 * 2 * Math.PI; const r = add(new THREE.Mesh(new THREE.BoxGeometry(1.3, 2 * G.RL - 1.2, 1.0), i === 0 ? M.stripe : M.roller), ROT); r.position.set((G.RR + 0.3) * Math.sin(a), 0, (G.RR + 0.3) * Math.cos(a)); r.rotation.y = a; }
+lathe([[0.01, -G.RL - 1.2], [6, -G.RL - 1.2], [6, -G.RL + 0.5], [0.01, -G.RL + 0.5]], M.steel, ROT, 0, 2 * Math.PI, 32);
+add(new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 98, 16), M.steel), ROT).position.y = 50;
+const MAG = new THREE.Group(); ROT.add(MAG); MAG.position.y = (G.MAG_Y0 + G.MAG_Y1) / 2;
+add(new THREE.Mesh(new THREE.CylinderGeometry(G.MAG_R, G.MAG_R, G.MAG_Y1 - G.MAG_Y0, 32, 1, false, 0, Math.PI), M.magN), MAG);
+add(new THREE.Mesh(new THREE.CylinderGeometry(G.MAG_R, G.MAG_R, G.MAG_Y1 - G.MAG_Y0, 32, 1, false, Math.PI, Math.PI), M.magS), MAG);
+// bracket: dynamo clamp -> fork blade
+DY.updateMatrixWorld(true);
+{ const p0 = DY.localToWorld(V(-17, 55, 0)); const r = p0.length(); const p1 = V(r * Math.cos(FA), r * Math.sin(FA), G.FORK_Z - 6);
+  const d = p1.clone().sub(p0); const b = add(new THREE.Mesh(new K.RBox(d.length(), 10, 3, 1, 1), M.steel)); b.position.copy(p0.clone().add(p1).multiplyScalar(0.5)); b.quaternion.setFromUnitVectors(V(1, 0, 0), d.clone().normalize());
+  const bolt = add(new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 8, 6), M.chrome)); bolt.position.copy(p1); bolt.rotation.x = Math.PI / 2; }
+// ---------- lamp on the crown, facing +x ----------
+const LP = V(72, 472, 0);
+const LAMP = new THREE.Group(); LAMP.position.copy(LP); LAMP.rotation.z = -Math.PI / 2; scene.add(LAMP);
+lathe([[0.01, -34], [14, -33], [22, -22], [26, -6], [26, 0], [0.01, 0]], M.cap, LAMP, 0, 2 * Math.PI, 64);
+lathe([[22, -2], [28, -2], [28, 5], [22, 5]], M.chrome, LAMP, 0, 2 * Math.PI, 64);
+const LENS = new THREE.Mesh(new THREE.CircleGeometry(22.5, 48), M.lens); LENS.rotation.x = -Math.PI / 2; LENS.position.y = 3; LAMP.add(LENS);
+const BEAM = new THREE.Mesh((() => { const g = new THREE.ConeGeometry(70, 260, 48, 1, true); g.translate(0, -130, 0); return g; })(),
+  new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+BEAM.rotation.x = Math.PI; BEAM.position.y = 4; LAMP.add(BEAM);
+const PL = new THREE.PointLight(0xfff0cc, 0, 600, 1.5); PL.position.set(0, 30, 0); LAMP.add(PL);
+{ const p0 = LAMP.localToWorld(V(0, -20, 0)); const p1 = fu.clone().multiplyScalar(530); const d = p1.clone().sub(p0); const b = add(new THREE.Mesh(new K.RBox(d.length(), 7, 4, 1, 1), M.fork)); b.position.copy(p0.clone().add(p1).multiplyScalar(0.5)); b.quaternion.setFromUnitVectors(V(1, 0, 0), d.clone().normalize()); }
+// ---------- wire: coil -> terminal (inside, local) -> lamp back ----------
+LAMP.updateMatrixWorld(true);
+const WIREPTS = [DY.localToWorld(V(13, 66, 0)), DY.localToWorld(V(9, 90, 0)), DY.localToWorld(V(5, 104, 0)), DY.localToWorld(V(5, 112, 0)), DY.localToWorld(V(8, 124, 8)),
+  V(20, 462, 22), V(28, 471, 9), LAMP.localToWorld(V(0, -35, 0))];
+const WIRE = new THREE.CatmullRomCurve3(WIREPTS, false, 'centripetal');
+{ const outer = new THREE.CatmullRomCurve3(WIREPTS.slice(3), false, 'centripetal'); add(new THREE.Mesh(new THREE.TubeGeometry(outer, 80, 1.8, 10), M.wire)); }
+S.shadowAll(scene);
+K.backdrop(scene, { floorY: -340, R: 300, zBack: -1600, h: 6000, width: 9000, wall: '#2b3240', floor: '#2a2e36', pool: true, catcher: 3000, shadowOpacity: 0.5 });
+const RIG = K.lightRig(scene, V(20, 400, 0), 260, { key: 2.5, rim: 3.0, fill: 0.55 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(300, 700, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.2); g.position.set(-600, 500, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const wa = k[1], ra = k[2], br = Math.pow(k[4], 1.6), cut = k[5];
+  WH.rotation.z = -wa; ROT.rotation.y = -ra; buildDyn(cut);
+  M.lens.color.setRGB(0.18 + 0.82 * Math.min(1, br * 1.6), 0.18 + 0.77 * Math.min(1, br * 1.6), 0.18 + 0.62 * Math.min(1, br * 1.6)); BEAM.material.opacity = 0.4 * br; PL.intensity = 4e4 * br;
+  K.glow(DYN.children[1], t >= T.s3 && t < T.s4 ? 0.45 : 0);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera ----------
+const DW_ = (y, x = 0) => { const v = DY.localToWorld(V(x, y, 0)); return [v.x, v.y, v.z]; };
+const ck = (t, p, dist, el, az) => [t, p[0], p[1], p[2], dist, el, az];
+const HERO = [20, 421, 15], WIDE = [30, 440, 20];
+const CAMK = [ck(0, HERO, 840, 8, 24), ck(T.cutIn - 0.01, HERO, 810, 8, 22),
+  ck(T.cutIn, [8, 318, 22], 250, 10, 34), ck(T.s2 - 0.01, [8, 318, 22], 240, 10, 32),
+  ck(T.s2, DW_(46), 300, 4, 6), ck(T.s3 - 0.01, DW_(46), 290, 4, 6),
+  ck(T.s3, WIDE, 610, 6, 14), ck(T.ans - 0.01, WIDE, 600, 6, 14),
+  ck(T.ans, HERO, 810, 8, 22), ck(LOOP, HERO, 840, 8, 24)];
+// ---------- overlay ----------
+const sc = (v) => S.toScreen(camera, v);
+const dyS = (x, y, z = 0) => sc(DY.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function dots(g2, k, a) {   // electricity: yellow dots along the wire, speed and number follow the wheel speed
+  if (a <= 0 || k[4] <= 0.01) return; const n = Math.round(10 + 22 * k[4]); const ph = k[1] * 0.55;
+  g2.save(); g2.globalAlpha = a * Math.min(1, k[4] * 3);
+  for (let i = 0; i < n; i++) { const s = ((i / n + ph) % 1 + 1) % 1; if (lastCut < 0.5 && s < 0.22) continue; const [x, y] = sc(WIRE.getPointAt(s));
+    g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.arc(x, y, 9, 0, 7); g2.fill(); g2.strokeStyle = 'rgba(40,20,0,0.9)'; g2.lineWidth = 3; g2.stroke(); }
+  g2.restore(); }
+function lampGlow(g2, br) { if (br <= 0.01) return; const [x, y] = sc(LAMP.localToWorld(V(0, 4, 0))); const R = 60 + 160 * br; const gr = g2.createRadialGradient(x, y, 0, x, y, R);
+  gr.addColorStop(0, `rgba(255,248,220,${0.85 * br})`); gr.addColorStop(0.35, `rgba(255,230,170,${0.35 * br})`); gr.addColorStop(1, 'rgba(255,220,150,0)'); g2.save(); g2.globalCompositeOperation = 'lighter'; g2.fillStyle = gr; g2.fillRect(x - R, y - R, 2 * R, 2 * R); g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const br = Math.pow(k[4], 1.6);
+  { let fx = 0; for (const c of [T.cutIn, T.s2, T.s3, T.ans]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  lampGlow(g2, br);
+  const s1 = hard(t, T.cutIn, T.s2), s2 = hard(t, T.s2, T.s3), s3 = hard(t, T.s3, T.s4), s4 = hard(t, T.s4, T.ans);
+  dots(g2, k, (s3 || s4) ? 1 : 0);
+  if (s1) { const c = V(G.RT * Math.cos(TH), G.RT * Math.sin(TH), G.RTUBE);
+    const [x0, y0] = sc(V(c.x - 60, c.y - 6, 10)), [x1, y1] = sc(V(c.x - 14, c.y + 2, 17)); arrowC(g2, hard(t, T.cutIn + 0.6, T.s2), x0, y0, x1, y1, 24, '#ffffff');
+    S.tag(g2, hard(t, T.cutIn + 0.3, T.s2), 'TIRE', ...sc(V(c.x - 40, c.y - 14, 14)), -150, 150, 52, '#ffffff');
+    S.tag(g2, hard(t, T.cutIn + 0.3, T.s2), 'ROLLER', ...dyS(G.RR, 2, 0), 150, -110, 52, '#ffd21f');
+    S.tag(g2, hard(t, T.vo1 + 2.6, T.s2), 'TINY = SPINS FAST', ...dyS(0, -G.RL, G.RR), 120, 190, 50, '#7dff9a'); }
+  if (s2) { S.tag(g2, hard(t, T.cutB, T.s3), 'MAGNET', ...dyS(3, 40, 8), 190, -170, 54, '#ffd21f');
+    S.tag(g2, hard(t, T.cutB + 1.2, T.s3), 'COIL OF COPPER WIRE', ...dyS(-14, 56, 6), -150, 150, 50, '#ffb070');
+    S.tag(g2, hard(t, T.cutA, T.s3), 'ROLLER', ...dyS(G.RR, 0, 0), 160, 40, 50, '#ffffff'); }
+  if (s3) { S.tag(g2, hard(t, T.s3 + 0.4, T.s4), 'ELECTRICITY', ...sc(WIRE.getPointAt(0.62)), -140, -120, 54, '#ffd21f');
+    S.tag(g2, hard(t, T.s3 + 0.2, T.s4), 'SPINNING MAGNET', ...dyS(0, 46, 6), 150, 140, 48, '#ffffff');
+    S.tag(g2, hard(t, T.vo3 + 2.8, T.s4), 'LAMP', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 54, '#ffffff'); }
+  if (s4) { const fast = t >= T.fastB - 0.3 && t < T.stopA + 0.2, dark = t >= T.stopB - 0.1;
+    S.tag(g2, fast ? 1 : 0, 'FAST: BRIGHT', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 56, '#ffd21f');
+    S.tag(g2, dark ? 1 : 0, 'STOP: DARK', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 56, '#ffffff');
+    S.tag(g2, !fast && !dark ? 1 : 0, 'SLOW: DIM', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 56, '#ffffff'); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES THE WHEEL', 'LIGHT THE LAMP?', 92); const [cx, cy] = dyS(0, 0, 0); K.TXT.circle(g2, 1, cx, cy, 70, [-230, 170]); }
+  K.TXT.step(g2, s1, 1, 'THE TIRE SPINS THE ROLLER', 58);
+  K.TXT.step(g2, s2, 2, 'A MAGNET SPINS INSIDE', 60);
+  K.TXT.step(g2, s3, 3, 'SPINNING MAGNET = ELECTRICITY', 54);
+  K.TXT.step(g2, s4, 4, 'FASTER = BRIGHTER', 62);
+  if (t >= T.ans) { const y = 465; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.72)'; S.rrect(g2, 75, y - 120, 845, 250, 28); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 5; g2.stroke();
+    S.outlined(g2, 'THE WHEEL SPINS A MAGNET', S.CX, y - 10, 62, '#ffffff'); S.outlined(g2, 'THE MAGNET MAKES POWER', S.CX, y + 85, 74, '#ffd21f'); g2.restore(); }
+  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

@@ -1,0 +1,64 @@
+{
+ "id": "p106",
+ "track": "A",
+ "group": "E",
+ "slot": "2026-11-27T17:00 Europe/London (planned, coordinator schedules)",
+ "topicKey": "pressure cooker weight",
+ "topicKeyLine": "topic key: pressure cooker weight (synonyms: jiggler, pressure regulator weight, weighted valve) - not in learnings/topics-used.md (coordinator checked 95 rows)",
+ "outlier": "scorecard rule: everyday object + one \"why does it...\" question; our own model, script, words and sound",
+ "topic": "Pressure cooker weighted regulator (jiggler): the weight plugs the vent pipe; steam pressure x hole area lifts it when it exceeds the weight, steam escapes, pressure drops, it falls back, so the weight sets the maximum pressure.",
+ "hook": "WHY DOES THIS / WEIGHT DANCE?",
+ "title": "Why Does the Pressure Cooker Weight Dance? 🍲",
+ "principle": "A calibrated weight rests on the vent pipe; it lifts when the steam pressure times the vent hole area exceeds its weight, releasing steam until the pressure falls back, so the cooker is held at about the pressure set by the weight (15 psi gauge on a standard US cooker).",
+ "caption": "Why Does the Pressure Cooker Weight Dance? 🍲\nGuess: what lifts it, steam or springs? 👇\nFollow @whyloop.hq for a new machine every day\n#howitworks #pressurecooker #cooking #science #engineering",
+ "firstComment": "Answer: steam 🍲\n\nOn an old-style (\"jiggle-top\") pressure cooker, a heavy metal weight, the pressure regulator, sits on a thin vent pipe in the lid and plugs it.\n\nAs the water boils, the steam can't get out, so the pressure inside builds up and pushes up on the weight through the pipe's tiny hole. When that push gets bigger than the weight, the weight lifts a little, a puff of steam escapes, the pressure drops a little and the weight falls back. Up, down, again and again: that is the rocking.\n\nSo the weight sets the top pressure. On a standard US cooker it starts to rock at about 15 psi above normal air pressure. At that pressure water boils at about 121 °C (250 °F) instead of 100 °C (212 °F), so food cooks faster.\n\n(Simplified 3D model, slowed down; the pipe and the lift are drawn bigger than real. Many newer cookers use a spring valve instead of a weight.)\n\nSources:\nPresto, Pressure Cooking - How to Use (the pressure regulator fits on the vent pipe, allows excess pressure to be released and maintains the pressure, usually 15 pounds): https://www.gopresto.com/content/pressure-cooking/pressure-cooking-how-to-use\nPresto, Pressure Cooking - FAQ (on a weighted gauge cooker the regulator begins to rock when 15 pounds pressure is reached): http://www.gopresto.com/content/pressure-cooking/pressure-cooking-faq\nHyperPhysics (Georgia State University), Pressure Cooker (a controlled vent at about 15 lb/in² above atmospheric pressure raises the boiling point to about 121 °C): http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/precook.html\nWikipedia, Pressure cooker (weight-modified or \"jiggler\" valve releases pressure during operation and rattles as excess steam is released; at 15 psi gauge water boils at 121 °C / 250 °F): https://en.wikipedia.org/wiki/Pressure_cooker",
+ "altText": "3D animation of a steel pressure cooker on a glowing stove, with a voiceover. Under the question Why does this weight dance? a red circle marks the small black weight on top of the lid, which bobs up and down while puffs of steam come out. Then the cooker is shown cut in half with red cut faces: water at the bottom and white steam puffs above it. 1, the weight plugs the pipe: the weight sits on a thin pipe in the lid. 2, steam pushes up: close up, a blue arrow labelled steam push grows under the weight while an orange arrow labelled weight pushes down. 3, push beats weight, it lifts: the arrows are equal, the weight rises a little and steam puffs out from under it. 4, steam out, it drops back: the push gets smaller than the weight and the weight falls back onto the pipe, then lifts and drops again. Back outside, the weight keeps dancing and the payoff reads The weight sets the top pressure, a follow line appears and the video loops.",
+ "onScreen": [
+  "INSIDE IT",
+  "WHY DOES THIS",
+  "WEIGHT DANCE?",
+  "THE WEIGHT PLUGS THE PIPE",
+  "WEIGHT",
+  "THIN PIPE",
+  "STEAM TRAPPED",
+  "STEAM PUSHES UP",
+  "STEAM PUSH",
+  "PUSH BEATS WEIGHT: IT LIFTS",
+  "STEAM OUT",
+  "STEAM OUT, IT DROPS BACK",
+  "PUSH < WEIGHT: DROPS",
+  "THE WEIGHT SETS",
+  "THE TOP PRESSURE",
+  "FOLLOW → A NEW MACHINE EVERY DAY"
+ ],
+ "voiceover": [
+  "Why does the weight on a pressure cooker dance?",
+  "The heavy weight sits on a thin pipe in the lid and plugs it, so the steam is trapped.",
+  "As the water boils, the steam pushes up on the weight, harder and harder.",
+  "When that push beats the weight, it lifts, and a puff of steam escapes.",
+  "The pressure drops a little, so the weight falls back. Up, down, again and again.",
+  "So the weight sets the top pressure."
+ ],
+ "sources": [
+  "https://www.gopresto.com/content/pressure-cooking/pressure-cooking-how-to-use",
+  "http://www.gopresto.com/content/pressure-cooking/pressure-cooking-faq",
+  "http://hyperphysics.phy-astr.gsu.edu/hbase/thermo/precook.html",
+  "https://en.wikipedia.org/wiki/Pressure_cooker"
+ ],
+ "version": "v1",
+ "status": "ready (HARD GATE pass; awaiting coordinator fresh review)",
+ "mediaUrls": [
+  "media/p106/cooker_reel_v1.mp4"
+ ],
+ "cover": "media/p106/cooker_cover_v1.jpg",
+ "visualScore": null,
+ "reviews": [],
+ "qualityAudit": {
+  "technical": "1080x1920 H.264 High yuv420p 30 fps + AAC 48 kHz stereo, 24.0 s as planned; first frame luma 62.5, last 59.2 (not black)",
+  "mechanism": "kin.py PASS (weight never through the pipe, lifts only when push >= weight, never held up when push < weight, bore never hits the pipe, loop seamless)",
+  "facts": "Presto how-to-use + FAQ (regulator on the vent pipe, rocks at 15 lb), HyperPhysics (vent ~15 psi above atmospheric, ~121 C), Wikipedia Pressure cooker (jiggler, 121 C / 250 F at 15 psi); VO makes no numeric claim",
+  "text": "US English; pyspellchecker flags justified (faq, hyperphysics = source names; howitworks, pressurecooker = hashtags; hq, whyloop = handle; jiggler = Wikipedia term; lb = unit); hook 112 px, steps 58-62 px, tags 46 px, all in the safe area (checked on the 0.5 s safe-zone frame)",
+  "audio": "-15.1 LUFS, -3.0 dBTP, 4 kHz high-pass 20.2 dB below the mix; no hiss/beeps; low taps land on each weight landing, rumble only while lifted",
+  "look": "6 stills + 0.5 s safe-zone frame + transition frames checked: no glitches, clipping, black frames, cut-off text or cropped subject"
+ }
+}
