@@ -8,3 +8,10 @@ Facts: Wikipedia Burr mill + US 6,929,201 (USPTO) + Peppermate adjusting guide (
 Copy spellchecked (flags: howitworks, hq, whyloop = hashtag/handle; peppermate = brand).
 Rebuild: python3 kin.py (venv); <venv>/python vo.py <ttsdir> vo; <venv>/python audio.py; bash master_p097.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; <venv>/python mkpost.py
 Render: node tools/render/render.js wip/p097/scene.html <frames> 30 1 0 738 0.75 0 0 1 1080 1920 1; encode.sh <frames> wip/p097/mix.wav pepper_reel_v1.mp4 24.60 30
+
+## 20 Nov 01:15-01:36 UTC run (fork, ig-awesome-curie-ty3ndo-0110-20nov) - FINAL v1 rendered, slot 25 Nov 2026 17:00 Europe/London
+- Final: wip/p097/pepper_reel_v1.mp4 (24.60 s) + cover wip/p097/pepper_cover_v1.jpg (still 0 with hook). mkpost.py slot -> 2026-11-25T17:00.
+- Safe-zone fixes before final (re-rendered frames 0-52, 590-668 only): hook red circle R 120 -> 100, raised 25 px, arrow now from the upper left (circle + arrow were inside the bottom 480 px); BEFORE/AFTER cards 380 -> 350 wide, AFTER card x 610 -> 575 (was 60 px into the right 150 px column).
+- qualityAudit (HARD GATE v1): 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 24.60 s (planned 24.60); first/last frame luma 75.6 / 74.3 (not black); audio -15.1 LUFS, -3.1 dBTP, HP4k gap 21.1 dB; kin.py PASS (min gap 1.30 mm, pieces <= 0.49 x gap, corns clear); spell flags only howitworks/hq/whyloop (hashtag/handle) + peppermate (source brand); text: hook 100 px, steps 48-56 px, tags 48-52 px, cards 44 px, answer 70/84 px, follow 44 px; safe_0.5s + 20.5 s frame checked (all text and key action inside the safe area); 6 stills looked at: no glitches, clipping, black frames or cut text.
+- Review packets (scratchpad p097/): clar/c_01..c_50.jpg (2 fps) + clar/transcript.txt; qc/still_0..100.png + qc/safe_0.5s.png + qc/sheet.jpg. Frames in scratchpad p097/frames.
+- PENDING (coordinator): fresh clarity reviewer + one visual review (rule B).

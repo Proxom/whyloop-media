@@ -159,11 +159,11 @@ const k_ = (t, a) => [t, ...a];
 const FRONT = (d = 820, el = -16, az = 8) => [-60, -170, 0, d, el, az];
 const WIDE = (d = 1200, el = 4, az = 0) => [-25, -48, 0, d, el, az];
 const HEAD = (d = 300, el = 6, az = 0) => [-158, 52, 0, d, el, az];
-const PULL = (d = 760, el = 4, az = 0) => [-115, -45, 0, d, el, az];
+const PULL = (d = 1190, el = 4, az = 0) => [-110, -118, 0, d, el, az];
 const CAMK = [k_(0, FRONT(840, -16, 8)), k_(T.cutIn - 0.01, FRONT(800, -16, 6)),
   k_(T.cutIn, WIDE(1220, 5, 6)), k_(T.vo2 - 0.6, WIDE(1180, 4, 2)),
   k_(T.vo2 - 0.2, HEAD(320, 6, 4)), k_(T.vo3 - 0.01, HEAD(290, 5, 0)),
-  k_(T.vo3, PULL(740, 4, 0)), k_(T.pullB + 0.4, PULL(780, 4, 0)),
+  k_(T.vo3, PULL(1170, 4, 0)), k_(T.pullB + 0.4, PULL(1190, 4, 0)),
   k_(T.vo4 + 0.2, HEAD(300, 5, 0)), k_(T.fireB + 0.6, HEAD(290, 5, 0)), k_(T.vo5 - 0.3, [-90, 50, 0, 520, 6, 0]),
   k_(T.vo5 + 0.4, WIDE(1220, 4, 0)), k_(T.outA - 0.01, WIDE(1190, 4, 4)),
   k_(T.outA, FRONT(800, -16, 6)), k_(LOOP, FRONT(840, -16, 8))];

@@ -1,0 +1,167 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p096 plane window breather hole "WHY IS THERE A / HOLE IN THE WINDOW?" (group V, track A voice). Built from kit/kit.js. Units mm.
+// Window axis z: cabin at +z, outside at -z. Panes: inner (scratch) z 0..4, middle z -55..-47 (with the hole), outer z -110..-98; fuselage skin z -126..-112; cabin wall panel z 4..30.
+// Front view = camera at +z (azim 0); side cutaway = camera at +x (azim 90), section plane x = 0 (clip keeps x <= CUT).
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const GJ = await (await fetch('geom.json')).json();
+const T = GJ.T, LOOP = GJ.LOOP, G = GJ.G;
+const st = K.makeKit({ fov: 30, bg: 0x3b4350, envIntensity: 1.1, near: 5, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const PL = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 400); const CLIP = [PL];
+// background: warm cabin (left) -> cold sky blue (right), screen-space gradient (never a black void)
+{ const c = document.createElement('canvas'); c.width = 512; c.height = 1024; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 512, 0);
+  gr.addColorStop(0, '#6f6457'); gr.addColorStop(0.5, '#4f5560'); gr.addColorStop(1, '#2c4f7c'); g.fillStyle = gr; g.fillRect(0, 0, 512, 1024);
+  const v = g.createLinearGradient(0, 0, 0, 1024); v.addColorStop(0, 'rgba(255,255,255,0.10)'); v.addColorStop(0.6, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.25)'); g.fillStyle = v; g.fillRect(0, 0, 512, 1024);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; scene.background = t; }
+// materials (all clipped by the section plane)
+const acr = (op, col = 0xdcefff) => phys({ color: col, roughness: 0.03, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: op, envMapIntensity: 2.6, specularIntensity: 1, ior: 1.49, sheen: 0.4, sheenColor: 0x9fe8e0, clippingPlanes: CLIP, side: THREE.DoubleSide, depthWrite: false });
+M.outer = acr(0.30, 0xbfe9e6); M.middle = acr(0.26, 0xcdeee9); M.inner = acr(0.18, 0xe4f5f2);
+M.panel = phys({ color: 0xe9e1d2, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5, clippingPlanes: CLIP, bumpMap: M.alu.roughnessMap, bumpScale: 0.15 });
+M.bezel = phys({ color: 0xdcd3c2, roughness: 0.45, clearcoat: 0.3, clippingPlanes: CLIP });
+M.skin = phys({ color: 0xc4c9cf, metalness: 0.85, roughness: 0.32, clippingPlanes: CLIP });
+M.seal = phys({ color: 0x7d8792, roughness: 0.55, clearcoat: 0.2, clippingPlanes: CLIP });
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#8e1d15'; g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(${i % 2 ? 255 : 0},${i % 2 ? 210 : 0},${i % 2 ? 200 : 0},0.05)`; g.fillRect(0, (i * 37) % 128, 128, 1); }
+  g.strokeStyle = 'rgba(30,4,2,0.55)'; g.lineWidth = 6; for (let k = -128; k < 256; k += 32) { g.beginPath(); g.moveTo(k, 128); g.lineTo(k + 128, 0); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t; })();
+M.cap = phys({ color: 0xffffff, map: hatch, roughness: 0.38, metalness: 0.25, clearcoat: 0.5, clearcoatRoughness: 0.25 });
+M.glassCap = phys({ color: 0x8fe0d8, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03, emissive: 0x0f4a52, emissiveIntensity: 0.55, envMapIntensity: 2.0 });
+// shapes
+function rr(w, h, r) { const s = new THREE.Shape(); const x = -w / 2, y = -h / 2; s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0); s.lineTo(x + w, y + h - r);
+  s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2); s.lineTo(x + r, y + h); s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI); s.lineTo(x, y + r); s.absarc(x + r, y + r, r, Math.PI, 1.5 * Math.PI); return s; }
+function rrPath(w, h, r) { const p = new THREE.Path(); const x = -w / 2, y = -h / 2; p.moveTo(x + r, y); p.absarc(x + r, y + r, r, 1.5 * Math.PI, Math.PI, true); p.lineTo(x, y + h - r); p.absarc(x + r, y + h - r, r, Math.PI, Math.PI / 2, true);
+  p.lineTo(x + w - r, y + h); p.absarc(x + w - r, y + h - r, r, Math.PI / 2, 0, true); p.lineTo(x + w, y + r); p.absarc(x + w - r, y + r, r, 0, -Math.PI / 2, true); p.lineTo(x + r, y); return p; }
+const ext = (shape, z0, z1, mat, bev = 0) => { const g = new THREE.ExtrudeGeometry(shape, { depth: z1 - z0 - 2 * bev, bevelEnabled: bev > 0, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 48 });
+  const m = new THREE.Mesh(g, mat); m.position.z = z0 + bev; m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
+const W = G.W, H = G.H, R = G.R;
+// panes
+const OUTER = ext(rr(W + 20, H + 20, R + 10), G.OUT[0], G.OUT[1], M.outer, 2);
+const midShape = rr(W + 20, H + 20, R + 10); { const h = new THREE.Path(); h.absarc(0, G.HOLE_Y, G.HOLE_R, 0, Math.PI * 2, true); midShape.holes.push(h); }
+const MIDDLE = ext(midShape, G.MID[0], G.MID[1], M.middle, 1.5);
+const INNER = ext(rr(W, H, R), G.INN[0], G.INN[1], M.inner, 1);
+// rubber seal holding outer + middle, fuselage skin, cabin wall panel + window bezel (reveal)
+{ const s = rr(W + 70, H + 70, R + 35); s.holes.push(rrPath(W + 26, H + 26, R + 13)); ext(s, G.OUT[0] - 4, G.MID[1] + 4, M.seal, 2); }
+{ const s = rr(1400, 1600, 40); s.holes.push(rrPath(W + 60, H + 60, R + 30)); ext(s, G.SKIN[0], G.SKIN[1], M.skin, 1.5); }
+{ const s = rr(1000, 1300, 60); s.holes.push(rrPath(W + 90, H + 90, R + 45)); ext(s, G.PANEL[1] - 8, G.PANEL[1], M.panel, 2); }
+{ const s = rr(W + 92, H + 92, R + 46); s.holes.push(rrPath(W + 6, H + 6, R + 3)); ext(s, G.MID[1] + 6, G.PANEL[1] - 2, M.bezel, 3); }
+// sky behind (front view)
+{ const c = document.createElement('canvas'); c.width = 512; c.height = 1024; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 1024);
+  gr.addColorStop(0, '#1f63c9'); gr.addColorStop(0.3, '#3f8fe8'); gr.addColorStop(0.42, '#8cc4f7'); gr.addColorStop(0.5, '#d9ecfb'); gr.addColorStop(1, '#ffffff'); g.fillStyle = gr; g.fillRect(0, 0, 512, 1024);
+  { const sg = g.createRadialGradient(300, 300, 0, 300, 300, 200); sg.addColorStop(0, 'rgba(255,250,225,1)'); sg.addColorStop(0.18, 'rgba(255,240,200,0.85)'); sg.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = sg; g.fillRect(0, 0, 512, 1024); }
+  for (let i = 0; i < 60; i++) { const x = (i * 97) % 560 - 20, y = 410 + (i * 53) % 320, r = 30 + (i * 31) % 60; const cg = g.createRadialGradient(x, y - r * 0.2, 0, x, y, r); cg.addColorStop(0, 'rgba(255,255,255,1)'); cg.addColorStop(0.6, 'rgba(250,252,255,0.85)'); cg.addColorStop(1, 'rgba(225,235,248,0)'); g.fillStyle = cg; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const m = new THREE.Mesh(new THREE.PlaneGeometry(3200, 4200), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); m.position.set(0, -590, -1800); scene.add(m); }
+// section caps at x = 0 (shown when the cut is complete): solid parts red, acrylic panes pale blue
+const CAPS = new THREE.Group(); scene.add(CAPS);
+const capBox = (y0, y1, z0, z1, mat) => { const bg = new THREE.BoxGeometry(1.2, y1 - y0, z1 - z0); { const uv = bg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (z1 - z0) / 24, uv.getY(i) * (y1 - y0) / 24); } const m = new THREE.Mesh(bg, mat); m.position.set(0.7, (y0 + y1) / 2, (z0 + z1) / 2); CAPS.add(m); return m; };
+capBox(-(H + 20) / 2 + 1, (H + 20) / 2 - 1, G.OUT[0], G.OUT[1], M.glassCap);
+capBox(-(H + 20) / 2 + 1, G.HOLE_Y - G.HOLE_R, G.MID[0], G.MID[1], M.glassCap); capBox(G.HOLE_Y + G.HOLE_R, (H + 20) / 2 - 1, G.MID[0], G.MID[1], M.glassCap);
+capBox(-H / 2 + 1, H / 2 - 1, G.INN[0], G.INN[1], M.glassCap);
+for (const sg of [-1, 1]) { capBox(sg > 0 ? (H + 26) / 2 : -(H + 70) / 2, sg > 0 ? (H + 70) / 2 : -(H + 26) / 2, G.OUT[0] - 4, G.MID[1] + 4, M.cap);
+  capBox(sg > 0 ? (H + 60) / 2 : -800, sg > 0 ? 800 : -(H + 60) / 2, G.SKIN[0], G.SKIN[1], M.cap);
+  capBox(sg > 0 ? (H + 90) / 2 : -650, sg > 0 ? 650 : -(H + 90) / 2, G.PANEL[1] - 8, G.PANEL[1], M.cap);
+  capBox(sg > 0 ? (H + 6) / 2 : -(H + 92) / 2, sg > 0 ? (H + 92) / 2 : -(H + 6) / 2, G.MID[1] + 6, G.PANEL[1] - 2, M.cap); }
+S.shadowAll(scene); for (const m of [OUTER, MIDDLE, INNER]) m.castShadow = false;
+const RIG = K.lightRig(scene, V(0, 0, -50), 420, { key: 2.2, rim: 2.4, fill: 0.5 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 1.0); f.position.set(900, 400, 1400); scene.add(f); const s2 = new THREE.DirectionalLight(0xcfe3ff, 1.2); s2.position.set(300, 600, -1600); scene.add(s2);
+  const f3 = new THREE.DirectionalLight(0xffffff, 0.8); f3.position.set(1600, 200, 100); scene.add(f3); }
+// ---------- timeline ----------
+const fade = (t, a, b, f = 0.15) => Math.min(S.smooth((t - a) / f), 1 - S.smooth((t - b + f) / f));
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+function cutAt(t) { if (t < T.orbA + 0.15) return 400; if (t < T.orbB) return 400 * (1 - S.smooth((t - T.orbA - 0.15) / (T.orbB - T.orbA - 0.25))); if (t < T.back) return 0;
+  if (t < T.backB) return 400 * S.smooth((t - T.back) / (T.backB - T.back - 0.1)); return 400; }
+// camera keys [t, tx, ty, tz, dist, elev, azim]
+const FRONT0 = [0, -10, -60, 1500, 6, 0], FRONT1 = [0, -40, -60, 1220, 5, 0];
+const SIDE = (ty, tz, d, el = 4, az = 90) => [0, ty + 10, tz, d * 0.9, el + 4, az - 16];
+const k_ = (t, a) => [t, ...a];
+const CAMK = [k_(0, FRONT0), k_(T.orbA, FRONT1), k_(T.orbB, SIDE(-10, -45, 1450, 5, 88)), k_(T.vo2 - 0.01, SIDE(-10, -40, 1420, 4, 90)),
+  k_(T.vo3 - 0.1, SIDE(-10, -20, 1340, 4, 92)), k_(T.fill + 1.0, SIDE(-105, -50, 760, 4, 90)), k_(T.vo4, SIDE(-95, -50, 820, 4, 89)),
+  k_(T.load - 0.2, SIDE(-10, -55, 1330, 5, 90)), k_(T.wet - 0.05, SIDE(-10, -60, 1300, 4, 91)), k_(T.wet + 0.6, SIDE(-70, -55, 1000, 4, 90)),
+  k_(T.back, SIDE(-60, -50, 1080, 5, 89)), k_(T.backB, FRONT1), k_(LOOP, FRONT0)];
+function setScene(t) {
+  const c = cutAt(t); PL.constant = c; CAPS.visible = c < 1;
+  K.glow(OUTER, hard(t, T.load, T.backup + 1.6) * 0.0); // acrylic keeps its look; the load is shown with arrows
+  K.shoot(st, CAMK, t);
+}
+// ---------- overlay ----------
+const sp = (y, z, x = 2) => S.toScreen(camera, V(x, y, z));
+let TITLE = false;
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0 || (TITLE && Math.abs(y0 - (TB0 + TB1) / 2) < (TB1 - TB0) / 2 + w * 1.4)) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+const HF = G.MID[1] + 3, HB = G.MID[0] - 3;
+function pathAt(p, u) { let a, b, v;
+  if (u < 0.3) { v = u / 0.3; a = p.start; b = [G.HOLE_Y, HF]; } else if (u < 0.45) { v = (u - 0.3) / 0.15; a = [G.HOLE_Y, HF]; b = [G.HOLE_Y, HB]; } else { v = (u - 0.45) / 0.55; a = [G.HOLE_Y, HB]; b = p.end; }
+  return [a[0] + (b[0] - a[0]) * v, a[1] + (b[1] - a[1]) * v]; }
+function wetAt(p, u) { let a, b, v;
+  if (u < 0.6) { v = u / 0.6; a = p.start; b = [G.HOLE_Y, HB]; } else if (u < 0.75) { v = (u - 0.6) / 0.15; a = [G.HOLE_Y, HB]; b = [G.HOLE_Y, HF]; } else { v = (u - 0.75) / 0.25; a = [G.HOLE_Y, HF]; b = p.end; }
+  return [a[0] + (b[0] - a[0]) * v, a[1] + (b[1] - a[1]) * v]; }
+const TB0 = 372, TB1 = 470; const inTB = (y) => y > TB0 - 14 && y < TB1 + 14;
+function dot(g2, x, y, r, fill, a = 1) { if (TITLE && inTB(y)) return; g2.save(); g2.globalAlpha = a; g2.fillStyle = fill; g2.strokeStyle = 'rgba(10,20,40,0.85)'; g2.lineWidth = 3; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.stroke(); g2.restore(); }
+// cabin air dots (between inner and middle pane + in the cabin): fixed jittered grid, gently moving
+const CAB = []; for (let i = 0; i < 44; i++) CAB.push([-150 + (i % 11) * 30 + ((i * 7) % 5), -40 + Math.floor(i / 11) * 13 + ((i * 3) % 4)]);
+for (let i = 0; i < 70; i++) CAB.push([-260 + (i % 10) * 54 + ((i * 13) % 17), 42 + Math.floor(i / 10) * 17 + ((i * 7) % 9)]);   // cabin side: dense
+const OUTA = []; for (let i = 0; i < 9; i++) OUTA.push([-240 + (i * 61) % 480, -150 - (i * 47) % 160]);                                 // outside: thin
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const side = t >= T.orbB - 0.1 && t < T.back + 0.2;
+  { let fx = 0; for (const c of [T.hookEnd]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.6 * Math.max(0, fx)); }
+  // hook (front view): breathing rings at the hole = the payoff (air passes through it)
+  const [hx, hy] = S.toScreen(camera, V(0, G.HOLE_Y, G.MID[1]));
+  if (t < T.orbA) { for (let r = 0; r < 3; r++) { const ph = ((t * 0.9 + r / 3) % 1); g2.save(); g2.globalAlpha = (1 - ph) * 0.9; g2.strokeStyle = '#9fe0ff'; g2.lineWidth = 6; g2.beginPath(); g2.arc(hx, hy, 10 + ph * 70, 0, 7); g2.stroke(); g2.restore(); }
+    dot(g2, hx, hy, 9, '#0b1018'); }
+  const hk = t < T.vo1 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.25) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'WHY IS THERE A', 'HOLE IN THE WINDOW?', 96); K.TXT.circle(g2, hard(t, 0, T.orbA), hx, hy, 95, [-230, 210]); }
+  // steps
+  const s1 = hard(t, T.orbB - 0.6, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.vo5), s5 = hard(t, T.vo5, T.back); TITLE = (s1 + s2 + s3 + s4 + s5) > 0;
+  if (side) {
+    // side labels for the outside / cabin, small and out of the action
+    if (t >= T.orbB - 0.2 && t < T.vo3) { g2.save(); g2.textAlign = 'center'; S.outlined(g2, 'CABIN', 230, 1380, 50, '#ffe7c2'); S.outlined(g2, s2 ? 'OUTSIDE: THIN AIR' : 'OUTSIDE', s2 ? 735 : 790, 1380, 50, '#bfe3ff'); g2.restore(); }
+    // step 1: one pane label at a time
+    if (s1) { const a = (t0) => hard(t, t0, T.vo2);
+      S.tag(g2, a(T.vo1 + 0.75), 'INNER', ...sp(60, (G.INN[0] + G.INN[1]) / 2), 140, -60, 48, '#ffffff');
+      S.tag(g2, a(T.vo1 + 1.25), 'MIDDLE', ...sp(-20, (G.MID[0] + G.MID[1]) / 2), 150, 40, 48, '#ffffff');
+      S.tag(g2, a(T.vo1 + 1.8), 'OUTER', ...sp(-90, (G.OUT[0] + G.OUT[1]) / 2), -150, 120, 48, '#ffffff'); }
+    // cabin air (from step 2 on): dots on the cabin side of the middle pane
+    if (t >= T.vo2 && t < T.back) { for (const [y, z] of OUTA) { const [x2, y2] = sp(y + 4 * Math.sin(t * 1.3 + z), z + 3 * Math.cos(t + y)); dot(g2, x2, y2, 6, '#c9dcf0', 0.55); } for (const [y, z] of CAB) { const jz = z + 3 * Math.sin(t * 2.3 + y), jy = y + 3 * Math.cos(t * 1.9 + z); const [x2, y2] = sp(jy, jz); dot(g2, x2, y2, 7, '#e8f6ff', 0.9); } }
+    if (s2) { for (const y of [-90, 20, 120]) { const [x0, y0] = sp(y, 120), [x1] = sp(y, -122); arrowC(g2, 1, x0, y0, x1, y0, 22, '#ffd21f'); } }
+    // step 3: air streams through the hole into the gap and stays there
+    if (t >= T.fill && t < T.back) for (const p of GJ.P) { const u = (t - p.t0) / 0.9; if (u < 0) continue; let y, z; if (u >= 1) { y = p.end[0] + 3 * Math.sin(t * 2 + p.end[1]); z = p.end[1] + 2 * Math.cos(t * 2.4 + p.end[0]); } else [y, z] = pathAt(p, u);
+      const [x2, y2] = sp(y, z); dot(g2, x2, y2, 7, '#e8f6ff', 0.95); }
+    if (s3) { S.tag(g2, hard(t, T.vo3 + 0.2, T.vo4), 'TINY HOLE', ...sp(G.HOLE_Y, (G.MID[0] + G.MID[1]) / 2), -230, 150, 52, '#ffd21f');
+      if (t > T.fill + 1.2) S.tag(g2, 1, 'CABIN AIR IN THE GAP', ...sp(-60, -78), 170, 120, 48, '#e8f6ff'); }
+    // step 4a: equal arrows both sides of the middle pane (balanced)
+    if (s4 && t < T.load) { for (const y of [-60, 40, 120]) { const [a0, ay] = sp(y, -18), [a1] = sp(y, -45); arrowC(g2, 1, a0, ay, a1, ay, 16, '#ffffff'); const [b0] = sp(y, -84), [b1] = sp(y, -57); arrowC(g2, 1, b0, ay, b1, ay, 16, '#ffffff'); } }
+    // step 4b: big arrows on the outer pane only; BACKUP tag on the middle pane
+    if (s4 && t >= T.load) { for (const y of [-90, 20, 120]) { const [a0, ay] = sp(y, -60), [a1] = sp(y, -97); arrowC(g2, 1, a0 + 30, ay, a1, ay, 24, '#ffd21f'); }
+      S.tag(g2, hard(t, T.load + 0.3, T.vo5), 'OUTER PANE: FULL LOAD', ...sp(-150, (G.OUT[0] + G.OUT[1]) / 2), -60, 300, 48, '#ffd21f');
+      S.tag(g2, hard(t, T.backup, T.vo5), 'MIDDLE PANE: BACKUP', ...sp(40, (G.MID[0] + G.MID[1]) / 2), -230, 20, 48, '#7cff9a'); }
+    // step 5: moisture droplets leave through the hole
+    if (t >= T.wet && t < T.back) for (const p of GJ.M) { const u = (t - p.t0) / 1.4; let y, z, a = 1; if (u < 0) [y, z] = p.start; else if (u >= 1) { [y, z] = p.end; a = Math.max(0, 1 - (u - 1) * 3); } else [y, z] = wetAt(p, u);
+      if (a > 0) { const [x2, y2] = sp(y, z); dot(g2, x2, y2, 8, '#6fc3ff', a); } }
+    if (s5) S.tag(g2, hard(t, T.wet + 0.4, T.back), 'MOISTURE OUT', ...sp(G.HOLE_Y - 8, -30), 150, 170, 50, '#6fc3ff');
+  }
+  // outro: the hole is clearly visible again (rings + red circle) under the answer card, same as the hook -> clean loop
+  if (t >= T.backB) { for (let r = 0; r < 3; r++) { const ph = ((t * 0.9 + r / 3) % 1); g2.save(); g2.globalAlpha = (1 - ph) * 0.9; g2.strokeStyle = '#9fe0ff'; g2.lineWidth = 6; g2.beginPath(); g2.arc(hx, hy, 10 + ph * 70, 0, 7); g2.stroke(); g2.restore(); }
+    dot(g2, hx, hy, 9, '#0b1018'); K.TXT.circle(g2, 1, hx, hy, 95, [-210, -190]); }
+  // step titles LAST, on a dark plate, so no dot, arrow or tag ever covers them
+  const stp = [[s1, 1, 'THREE PANES', 60], [s2, 2, 'UP HIGH: CABIN AIR PUSHES OUT', 54], [s3, 3, 'THE HOLE LETS CABIN AIR IN', 56],
+    [s4, 4, t < T.load ? 'SAME PUSH ON BOTH SIDES' : 'ONLY THE OUTER PANE TAKES IT', 54], [s5, 5, 'IT ALSO LETS MOISTURE OUT', 56]];
+  for (const [a, n, txt, sz] of stp) if (a > 0) { g2.save(); g2.font = `${sz}px Anton`; const w = g2.measureText(txt).width + sz + 70; g2.fillStyle = 'rgba(10,12,18,0.62)'; S.rrect(g2, 540 - w / 2 + sz * 0.3, TB0, w, TB1 - TB0, 18); g2.fill(); g2.restore(); K.TXT.step(g2, a, n, txt, sz); }
+  K.TXT.answer(g2, hard(t, T.vo6 + 0.1, LOOP + 1), 'ONE TINY HOLE:', 'OUTER PANE DOES THE WORK', 470);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+for (const m of [OUTER, MIDDLE, INNER]) m.visible = false; S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
