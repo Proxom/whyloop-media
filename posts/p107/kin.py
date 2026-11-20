@@ -5,15 +5,15 @@ import json, math
 FPS_K = 120
 VO = [d['dur'] for d in json.load(open('vo/vo.json'))]
 T = dict(vo0=0.2, hookA=0.35, hookB=0.8, cutIn=2.2, vo1=2.5, cutA=2.4, cutB=3.4, insA=3.6, insB=6.2, s2=6.4, vo2=6.6, bendA=6.8, bendB=9.4,
-         s3=9.8, vo3=10.0, snapA=10.55, snapB=10.75, tugA=12.4, tugB=13.4, s4=14.6, vo4=14.8, colA=15.6, colB=16.4, outA=17.0, outB=18.6,
-         relA=18.9, relB=19.5, ans=19.8, vo5=20.0, backA=19.8, backB=21.2, uncA=20.0, uncB=21.0)
+         s3=9.8, vo3=10.0, snapA=10.55, snapB=10.75, tugA=12.4, tugB=13.4, s4=14.6, vo4=14.8, colA=15.4, colB=16.2, outA=16.8, outB=18.2,
+         relA=18.6, relB=19.2, ans=19.8, vo5=20.0, backA=19.8, backB=21.2, uncA=20.0, uncB=21.0)
 LOOP = 24.0
 starts = [T['vo0'], T['vo1'], T['vo2'], T['vo3'], T['vo4'], T['vo5']]; nxt = [T['cutIn'], T['s2'], T['s3'], T['s4'], T['ans'], LOOP - 0.6]
 for i in range(6): assert starts[i] + VO[i] < nxt[i], ('VO overlap', i, starts[i] + VO[i], nxt[i])
 # male profile R_m(y): chamfered tip, nose R 9, groove R 5.5 between 9.5 and 15.5, nose R 9 up to the flange at 40
 G = dict(RN=9.0, RG=5.5, GY0=9.5, GY1=15.5, TIPC=2.0, RTIP=7.0, FLY=40.0, BORE=9.3,
          HOOK_IN=5.6, HOOK_Y0=-25.5, HOOK_Y1=-22.5, RAMP_Y=-20.0, RAMP_R=9.4, CLAW_RI=11.0, CLAW_RO=12.5, ROOT_Y=-40.0, ROOT_R=11.75,
-         F_LOCK=36.0, F_OUT=20.0, F_START=-30.0, COLLAR_TRAVEL=4.0, TUBE_RI=9.4, TUBE_RO=10.0, TUBE_Y0=-19.4, CH_R=18.5)
+         F_LOCK=36.0, F_OUT=20.0, F_START=-30.0, COLLAR_TRAVEL=4.0, TUBE_RI=9.4, TUBE_RO=10.6, TUBE_Y0=-19.4, CH_R=18.5)
 def Rm(y):
     if y < 0: return 0.0
     if y < G['TIPC']: return G['RTIP'] + (G['RN'] - G['RTIP']) * y / G['TIPC']

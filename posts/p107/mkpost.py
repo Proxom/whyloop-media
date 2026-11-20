@@ -19,11 +19,11 @@ US 2005/0067837 A1, Quick disconnect hose coupling (background: radially moving 
 alt = ("3D animation of a snap-on garden hose connector, with a voiceover. A brass garden tap on a red brick wall has a grey plug screwed on; an orange connector on a green hose is pushed up onto it and clicks, under the question How does it click on? with a red circle on the grey collar. "
        "The connector and its collar are cut open with red cut faces. 1, push it on: the connector rises toward the plug, labelled Plug on the tap, Connector and Springy claws: dark claws inside the orange body. "
        "2, the nose pushes the claws out: the plug's rounded nose slides in and the claws, glowing blue, bend outward. "
-       "3, the groove lines up, they snap in: the claws spring into a groove around the plug with a click; a pull arrow shows it holds. "
-       "4, pull the collar, claws open: the grey collar slides down against its spring, its inner tube pushes the claws out of the groove, and the connector slides off. "
+       "3, the groove lines up, they snap in: the claws spring into a groove around the plug with a click; the hose is tugged and green rings mark where the hooks catch on the edge of the groove, labelled Pull: hooks catch, it holds. "
+       "4, pull the collar, claws open: the grey collar slides down, its inner tube glows yellow and pushes the blue claws outward, out of the groove, and the connector slides off, labelled Plug is free. "
        "The payoff reads Springy claws snap into the groove, the view pulls back to the tap, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES IT', 'CLICK ON?', 'PUSH IT ON', 'PLUG (ON THE TAP)', 'CONNECTOR', 'SPRINGY CLAWS', 'THE NOSE PUSHES THE CLAWS OUT', 'ROUND NOSE', 'CLAWS BEND OUT',
-      'GROOVE LINES UP: THEY SNAP IN', 'GROOVE', 'CLICK: CLAWS IN THE GROOVE', 'PULL: IT HOLDS', 'PULL THE COLLAR: CLAWS OPEN', 'COLLAR', 'ITS TUBE PUSHES THE CLAWS OPEN',
+      'GROOVE LINES UP: THEY SNAP IN', 'GROOVE', 'CLICK: CLAWS IN THE GROOVE', 'PULL: HOOKS CATCH, IT HOLDS', 'PULL THE COLLAR: CLAWS OPEN', 'COLLAR', 'ITS TUBE PUSHES THE CLAWS OPEN', 'PLUG IS FREE',
       'SPRINGY CLAWS', 'SNAP INTO THE GROOVE', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p107', track='A', group='E', slot='2026-11-27T17:00 Europe/London (planned, coordinator schedules; replaces p104 flask / p106 pressure cooker, both visual 4)', topicKey='hose quick connector',

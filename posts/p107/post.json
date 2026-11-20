@@ -12,7 +12,7 @@
  "principle": "Resilient latch fingers in the female coupling deflect outward over the male plug nose and snap back into its circumferential groove when fully inserted, so an axial pull is blocked by the groove shoulder; retracting the spring-loaded sleeve moves the fingers out of the groove to release.",
  "caption": "How Does a Hose Connector Click On? 💦\nGuess: what holds it on, a magnet or claws? 👇\nFollow @whyloop.hq for a new machine every day\n#howitworks #garden #engineering #mechanism #satisfying",
  "firstComment": "Answer: springy claws 🪝\n\nA snap-on garden hose connector has two halves. The plug (the male part) is screwed onto the tap or the tool. It has a groove around it and an O-ring that seals the water in. The connector (the female part) sits on the hose.\n\nInside the connector are a few springy plastic claws (fingers). Push the connector onto the plug, and the plug's rounded nose pushes the claws outward. When the plug is all the way in, its groove lines up with the claws, and they spring back inward into the groove. That's the click. Now the claws are hooked behind the edge of the groove, so pulling on the hose can't pull it off.\n\nTo let go, pull back the spring-loaded collar (the sleeve). It moves the claws out of the groove, and the plug slides out. Let go, and the spring pushes the collar back.\n\nBrass quick connectors often use small steel balls or pins instead of plastic claws, but the idea is the same: something springs into a groove, and a sliding sleeve frees it.\n\n(Simplified 3D model, slowed down and not to scale; the way the collar opens the claws differs between brands.)\n\nSources:\nLSU AgCenter, Quick Connectors for Garden Hose (push one part into the other until it snaps; release by pulling back the collar or pushing two buttons): https://www.lsuagcenter.com/topics/lawn_garden/ornamentals/equipment/irrigation/quick-connectors-for-garden-hose\nGarden hose connectors patent application (quick-connect system: the male part carries an O-ring seal; the female part has engaging fingers that move resiliently; as the male part goes in, the fingers are driven back, and they return once the parts are fully engaged; a spring-loaded sleeve retracts the fingers to release): https://trea.com/information/garden-hose-connectors/patentapplication/7833a37d-6c8a-4a32-8c6d-88a7a429831e\nUS 2005/0067837 A1, Quick disconnect hose coupling (background: radially moving balls and a spring-biased sleeve that is pulled back to release): https://patents.google.com/patent/US20050067837A1/en",
- "altText": "3D animation of a snap-on garden hose connector, with a voiceover. A brass garden tap on a red brick wall has a grey plug screwed on; an orange connector on a green hose is pushed up onto it and clicks, under the question How does it click on? with a red circle on the grey collar. The connector and its collar are cut open with red cut faces. 1, push it on: the connector rises toward the plug, labelled Plug on the tap, Connector and Springy claws: dark claws inside the orange body. 2, the nose pushes the claws out: the plug's rounded nose slides in and the claws, glowing blue, bend outward. 3, the groove lines up, they snap in: the claws spring into a groove around the plug with a click; a pull arrow shows it holds. 4, pull the collar, claws open: the grey collar slides down against its spring, its inner tube pushes the claws out of the groove, and the connector slides off. The payoff reads Springy claws snap into the groove, the view pulls back to the tap, a follow line appears and the video loops.",
+ "altText": "3D animation of a snap-on garden hose connector, with a voiceover. A brass garden tap on a red brick wall has a grey plug screwed on; an orange connector on a green hose is pushed up onto it and clicks, under the question How does it click on? with a red circle on the grey collar. The connector and its collar are cut open with red cut faces. 1, push it on: the connector rises toward the plug, labelled Plug on the tap, Connector and Springy claws: dark claws inside the orange body. 2, the nose pushes the claws out: the plug's rounded nose slides in and the claws, glowing blue, bend outward. 3, the groove lines up, they snap in: the claws spring into a groove around the plug with a click; the hose is tugged and green rings mark where the hooks catch on the edge of the groove, labelled Pull: hooks catch, it holds. 4, pull the collar, claws open: the grey collar slides down, its inner tube glows yellow and pushes the blue claws outward, out of the groove, and the connector slides off, labelled Plug is free. The payoff reads Springy claws snap into the groove, the view pulls back to the tap, a follow line appears and the video loops.",
  "onScreen": [
   "INSIDE IT",
   "HOW DOES IT",
@@ -27,10 +27,11 @@
   "GROOVE LINES UP: THEY SNAP IN",
   "GROOVE",
   "CLICK: CLAWS IN THE GROOVE",
-  "PULL: IT HOLDS",
+  "PULL: HOOKS CATCH, IT HOLDS",
   "PULL THE COLLAR: CLAWS OPEN",
   "COLLAR",
   "ITS TUBE PUSHES THE CLAWS OPEN",
+  "PLUG IS FREE",
   "SPRINGY CLAWS",
   "SNAP INTO THE GROOVE",
   "FOLLOW → A NEW MACHINE EVERY DAY"
@@ -50,20 +51,30 @@
   "https://www.eleyhosereels.com/products/garden-hose-quick-connectors",
   "https://kindseed.com/hose-quick-connect-fittings"
  ],
- "version": "v1",
- "status": "ready (HARD GATE PASS, awaiting coordinator fresh review)",
+ "version": "v2",
+ "status": "ready (HARD GATE v2 PASS; fresh review v1: clarity YES, 14yo YES, visual 6 -> one fix pass done, no re-score)",
  "mediaUrls": [
-  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_reel_v1.mp4"
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_reel_v2.mp4"
  ],
- "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_cover_v1.jpg",
- "visualScore": null,
- "reviews": [],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_cover_v2.jpg",
+ "visualScore": 6,
+ "reviews": [
+  {
+   "round": 1,
+   "by": "coordinator fresh reviewer (frames 2 fps + VO only)",
+   "clarity": "YES",
+   "fourteen": "YES",
+   "visual": 6,
+   "fixes": "stray yellow bar/leader through ROUND NOSE (fr 16-19); PULL arrow cropped left (fr 25-28) and right (fr 31-33); spring half-rings outside the cutaway (fr 10-35); tube label on closed claws (fr 39-40); release step must show the tube opening the claws and the plug sliding out; visible hook catch on tug; FOLLOW pill off the connector body",
+   "applied": "v2: long bar replaced by short outward arrows at both claws; ROUND NOSE label moved clear; tug arrow on the hose inside the frame + green rings at the hook/groove-shoulder contact + tag PULL: HOOKS CATCH, IT HOLDS; collar arrow moved inside (left); spring hidden while cut; close camera pulled back (dist 232) so the collar stays out of the right band; collar tube is a separate part (1.2 mm wall), glows yellow while pulled, leader on its bottom end, label only while the claws are open (blue); plug slides out 16.8-18.2 s and holds, PLUG IS FREE tag 18.6-19.8 s; FOLLOW pill moved under the answer card (y 640)"
+  }
+ ],
  "qualityAudit": {
-  "technical": "PASS: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 24.0 s as planned; first/last frame luma 135.5/130.5 (not black)",
-  "mechanism": "PASS: principle = resilient claws deflect over the plug nose and snap into its groove, the groove shoulder blocks pull-out, the collar tube pushes the claws out to release. kin.py (1/120 s): hooks never inside the plug, claws inside the chamber (max shift 4.40 mm vs 5.7 mm room), tube never inside a claw, plug only leaves with the claws open past the groove depth, claws move only when the plug or the collar tube pushes them, 0.95 mm tug keeps the hook in the groove",
-  "facts": "PASS: LSU AgCenter (push until it snaps, pull back the collar), garden hose connectors patent application (resilient engaging fingers driven back on insertion and returning when fully engaged, O-ring on the male part, spring-loaded sleeve retracts the fingers), US 2005/0067837 (balls + spring-biased sleeve), Eley (brass: locking pins click, slide sleeve releases); model-specific collar-tube detail flagged as simplified in the first comment",
-  "text": "PASS: US English; pyspellchecker flags agcenter, lsu (source name), howitworks (hashtag), hq, whyloop (handle) = justified; hook 104 px, steps 54-62 px, tags 46-54 px; safe zones checked on the 0.5 s frame",
-  "audio": "PASS: -15.0 LUFS, -3.1 dBTP, 4 kHz high-pass gap 20.6 dB; low thumps on the two snaps, collar pull/release and tug, low 70-300 Hz rub on push/pull, no hiss/beeps/clinks; low-pass 7 kHz + -4 dB shelf + de-esser (master_p107.sh, private /tmp/p107_m1.wav)",
-  "look": "PASS: 6 stills + 0.5 s safe-zone frame checked; fixed before final: hook text over the plug/collar joint (camera target lowered), red-circle arrow out of the right band, PLUG tag over the step title, PULL arrow off-frame, claws glow blue instead of orange (contrast), spring clipped to its back half in the cutaway. Known nit: FOLLOW pill sits over the connector body in the last 1.4 s"
+  "technical": "PASS v2: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 24.0 s; first/last frame luma 135.5/129.9",
+  "mechanism": "PASS v2: kin.py (1/120 s): hooks never inside the plug, claws inside the chamber (max shift 5.00 mm vs 5.7 mm room), collar tube (r 9.4-10.6) never inside a claw, plug only leaves with the claws open past the groove depth, claws move only when the plug nose or the collar tube pushes them, the 0.95 mm tug keeps the hook on the groove shoulder",
+  "facts": "PASS: LSU AgCenter, garden hose connectors patent application, US 2005/0067837, Eley; model-specific collar-tube detail flagged as simplified in the first comment",
+  "text": "PASS v2: US English; pyspellchecker flags agcenter, lsu, howitworks, hq, whyloop = justified; hook 104 px, steps 54-62 px, tags 46-54 px; all labels >= 60 px from the edges, no label on another label (checked fr 17, 26, 32-40, 48)",
+  "audio": "PASS v2: -15.1 LUFS, -3.1 dBTP, 4 kHz high-pass gap 20.7 dB; low thumps on the snaps, tug, collar pull/release; no hiss/beeps/clinks",
+  "look": "PASS v2: 6 stills + 0.5 s safe-zone frame checked"
  }
 }

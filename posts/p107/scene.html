@@ -63,18 +63,19 @@ const TAPY = 118;
   const o = add(new THREE.Mesh(new THREE.TorusGeometry(8.4, 0.9, 12, 64), M.oring)); o.rotation.x = Math.PI / 2; o.position.y = 26; }
 // ---------- female connector (group FEM at y = F) ----------
 const FEM = new THREE.Group(); scene.add(FEM);
-const BODYP = [[10.2, -6.5], [19.4, -6.5], [20, -7.1], [20, -38], [23.5, -38], [23.5, -42], [15, -56], [11.5, -58], [11.5, -66], [6, -66], [6, -44], [18.5, -44], [18.5, -12], [10.2, -12]];
-const COLP = [[9.4, -19.4], [10, -19.4], [10, -2.5], [20.2, -2.5], [20.2, -18], [23.6, -18], [24, -17], [24, -0.6], [23.4, 0], [9.4, 0]];
+const BODYP = [[10.8, -6.5], [19.4, -6.5], [20, -7.1], [20, -38], [23.5, -38], [23.5, -42], [15, -56], [11.5, -58], [11.5, -66], [6, -66], [6, -44], [18.5, -44], [18.5, -12], [10.8, -12]];
+const TUBEP = [[9.4, -19.4], [10.6, -19.4], [10.6, -2.6], [9.4, -2.6]];
+const COLP = [[9.4, -2.5], [20.2, -2.5], [20.2, -18], [23.6, -18], [24, -17], [24, -0.6], [23.4, 0], [9.4, 0]];
 const BODY = new THREE.Group(); FEM.add(BODY); const COL = new THREE.Group(); FEM.add(COL);
-let lastCut = -1;
+let lastCut = -1; let TUBE = null; M.tube = M.grey.clone();
 function build(cut) {
   if (Math.abs(cut - lastCut) < 1e-4) return; lastCut = cut;
   for (const g of [BODY, COL]) for (const c of [...g.children]) { g.remove(c); c.geometry.dispose(); }
   const c = cut * 150 * D2R; const a0 = c / 2, len = 2 * Math.PI - c;
-  lathe(BODYP, M.orange, BODY, a0, len, 128); lathe(COLP, M.grey, COL, a0, len, 128);
+  lathe(BODYP, M.orange, BODY, a0, len, 128); lathe(COLP, M.grey, COL, a0, len, 128); TUBE = lathe(TUBEP, M.tube, COL, a0, len, 64);
   for (let i = 0; i < 16; i++) { const a = a0 + (i + 0.5) / 16 * len; if (cut > 0.02 && Math.abs(((a + Math.PI) % (2 * Math.PI)) - Math.PI) < c / 2 + 0.1) continue;
     const r = add(new THREE.Mesh(new K.RBox(1.6, 12, 2.4, 0.5, 2), M.grey), COL); r.position.set(24.2 * Math.sin(a), -9, 24.2 * Math.cos(a)); r.rotation.y = a; }
-  if (c > 1e-3) for (const ph of [a0, a0 + len]) for (const [P, g] of [[BODYP, BODY], [COLP, COL]]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P)), M.sec), g); m.rotation.y = ph - Math.PI / 2; }
+  if (c > 1e-3) for (const ph of [a0, a0 + len]) for (const [P, g] of [[BODYP, BODY], [COLP, COL], [TUBEP, COL]]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P)), M.sec), g); m.rotation.y = ph - Math.PI / 2; }
 }
 build(0);
 // claw ring (fixed in the body) + 4 claws on pivots
@@ -105,17 +106,18 @@ const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
 let KK = null;
 function setScene(t) {
   const k = KK = kin(t); const F = k[1], d = k[2], c = k[3];
-  FEM.position.y = F; build(k[4]); SPR.material = k[4] > 0.05 ? M.sprClip : M.steelS; COL.position.y = -c; SPR.setLength(20 - c);
+  FEM.position.y = F; build(k[4]); SPR.visible = k[4] < 0.05; COL.position.y = -c; SPR.setLength(20 - c);
   const ang = Math.atan2(d, LCLAW);
   for (const C of CLAWS) { C.piv.rotation.z = -ang; C.m.visible = !(C.front && k[4] > 0.05); }
   const act = (t >= T.bendA && t < T.snapB + 0.6) || (t >= T.colA && t < T.relA) || (t > T.hookA && t < T.hookB + 0.3);
   for (const C of CLAWS) K.glow(C.m, act ? 0.5 : 0, 0x2f8cff);
+  if (TUBE) K.glow(TUBE, (t >= T.colA && t < T.relA + 0.2) ? 0.7 : 0, 0xffd21f);
   K.shoot(st, CAMK, t);
 }
 // ---------- camera (still during every key motion) ----------
 const ck = (t, p, dist, el, az) => [t, p[0], p[1], p[2], dist, el, az];
 const WIDE = [0, 15, 0], CLOSE = [0, -2, 0];
-const CAMK = [ck(0, WIDE, 360, 6, 24), ck(T.cutA, WIDE, 360, 6, 24), ck(T.cutB + 0.2, CLOSE, 190, 4, 16), ck(T.backA, CLOSE, 190, 4, 16), ck(T.backB, WIDE, 360, 6, 24), ck(LOOP, WIDE, 360, 6, 24)];
+const CAMK = [ck(0, WIDE, 360, 6, 24), ck(T.cutA, WIDE, 360, 6, 24), ck(T.cutB + 0.2, CLOSE, 232, 4, 16), ck(T.backA, CLOSE, 232, 4, 16), ck(T.backB, WIDE, 360, 6, 24), ck(LOOP, WIDE, 360, 6, 24)];
 // ---------- overlay ----------
 const sc = (v) => S.toScreen(camera, v);
 const fs = (x, y, z = 0) => sc(V(x, y + (KK ? KK[1] : 0), z));
@@ -132,18 +134,21 @@ function overlay(t) {
     S.tag(g2, hard(t, T.cutB, T.s2), 'PLUG (ON THE TAP)', ...sc(V(-G.RN, 8, 0)), -170, 60, 50, '#ffffff');
     S.tag(g2, hard(t, T.cutB + 0.6, T.s2), 'CONNECTOR', ...fs(-23, -30, 0), -120, 120, 50, '#ff9a4a');
     S.tag(g2, hard(t, T.vo1 + 1.8, T.s2), 'SPRINGY CLAWS', ...fs(-11.5, -30, 0), -130, -150, 52, '#ffd21f'); }
-  if (s2) { S.tag(g2, hard(t, T.s2 + 0.2, T.s3), 'ROUND NOSE', ...sc(V(-6, 1.5, 0)), -170, -170, 52, '#ffffff');
-    S.tag(g2, hard(t, T.bendA + 0.8, T.s3), 'CLAWS BEND OUT', ...fs(12.5 + k[2], -24, 0), 130, -40, 52, '#ffd21f');
-    const [x0, y0] = fs(-13, -22), [x1, y1] = fs(-13 - 30, -22); arrowC(g2, hard(t, T.bendA + 0.5, T.bendB) * Math.min(1, k[2] / 1.5), x0 - 10, y0, x1, y1, 18, '#ffd21f'); }
+  if (s2) { S.tag(g2, hard(t, T.s2 + 0.2, T.s3), 'ROUND NOSE', ...sc(V(-5, 1.5, 0)), -110, -250, 52, '#ffffff');
+    S.tag(g2, hard(t, T.bendA + 0.8, T.s3), 'CLAWS BEND OUT', ...fs(12.5 + k[2], -32, 0), 60, 330, 52, '#ffd21f');
+    const aa = hard(t, T.bendA + 0.5, T.bendB + 0.3) * Math.min(1, k[2] / 1.5); for (const sgn of [-1, 1]) { const [x0, y0] = fs(sgn * (13.5 + k[2]), -24), [x1, y1] = fs(sgn * (19 + k[2]), -24); arrowC(g2, aa, x0, y0, x1, y1, 16, '#ffd21f'); } }
   if (s3) { const lk = t >= T.snapB; S.tag(g2, hard(t, T.s3 + 0.1, T.s4), 'GROOVE', ...sc(V(G.RG, (G.GY0 + G.GY1) / 2, 0)), 170, -190, 52, '#7dff9a');
     burst(g2, Math.max(0, 1 - Math.abs(t - T.snapB - 0.15) / 0.45), ...fs(0, -24, 0));
     S.tag(g2, lk && t > T.snapB + 0.3 ? 1 : 0, 'CLICK: CLAWS IN THE GROOVE', ...fs(-6, -24, 0), -40, 300, 50, '#ffd21f');
-    const tug = t >= T.tugA - 0.3 && t < T.tugB + 0.6; const [ax, ay] = fs(-26, -62); arrowC(g2, tug ? 1 : 0, ax - 50, ay - 60, ax - 50, ay + 80, 24, '#ffffff');
-    S.tag(g2, tug ? 1 : 0, 'PULL: IT HOLDS', ax - 50, ay + 80, 60, 80, 52, '#ffffff'); }
-  if (s4) { const [cx, cy] = fs(24, -9); arrowC(g2, hard(t, T.colA - 0.4, T.colB + 0.3), cx + 70, cy - 60, cx + 70, cy + 60, 24, '#ffffff');
-    S.tag(g2, hard(t, T.s4 + 0.2, T.ans), 'COLLAR', ...fs(24, -12, 0), 110, 120, 54, '#ffffff');
-    S.tag(g2, hard(t, T.colA + 0.3, T.ans), 'ITS TUBE PUSHES THE CLAWS OPEN', ...fs(-10, -21, 0), -60, 330, 46, '#ffd21f');
-    const [ox, oy] = fs(-30, -60); arrowC(g2, hard(t, T.outA - 0.2, T.outB), ox - 70, oy - 40, ox - 70, oy + 100, 24, '#7dff9a'); }
+    const tug = t >= T.tugA - 0.3 && t < T.tugB + 0.6; const [ax, ay] = fs(-19, -72); arrowC(g2, tug ? 1 : 0, ax - 40, ay - 50, ax - 40, ay + 90, 24, '#ffffff');
+    const ca = (t >= T.tugA && t < T.tugB + 0.6) ? 0.6 + 0.4 * Math.sin((t - T.tugA) * 12) : 0;
+    if (ca > 0) for (const sgn of [-1, 1]) { const [hx, hy] = sc(V(sgn * 7.3, G.GY0, 0)); g2.save(); g2.globalAlpha = ca; g2.strokeStyle = '#7dff9a'; g2.lineWidth = 7; g2.beginPath(); g2.arc(hx, hy, 26, 0, 7); g2.stroke(); g2.restore(); }
+    S.tag(g2, tug ? 1 : 0, 'PULL: HOOKS CATCH, IT HOLDS', ...sc(V(7.3, G.GY0 - 1, 0)), 40, 420, 48, '#7dff9a'); }
+  if (s4) { const [cx, cy] = fs(-24, -9); arrowC(g2, hard(t, T.colA - 0.4, T.colB + 0.3), cx - 45, cy - 60, cx - 45, cy + 70, 24, '#ffffff');
+    S.tag(g2, hard(t, T.s4 + 0.2, T.ans), 'COLLAR', ...fs(23, -14, 0), -60, 170, 54, '#ffffff');
+    S.tag(g2, hard(t, T.colA + 0.5, T.relA), 'ITS TUBE PUSHES THE CLAWS OPEN', ...fs(-10, -19.4 - k[3], 0), 60, -150, 46, '#ffd21f');
+    const [ox, oy] = fs(16, -72); arrowC(g2, hard(t, T.outA - 0.2, T.outB + 0.3), ox + 30, oy - 40, ox + 30, oy + 100, 24, '#7dff9a');
+    S.tag(g2, hard(t, T.relA, T.ans), 'PLUG IS FREE', ...sc(V(-8.6, 5, 0)), -110, 0, 52, '#7dff9a'); }
   if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT', 'CLICK ON?', 104); const [cx, cy] = fs(24, -9, 0); K.TXT.circle(g2, 1, cx, cy, 70, [120, 200]);
     burst(g2, Math.max(0, 1 - Math.abs(t - T.hookB - 0.1) / 0.35), ...fs(0, -10, 24)); }
   K.TXT.step(g2, s1, 1, 'PUSH IT ON', 62);
@@ -152,7 +157,7 @@ function overlay(t) {
   K.TXT.step(g2, s4, 4, 'PULL THE COLLAR: CLAWS OPEN', 56);
   if (t >= T.ans) { const y = 465; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.75)'; S.rrect(g2, 75, y - 120, 845, 250, 28); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 5; g2.stroke();
     S.outlined(g2, 'SPRINGY CLAWS', S.CX, y - 10, 66, '#ffffff'); S.outlined(g2, 'SNAP INTO THE GROOVE', S.CX, y + 85, 74, '#ffd21f'); g2.restore(); }
-  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+  if (t >= LOOP - 1.4) { const tx = 'FOLLOW → A NEW MACHINE EVERY DAY'; g2.save(); g2.font = '44px Anton'; const w = g2.measureText(tx).width + 44; S.rrect(g2, S.CX - w / 2, 640 - 34, w, 68, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = '#ffffff'; g2.lineWidth = 4; g2.stroke(); g2.fillStyle = '#fff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(tx, S.CX, 642); g2.restore(); }
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;
