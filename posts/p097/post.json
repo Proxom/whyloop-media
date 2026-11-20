@@ -52,5 +52,14 @@
   "https://en.wikipedia.org/wiki/Burr_mill",
   "https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/6929201",
   "https://www.peppermate.com/blogs/recipes/dialing-in-deliciousness-adjusting-your-pepper-mill-grind"
- ]
+ ],
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p097/pepper_reel_v3.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p097/pepper_cover_v3.jpg",
+ "reviews": {
+  "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gap: cracking not shown -> v2 shards)",
+  "visual": "5/10 -> rule B 3 fixes once + glitch fixes; v3 outside reshaped (classic mill profile) after coordinator flagged the v2 silhouette; no re-score"
+ }
 }
