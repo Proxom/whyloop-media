@@ -50,5 +50,17 @@
   "https://si.shimano.com/en/pdfs/um/L800B/UM-L800B-000-ENG.pdf",
   "https://bike.shimano.com/en-NA/technologies/details/spd.html",
   "https://patents.google.com/patent/US6341540"
+ ],
+ "qualityAudit": {
+  "video": "1080x1920 H.264 High yuv420p 30 fps, 27.77 s (planned 27.77), first/last frame luma 44.4 / 42.8 (not black)",
+  "audio": "AAC 48 kHz stereo; -15.1 LUFS, -2.9 dBTP, HP4k gap 20.2 dB; low tocks/thumps only",
+  "mechanism": "kin.py PASS (front gap >= 0.23 mm, back jaw = min non-overlap angle, no opening without a cause, locked during pull-up, release after twist d >= 2.5 mm at 13.7 deg, loop ends match)",
+  "facts": "Shimano UM-45F0A + UM-L800B + Shimano SPD page + US 6,341,540 (firstComment)",
+  "text": "spell flags only camming/clipless/shimano/spd + hashtag/handle; hook 100 px, steps 50-60 px, tags 46-56 px, SLOW MOTION 46 px, follow (kit) >= 44 px; safe_0.5s checked (hook text + circle inside; shoe toe enters the right column = context, no text)",
+  "look": "6 stills checked: no glitches, no cut-off text, no text over text"
+ },
+ "mediaFiles": [
+  "pedal_reel_v1.mp4",
+  "pedal_cover_v1.jpg"
  ]
 }

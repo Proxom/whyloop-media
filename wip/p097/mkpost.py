@@ -14,7 +14,7 @@ Sources:
 Wikipedia, Burr mill (food is ground between two revolving abrasive surfaces separated by a distance set by the user; closer = finer, farther = coarser): https://en.wikipedia.org/wiki/Burr_mill
 US Patent 6,929,201, Adjustable spice grinder (an inner serrated cone inside an outer grinding member forms a tapered annular gap; turning the knob moves the shaft axially to adjust the gap and the coarseness): https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/6929201
 Peppermate, Adjusting your pepper mill grind (turning the top knob changes the space between the burrs; tighter = less space = finer grind, looser = coarser): https://www.peppermate.com/blogs/recipes/dialing-in-deliciousness-adjusting-your-pepper-mill-grind"""
-alt = ("3D animation of a dark walnut pepper mill above a stone countertop, with a voiceover. Under the question How does it crush pepper? a red circle marks the bottom of the mill while fine black pepper falls out of it. "
+alt = ("3D animation of a light wooden pepper mill (wide base, narrow waist, steel knob on top) above a stone countertop, next to a small dish of peppercorns, with a voiceover. Under the question How does it crush pepper? a red circle marks the bottom of the mill while fine black pepper falls out of it. "
        "The top of the mill twists, then the mill is cut in half: inside, peppercorns sit in the chamber above a bright grooved steel cone that turns inside a dark grooved steel ring. "
        "1, a grooved cone turns in a ring: tags mark the shaft and the cone (both turn) and the ring (fixed). "
        "2, wide at the top, narrow at the bottom: yellow arrows measure a wide gap at the top and a narrow gap at the bottom. "
