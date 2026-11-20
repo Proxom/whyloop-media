@@ -81,10 +81,10 @@ Update this file every time a video is scheduled.
 | 2026-11-22 21:00 | p091 | Why doesn't the blind fall | blind cord lock | venetian blind cord lock, roman blind cord lock, cord lock roller (scheduled 19 Nov 18:13 run) |
 | 2026-11-24 21:00 | p083 | Why does this cap just click | child-proof cap | child-resistant closure, push-and-turn cap, safety cap (sloped one-way teeth = ratchet family, but Erkan approved a-042: object counts, not mechanism; scheduled 19 Nov 18:13 run, resumed; Metricool 434737743) |
 | 2026-11-21 21:00 | p095 | What flips the key out | flip key | folding car key, switchblade key, flip key fob (torsion spring + button teeth in case notches; scheduled 19 Nov 18:13 run, resumed; Metricool 434744800) |
+| 2026-11-26 01:00 | Why do a corkscrew's wings go up | wing corkscrew |
 
 Not published (never count as used, but do not re-pitch without a new concept): p023 ratchet-and-pawl, p025 differential, p030 ball bearing alt, p031 Geneva 3D, p033 scissor lift, p042b combination lock alt, p047/p063 stapler, p055 door latch, p057 gas cap, p061 bike quick release.
 
 BLOCKED from the 1M+ list: #7 pin tumbler lock (= p010, 29 Oct). #8 spring scale = p068 (17 Nov). #9 car clutch = p069 (18 Nov). The 1M+ list is finished: next topics come from the scorecard list (learnings/reel-scorecard-2026-11-16.md: retractable pen click next) and new 1M+ finds in reports/outliers.md.
 
 IN PROGRESS (not published, keys reserved): p088 gas strut (wip/p088, HARD GATE + clarity PASS, visual 4 -> NOT scheduled, concept needs a real car-rear model - 19 Nov 15:10 run). p079 wing corkscrew (wip/p079, HARD GATE + clarity PASS, visual 5; rack and pinion like p020 -> Erkan APPROVED a-041 on 19 Nov 18:15: not a repeat; next: rule B top-3 fixes once, then the first empty slot). p074 nail clipper (wip/p074, visual 4 + clarity NO, NOT scheduled - 19 Nov 01:09 run). p076 lighter flint (wip/p076, HARD GATE + clarity PASS, visual 4, NOT scheduled - 19 Nov 05:09 run). p077 fuel nozzle shutoff (wip/p077, HARD GATE PASS, visual 4 + clarity NO, NOT scheduled - 19 Nov 05:09 run). p078 bike pump (wip/p078, HARD GATE PASS, visual 4 + clarity NO, NOT scheduled - 19 Nov 05:09 run).
-| 2026-11-26 01:00 | Why do a corkscrew's wings go up | wing corkscrew |
