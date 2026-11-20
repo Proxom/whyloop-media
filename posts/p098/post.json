@@ -60,5 +60,22 @@
   "https://auto.howstuffworks.com/fuel-gauge.htm",
   "https://www.delphiautoparts.com/resource-center/article/what's-wrong-with-my-fuel-gauge-diagnosing-a-bad-fuel-sending-unit",
   "https://www.tanksinc.com/index.cfm/page/ptype=results/category_id=159/mode=cat/cat159.htm"
- ]
+ ],
+ "qualityAudit": "HARD GATE v2: 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 28.04 s (planned 28.04); first/last frame luma 63.3 / 61.5 (not black); audio -15.1 LUFS, -3.1 dBTP, HP4k gap 21.1 dB (private master temp path, mix.wav verified 28.04 s); kin.py PASS (tank inner -90..300, float >= 4 mm from walls); spell flags only hashtag/handle/source name; text: hook 96 px, steps 58-60 px, tags 46-54 px, TIME-LAPSE/GAUGE/BATTERY/follow 44 px, inset E/F 48 px; safe_0.5s checked (hook gauge inside the safe area, bezel at the right edge); 6 stills looked at: no glitches, clipping, black frames, cut-off text; whole tank in frame; follow pill clear of the gauge. Cover = frame 12 -> fuelgauge_cover_v2.jpg.",
+ "visualScore": "v1 5/10 -> rule B: MUST fixes + top 3 fixes once, no re-score",
+ "clarity": "v1: correct, 14yo YES (coordinator review)",
+ "media": {
+  "mp4": "wip/p098/fuelgauge_reel_v2.mp4",
+  "cover": "wip/p098/fuelgauge_cover_v2.jpg",
+  "duration": 28.04
+ },
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p098/fuelgauge_reel_v2.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p098/fuelgauge_cover_v2.jpg",
+ "reviews": {
+  "clarity": "20 Nov fresh reviewer: correct, 14yo YES (gaps: power source/ground, gauge internals) -> v2 adds battery + ground loop",
+  "visual": "5/10 -> rule B 3 fixes once + text-overlap fixes, no re-score"
+ }
 }
