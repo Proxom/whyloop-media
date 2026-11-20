@@ -10,3 +10,7 @@ Audio: Kokoro VO + soft bed + low tocks/thumps (hook flip, tab flip, beams land,
 Rebuild: TTS setup = venv kokoro-onnx 0.6.1 + npm pack kokoro-q8-shards@1.0.0 (cat parts -> model_q8.onnx, sha256 fbae9257...a1478) + kokoro-js@1.2.1 voices/af_heart.bin -> voices.npz (reshape -1,1,256).
   <venv>/python vo.py <ttsdir> vo; python3 kin.py; <venv>/python audio.py; bash master_p103.sh vo_stem.wav bed_stem.wav mix.wav 4 -5 -15; <venv>/python mkpost.py
 Render: NODE_PATH=/opt/node22/lib/node_modules node tools/render/render.js wip/p103/scene.html <frames> 30 1 0 768 0.75 0 0 1 1080 1920 1 (~0.5 s/frame); encode.sh <frames> wip/p103/mix.wav media/p103/mirror_reel_v1.mp4 25.6 30
+
+## Fresh review (20 Nov 20:30 UTC, coordinator) - FAIL, NOT scheduled (rule B: visual 4 = concept wrong)
+Visual 4/10, clarity NO. Reviewer: mechanism explained right but the WHY of the wedge (two faces point different ways -> two reflections leave at different angles) never said; night diagram draws the bright silver beam on top of the incoming beam (no visible "misses your eye"); the tilt is hidden by a simultaneous camera move; ray diagrams leave the mirror ~5% of the frame, car behind cropped to a half glow, bottom 55% empty; 4% has no comparison (silver ~90%).
+If ever retried: locked side camera for the tilt with ghost + angle arc, bright beam clearly up to the roof, thin faint glass ray to the eye, vertical 9:16 stack (car / mirror / eye) filling the frame, real car model.
