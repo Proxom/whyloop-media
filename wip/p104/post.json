@@ -49,5 +49,17 @@
   "https://home.howstuffworks.com/thermos2.htm",
   "https://www.bbc.co.uk/bitesize/guides/z32nf82/revision/14",
   "https://www.physics.usyd.edu.au/super/physics_tut/activities/Thermal_Physics/Thermos_Flask.pdf"
- ]
+ ],
+ "version": "v2",
+ "status": "ready",
+ "mediaUrls": [
+  "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p104/flask_reel_v2.mp4"
+ ],
+ "cover": "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p104/flask_cover_v2.jpg",
+ "qualityAudit": "HARD GATE v2 (20 Nov 20:30 UTC): 1080x1920 H.264 High yuv420p 30 fps, AAC 48 kHz stereo, 26.50 s; first/last frame luma 94.6 / 87.7 (not black); audio -15.1 LUFS, -3.0 dBTP, HP4k gap 21.5 dB (no hiss; pour = 60-320 Hz rumble only); kin.py PASS (walls only meet at the lip, min gap 2.5 mm; stopper never through the neck; flask never hits cup/table in the pour; vacuum heat dots never reach the inner wall); spell flags only names/handle/hashtags (bbc, bitesize, howstuffworks, whyloop, hq, howitworks); US spelling; text: hook 104 px, steps 58-60 px, tags 48-52 px, answer 70/84 px, follow 44 px, all inside the safe area; 6 stills + 0.5 s safe frame checked: no glitch, no black frame, no cut-off text. v2 = one fix pass of v1 (tag overlap IF IT HAD AIR / HEAT ESCAPES moved; stopper glow toned down).",
+ "visualScore": "self-check only (fork could not spawn a reviewer): est. 5-6",
+ "reviews": {
+  "clarity": "PENDING fresh reviewer (coordinator)",
+  "visual": "PENDING fresh reviewer (coordinator)"
+ }
 }
