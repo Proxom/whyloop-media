@@ -16,8 +16,8 @@
  },
  {
   "i": 3,
-  "text": "A spinning magnet makes electricity flow in the coil. The wire carries it to the lamp.",
-  "dur": 4.544
+  "text": "As the magnet's poles sweep past the coil, they push electricity through the wire, to the lamp.",
+  "dur": 4.843
  },
  {
   "i": 4,
@@ -26,7 +26,7 @@
  },
  {
   "i": 5,
-  "text": "The wheel spins a magnet, and the magnet makes the power.",
-  "dur": 2.901
+  "text": "Your legs spin the magnet, and the spinning magnet turns that motion into electricity.",
+  "dur": 4.544
  }
 ]

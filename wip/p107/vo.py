@@ -3,12 +3,12 @@ import sys, os, json, soundfile as sf
 from kokoro_onnx import Kokoro
 TTS = sys.argv[1]; OUT = sys.argv[2]; os.makedirs(OUT, exist_ok=True)
 LINES = [
- "How does a spinning wheel light the lamp?",
- "The tire spins a small roller. The roller is tiny, so it spins really fast.",
- "Inside, the roller turns a magnet, right in the middle of a coil of copper wire.",
- "A spinning magnet makes electricity flow in the coil. The wire carries it to the lamp.",
- "Ride faster: the magnet spins faster, so the light gets brighter. Stop, and it goes dark.",
- "The wheel spins a magnet, and the magnet makes the power.",
+ "How does a hose connector click on?",
+ "Push it onto the tap. Inside, there are springy plastic claws.",
+ "The plug's round nose pushes the claws out of the way.",
+ "When the groove lines up, the claws spring back into it. Click! Now it can't pull off.",
+ "To let go, pull the collar back. It pushes the claws open, and the plug slides out.",
+ "Springy claws snap into the groove.",
 ]
 k = Kokoro(f'{TTS}/model_q8.onnx', f'{TTS}/voices.npz')
 info = []

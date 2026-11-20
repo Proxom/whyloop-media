@@ -72,17 +72,24 @@ for (const z of [G.FORK_Z, -G.FORK_Z]) { const g = new THREE.CylinderGeometry(G.
 const TH = G.TH * D2R; const uu = V(Math.cos(TH), Math.sin(TH), 0);
 const DY = new THREE.Group(); DY.position.set(G.RT * Math.cos(TH), G.RT * Math.sin(TH), G.ZOFF); DY.rotation.z = TH - Math.PI / 2; scene.add(DY);
 const BODYP = [[4, 14], [14, 15], [17, 20], [17, 94], [14.5, 100], [5, 101.5], [5, 99.5], [13.5, 98], [15.5, 93], [15.5, 21], [13, 17], [4, 16]];
-const COILP = (() => { const P = [[G.COIL_RI, G.COIL_Y0]]; for (let y = G.COIL_Y0; y <= G.COIL_Y1 + 1e-6; y += 0.8) P.push([((y - G.COIL_Y0) / 0.8) % 2 ? 15.0 : 15.5, y]); P.push([G.COIL_RI, G.COIL_Y1]); return P; })();
+const COILP_UNUSED = (() => { const P = [[G.COIL_RI, G.COIL_Y0]]; for (let y = G.COIL_Y0; y <= G.COIL_Y1 + 1e-6; y += 0.8) P.push([((y - G.COIL_Y0) / 0.8) % 2 ? 15.0 : 15.5, y]); P.push([G.COIL_RI, G.COIL_Y1]); return P; })();
 const COILC = [[G.COIL_RI, G.COIL_Y0], [15.2, G.COIL_Y0], [15.2, G.COIL_Y1], [G.COIL_RI, G.COIL_Y1]];
-const DYN = new THREE.Group(); DY.add(DYN); let lastCut = -1;
+const DYN = new THREE.Group(); DY.add(DYN); let lastCut = -1; let COIL = null;
+M.bobbin = phys({ color: 0x3a3f47, roughness: 0.6, side: THREE.DoubleSide });
+const disposeAll = (o) => o.traverse(m => { if (m.geometry) m.geometry.dispose(); });
 function buildDyn(cut) {   // cut 0..1 -> removed sector 0..160 deg facing local +z, with red section caps
   if (Math.abs(cut - lastCut) < 1e-4) return; lastCut = cut;
-  for (const c of [...DYN.children]) { DYN.remove(c); c.geometry.dispose(); }
+  for (const c of [...DYN.children]) { DYN.remove(c); disposeAll(c); }
   const c = cut * 160 * D2R; const a0 = c / 2, len = 2 * Math.PI - c;
-  lathe(BODYP, M.body, DYN, a0, len); lathe(COILP, M.copper, DYN, a0, len);
-  lathe([[G.COIL_RI - 0.4, G.COIL_Y0], [G.COIL_RI, G.COIL_Y0], [G.COIL_RI, G.COIL_Y1], [G.COIL_RI - 0.4, G.COIL_Y1]], M.inner, DYN, a0, len);
-  if (c > 1e-3) for (const ph of [a0, a0 + len]) {
-    for (const [P, mat] of [[BODYP, M.sec], [COILC, M.copper]]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P)), mat), DYN); m.rotation.y = ph - Math.PI / 2; } }
+  lathe(BODYP, M.body, DYN, a0, len);
+  lathe([[G.COIL_RI - 0.6, G.COIL_Y0 - 1.2], [G.COIL_RI, G.COIL_Y0 - 1.2], [G.COIL_RI, G.COIL_Y1 + 1.2], [G.COIL_RI - 0.6, G.COIL_Y1 + 1.2]], M.bobbin, DYN, a0, len);   // bobbin tube
+  for (const y of [G.COIL_Y0 - 1.2, G.COIL_Y1 + 1.2]) lathe([[G.COIL_RI - 0.6, y - 0.6], [15.3, y - 0.6], [15.3, y + 0.6], [G.COIL_RI - 0.6, y + 0.6]], M.bobbin, DYN, a0, len); // flanges
+  COIL = new THREE.Group(); DYN.add(COIL);                      // wound copper wire: 3 layers of turns (partial tori leave the cut open)
+  const tg = {}; for (const r of [12.0, 13.3, 14.6]) tg[r] = new THREE.TorusGeometry(r, 0.65, 8, 64, len);
+  for (const r of [12.0, 13.3, 14.6]) for (let y = G.COIL_Y0 + 0.65; y <= G.COIL_Y1 - 0.6; y += 1.3) {
+    const m = new THREE.Mesh(tg[r], M.copper); const h = new THREE.Group(); h.add(m); m.rotation.x = Math.PI / 2; h.rotation.y = -(Math.PI / 2 + c / 2) + (c > 1e-3 ? 0 : 0); h.position.y = y; COIL.add(h); }
+  COIL.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+  if (c > 1e-3) for (const ph of [a0, a0 + len]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(BODYP)), M.sec), DYN); m.rotation.y = ph - Math.PI / 2; }
 }
 buildDyn(0);
 // black end cap + terminal + clamp band (do not need the cut)
@@ -116,10 +123,11 @@ const PL = new THREE.PointLight(0xfff0cc, 0, 600, 1.5); PL.position.set(0, 30, 0
 { const p0 = LAMP.localToWorld(V(0, -20, 0)); const p1 = fu.clone().multiplyScalar(530); const d = p1.clone().sub(p0); const b = add(new THREE.Mesh(new K.RBox(d.length(), 7, 4, 1, 1), M.fork)); b.position.copy(p0.clone().add(p1).multiplyScalar(0.5)); b.quaternion.setFromUnitVectors(V(1, 0, 0), d.clone().normalize()); }
 // ---------- wire: coil -> terminal (inside, local) -> lamp back ----------
 LAMP.updateMatrixWorld(true);
-const WIREPTS = [DY.localToWorld(V(13, 66, 0)), DY.localToWorld(V(9, 90, 0)), DY.localToWorld(V(5, 104, 0)), DY.localToWorld(V(5, 112, 0)), DY.localToWorld(V(8, 124, 8)),
+const WIREPTS = [DY.localToWorld(V(14.6, 32, 1.5)), DY.localToWorld(V(15.0, 50, 1.5)), DY.localToWorld(V(14.6, 66, 1)), DY.localToWorld(V(9, 90, 0)), DY.localToWorld(V(5, 104, 0)), DY.localToWorld(V(5, 112, 0)), DY.localToWorld(V(8, 124, 8)),
   V(20, 462, 22), V(28, 471, 9), LAMP.localToWorld(V(0, -35, 0))];
 const WIRE = new THREE.CatmullRomCurve3(WIREPTS, false, 'centripetal');
-{ const outer = new THREE.CatmullRomCurve3(WIREPTS.slice(3), false, 'centripetal'); add(new THREE.Mesh(new THREE.TubeGeometry(outer, 80, 1.8, 10), M.wire)); }
+let S_EXIT = 0; for (let i = 0; i <= 400; i++) { const q = DY.worldToLocal(WIRE.getPointAt(i / 400)); if (q.y > 106) { S_EXIT = i / 400; break; } }
+{ const outer = new THREE.CatmullRomCurve3(WIREPTS.slice(5), false, 'centripetal'); add(new THREE.Mesh(new THREE.TubeGeometry(outer, 80, 1.8, 10), M.wire)); }
 S.shadowAll(scene);
 K.backdrop(scene, { floorY: -340, R: 300, zBack: -1600, h: 6000, width: 9000, wall: '#2b3240', floor: '#2a2e36', pool: true, catcher: 3000, shadowOpacity: 0.5 });
 const RIG = K.lightRig(scene, V(20, 400, 0), 260, { key: 2.5, rim: 3.0, fill: 0.55 }); RIG.key.shadow.bias = -0.0004;
@@ -130,21 +138,21 @@ function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(
 const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
 let KK = null;
 function setScene(t) {
-  const k = KK = kin(t); const wa = k[1], ra = k[2], br = Math.pow(k[4], 1.6), cut = k[5];
+  const k = KK = kin(t); const wa = k[1], ra = k[2], br = Math.pow(k[4], 2.2), cut = k[5];
   WH.rotation.z = -wa; ROT.rotation.y = -ra; buildDyn(cut);
-  M.lens.color.setRGB(0.18 + 0.82 * Math.min(1, br * 1.6), 0.18 + 0.77 * Math.min(1, br * 1.6), 0.18 + 0.62 * Math.min(1, br * 1.6)); BEAM.material.opacity = 0.4 * br; PL.intensity = 4e4 * br;
-  K.glow(DYN.children[1], t >= T.s3 && t < T.s4 ? 0.45 : 0);
+  const lb = Math.min(1, br * 1.3); M.lens.color.setRGB(0.18 + 0.82 * lb, 0.18 + 0.77 * lb, 0.18 + 0.62 * lb); BEAM.material.opacity = 0.42 * br * br; PL.intensity = 4e4 * br;
+  if (COIL) K.glow(COIL, t >= T.s3 && t < T.s4 ? 0.35 : 0);
   K.shoot(st, CAMK, t);
 }
 // ---------- camera ----------
 const DW_ = (y, x = 0) => { const v = DY.localToWorld(V(x, y, 0)); return [v.x, v.y, v.z]; };
 const ck = (t, p, dist, el, az) => [t, p[0], p[1], p[2], dist, el, az];
-const HERO = [20, 421, 15], WIDE = [30, 440, 20];
+const HERO = [20, 421, 15], WIDE = [30, 440, 20], ANS = [20, 486, 15];
 const CAMK = [ck(0, HERO, 840, 8, 24), ck(T.cutIn - 0.01, HERO, 810, 8, 22),
   ck(T.cutIn, [8, 318, 22], 250, 10, 34), ck(T.s2 - 0.01, [8, 318, 22], 240, 10, 32),
   ck(T.s2, DW_(46), 300, 4, 6), ck(T.s3 - 0.01, DW_(46), 290, 4, 6),
   ck(T.s3, WIDE, 610, 6, 14), ck(T.ans - 0.01, WIDE, 600, 6, 14),
-  ck(T.ans, HERO, 810, 8, 22), ck(LOOP, HERO, 840, 8, 24)];
+  ck(T.ans, ANS, 810, 8, 22), ck(LOOP, ANS, 840, 8, 24)];
 // ---------- overlay ----------
 const sc = (v) => S.toScreen(camera, v);
 const dyS = (x, y, z = 0) => sc(DY.localToWorld(V(x, y, z)));
@@ -153,27 +161,45 @@ function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save()
 function dots(g2, k, a) {   // electricity: yellow dots along the wire, speed and number follow the wheel speed
   if (a <= 0 || k[4] <= 0.01) return; const n = Math.round(10 + 22 * k[4]); const ph = k[1] * 0.55;
   g2.save(); g2.globalAlpha = a * Math.min(1, k[4] * 3);
-  for (let i = 0; i < n; i++) { const s = ((i / n + ph) % 1 + 1) % 1; if (lastCut < 0.5 && s < 0.22) continue; const [x, y] = sc(WIRE.getPointAt(s));
+  for (let i = 0; i < n; i++) { const s = ((i / n + ph) % 1 + 1) % 1; if (lastCut < 0.5 && s < S_EXIT) continue; const [x, y] = sc(WIRE.getPointAt(s));
     g2.fillStyle = '#ffd21f'; g2.beginPath(); g2.arc(x, y, 9, 0, 7); g2.fill(); g2.strokeStyle = 'rgba(40,20,0,0.9)'; g2.lineWidth = 3; g2.stroke(); }
   g2.restore(); }
 function lampGlow(g2, br) { if (br <= 0.01) return; const [x, y] = sc(LAMP.localToWorld(V(0, 4, 0))); const R = 60 + 160 * br; const gr = g2.createRadialGradient(x, y, 0, x, y, R);
   gr.addColorStop(0, `rgba(255,248,220,${0.85 * br})`); gr.addColorStop(0.35, `rgba(255,230,170,${0.35 * br})`); gr.addColorStop(1, 'rgba(255,220,150,0)'); g2.save(); g2.globalCompositeOperation = 'lighter'; g2.fillStyle = gr; g2.fillRect(x - R, y - R, 2 * R, 2 * R); g2.restore(); }
+function chev(g2, x, y, ang, size, color) { g2.save(); g2.translate(x, y); g2.rotate(ang); g2.beginPath(); g2.moveTo(size, 0); g2.lineTo(-size * 0.7, -size * 0.8); g2.lineTo(-size * 0.25, 0); g2.lineTo(-size * 0.7, size * 0.8); g2.closePath();
+  g2.fillStyle = color; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10; g2.fill(); g2.lineWidth = 4; g2.strokeStyle = '#1c0f00'; g2.stroke(); g2.restore(); }
+function spinMarks(g2, k, a) {   // curved rotation guides: tire (slow, white) and roller (fast, yellow); chevrons ride on the real angles
+  if (a <= 0) return; g2.save(); g2.globalAlpha = a; const wa = k[1], ra = k[2];
+  const tp = (th) => sc(V(311 * Math.cos(th), 311 * Math.sin(th), 18.5));
+  g2.lineWidth = 7; g2.strokeStyle = 'rgba(255,255,255,0.75)'; g2.setLineDash([]); g2.beginPath();
+  for (let i = 0; i <= 40; i++) { const [x, y] = tp((112 - i * 0.9) * D2R); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke();
+  for (let j = 0; j < 4; j++) { let th = (112 - ((wa * 180 / Math.PI * 1.0 + j * 9) % 36)) * D2R; const [x, y] = tp(th), [x2, y2] = tp(th - 0.01); chev(g2, x, y, Math.atan2(y2 - y, x2 - x), 22, '#ffffff'); }
+  const rp = (ph) => dyS(15.5 * Math.sin(ph), 0, 15.5 * Math.cos(ph));
+  g2.strokeStyle = 'rgba(255,210,31,0.8)'; g2.beginPath(); for (let i = 0; i <= 40; i++) { const [x, y] = rp(-1.3 + i * 2.6 / 40); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke();
+  for (let j = 0; j < 3; j++) { const ph = ((-ra + j * 2 * Math.PI / 3) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; if (Math.abs(ph) > 1.3) continue;
+    const [x, y] = rp(ph), [x2, y2] = rp(ph - 0.05); chev(g2, x, y, Math.atan2(y2 - y, x2 - x), 24, '#ffd21f'); }
+  g2.restore(); }
+function poles(g2, a) { if (a <= 0) return; MAG.updateMatrixWorld(true); const cz = MAG.localToWorld(V(0, 0, 0));
+  for (const [lx, L] of [[6, 'N'], [-6, 'S']]) { const p = MAG.localToWorld(V(lx, 0, 0)); const toCam = camera.position.clone().sub(cz).normalize(); if (p.clone().sub(cz).dot(toCam) < 1.5) continue;
+    const q = MAG.localToWorld(V(lx, 0, 0)).add(toCam.multiplyScalar(9)); const [x, y] = sc(q); g2.save(); g2.globalAlpha = a; S.outlined(g2, L, x, y + 18, 50, '#ffffff'); g2.restore(); } }
 function overlay(t) {
-  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const br = Math.pow(k[4], 1.6);
-  { let fx = 0; for (const c of [T.cutIn, T.s2, T.s3, T.ans]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const br = Math.pow(k[4], 2.2);
+  { let fx = 0; for (const c of [0, T.cutIn, T.s2, T.s3, T.ans, LOOP]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
   lampGlow(g2, br);
   const s1 = hard(t, T.cutIn, T.s2), s2 = hard(t, T.s2, T.s3), s3 = hard(t, T.s3, T.s4), s4 = hard(t, T.s4, T.ans);
   dots(g2, k, (s3 || s4) ? 1 : 0);
   if (s1) { const c = V(G.RT * Math.cos(TH), G.RT * Math.sin(TH), G.RTUBE);
-    const [x0, y0] = sc(V(c.x - 60, c.y - 6, 10)), [x1, y1] = sc(V(c.x - 14, c.y + 2, 17)); arrowC(g2, hard(t, T.cutIn + 0.6, T.s2), x0, y0, x1, y1, 24, '#ffffff');
+    spinMarks(g2, k, hard(t, T.cutIn + 0.5, T.s2));
     S.tag(g2, hard(t, T.cutIn + 0.3, T.s2), 'TIRE', ...sc(V(c.x - 40, c.y - 14, 14)), -150, 150, 52, '#ffffff');
     S.tag(g2, hard(t, T.cutIn + 0.3, T.s2), 'ROLLER', ...dyS(G.RR, 2, 0), 150, -110, 52, '#ffd21f');
     S.tag(g2, hard(t, T.vo1 + 2.6, T.s2), 'TINY = SPINS FAST', ...dyS(0, -G.RL, G.RR), 120, 190, 50, '#7dff9a'); }
+  poles(g2, (s2 && t >= T.cutB) || s3 ? 1 : 0);
   if (s2) { S.tag(g2, hard(t, T.cutB, T.s3), 'MAGNET', ...dyS(3, 40, 8), 190, -170, 54, '#ffd21f');
-    S.tag(g2, hard(t, T.cutB + 1.2, T.s3), 'COIL OF COPPER WIRE', ...dyS(-14, 56, 6), -150, 150, 50, '#ffb070');
+    S.tag(g2, hard(t, T.cutB + 1.2, T.s3), 'COIL OF COPPER WIRE', ...dyS(-14.0, 36, -3.5), -170, 170, 50, '#ffb070');
     S.tag(g2, hard(t, T.cutA, T.s3), 'ROLLER', ...dyS(G.RR, 0, 0), 160, 40, 50, '#ffffff'); }
   if (s3) { S.tag(g2, hard(t, T.s3 + 0.4, T.s4), 'ELECTRICITY', ...sc(WIRE.getPointAt(0.62)), -140, -120, 54, '#ffd21f');
     S.tag(g2, hard(t, T.s3 + 0.2, T.s4), 'SPINNING MAGNET', ...dyS(0, 46, 6), 150, 140, 48, '#ffffff');
+    S.tag(g2, hard(t, T.vo3 + 0.3, T.s4), 'POLES SWEEP PAST THE COIL', ...dyS(-14.0, 40, -3.5), -60, -230, 48, '#7dff9a');
     S.tag(g2, hard(t, T.vo3 + 2.8, T.s4), 'LAMP', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 54, '#ffffff'); }
   if (s4) { const fast = t >= T.fastB - 0.3 && t < T.stopA + 0.2, dark = t >= T.stopB - 0.1;
     S.tag(g2, fast ? 1 : 0, 'FAST: BRIGHT', ...sc(LAMP.localToWorld(V(24, -10, 0))), 110, 170, 56, '#ffd21f');
@@ -185,8 +211,9 @@ function overlay(t) {
   K.TXT.step(g2, s3, 3, 'SPINNING MAGNET = ELECTRICITY', 54);
   K.TXT.step(g2, s4, 4, 'FASTER = BRIGHTER', 62);
   if (t >= T.ans) { const y = 465; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.72)'; S.rrect(g2, 75, y - 120, 845, 250, 28); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 5; g2.stroke();
-    S.outlined(g2, 'THE WHEEL SPINS A MAGNET', S.CX, y - 10, 62, '#ffffff'); S.outlined(g2, 'THE MAGNET MAKES POWER', S.CX, y + 85, 74, '#ffd21f'); g2.restore(); }
-  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+    S.outlined(g2, 'YOUR LEGS SPIN A MAGNET', S.CX, y - 10, 64, '#ffffff'); S.outlined(g2, 'SPINNING MAGNET = ELECTRICITY', S.CX, y + 85, 60, '#ffd21f'); g2.restore(); }
+  if (t >= LOOP - 1.4) { const text = 'FOLLOW → A NEW MACHINE EVERY DAY'; g2.save(); g2.font = '44px Anton'; const w = g2.measureText(text).width + 44; S.rrect(g2, S.CX - w / 2, 700 - 34, w, 68, 16); g2.fillStyle = 'rgba(12,14,20,0.86)'; g2.fill(); g2.strokeStyle = '#ffffff'; g2.lineWidth = 4; g2.stroke();
+    g2.fillStyle = '#fff'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(text, S.CX, 702); g2.restore(); }
 }
 window.motionPx = (t) => 0;
 S.install(st, setScene, overlay); window.ready = false;

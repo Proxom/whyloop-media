@@ -4,18 +4,19 @@
 import json, math
 FPS_K = 120
 VO = [d['dur'] for d in json.load(open('vo/vo.json'))]
-T = dict(vo0=0.2, cutIn=2.2, vo1=2.4, s2=7.2, vo2=7.4, cutA=7.6, cutB=8.6, s3=12.0, vo3=12.2, s4=17.0, vo4=17.2,
-         fastA=18.0, fastB=19.2, stopA=20.4, stopB=21.6, ans=22.9, vo5=23.0, goA=23.2, goB=24.6)
-LOOP = 26.8
+T = dict(vo0=0.2, cutIn=2.2, vo1=2.4, s2=7.2, vo2=7.4, cutA=7.6, cutB=8.6, s3=12.0, vo3=12.2, s4=17.3, vo4=17.5,
+         slowA=17.5, slowB=18.3, fastA=19.0, fastB=20.2, stopA=21.2, stopB=22.4, ans=23.2, vo5=23.24, goA=23.5, goB=24.9)
+LOOP = 28.6
 starts = [T['vo0'], T['vo1'], T['vo2'], T['vo3'], T['vo4'], T['vo5']]; nxt = [T['cutIn'], T['s2'], T['s3'], T['s4'], T['ans'], LOOP - 0.5]
 for i in range(6): assert starts[i] + VO[i] < nxt[i], ('VO overlap', i, starts[i] + VO[i], nxt[i])
 G = dict(TH=88.0, RT=320.0, RTUBE=18.0, RR=12.0, RL=7.0, ZOFF=30.0, BODY_R=17.0, BODY_Y0=14.0, BODY_Y1=100.0, MAG_R=9.0, MAG_Y0=30.0, MAG_Y1=62.0,
-         COIL_RI=11.0, COIL_RO=15.0, COIL_Y0=27.0, COIL_Y1=65.0, FORK_TH=100.0, FORK_Z=45.0, FORK_R=10.0)
-W_SLOW, W_HOOK, W_FAST = 0.6, 0.9, 1.5
+         COIL_RI=11.0, COIL_RO=15.25, COIL_Y0=27.0, COIL_Y1=65.0, FORK_TH=100.0, FORK_Z=45.0, FORK_R=10.0)
+W_SLOW, W_MID, W_HOOK, W_FAST = 0.5, 0.9, 1.3, 1.5
 def ease(u): u = min(1, max(0, u)); return u * u * (3 - 2 * u)
 def omega(t):
     if t < T['cutIn']: return W_HOOK
-    if t < T['fastA']: return W_SLOW
+    if t < T['slowA']: return W_MID
+    if t < T['fastA']: return W_MID + (W_SLOW - W_MID) * ease((t - T['slowA']) / (T['slowB'] - T['slowA']))
     if t < T['stopA']: return W_SLOW + (W_FAST - W_SLOW) * ease((t - T['fastA']) / (T['fastB'] - T['fastA']))
     if t < T['goA']: return W_FAST * (1 - ease((t - T['stopA']) / (T['stopB'] - T['stopA'])))
     return W_HOOK * ease((t - T['goA']) / (T['goB'] - T['goA']))

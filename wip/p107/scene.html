@@ -1,0 +1,161 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p107 garden hose quick connector "HOW DOES IT / CLICK ON?" (group E, track A). Built from kit/kit.js. Units mm, axis = world y.
+// Male plug (grey) screwed on a brass garden tap, nose tip at y=0 pointing down. Female connector (orange body + grey collar) on a green hose, top at y=F.
+// kin.json rows: [t, F, delta, collar, cut]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T;
+const st = K.makeKit({ fov: 30, bg: 0x6b4a3a, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const D2R = Math.PI / 180;
+M.orange = phys({ color: 0xff6a10, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.25 });
+M.grey = phys({ color: 0x8d949c, roughness: 0.42, clearcoat: 0.3 });
+M.plug = phys({ color: 0x9aa1a8, roughness: 0.35, clearcoat: 0.4 });
+M.claw = phys({ color: 0x2a2d33, roughness: 0.5, clearcoat: 0.2 });
+M.oring = phys({ color: 0x15161a, roughness: 0.7 });
+M.hose = phys({ color: 0x2f9a3c, roughness: 0.45, clearcoat: 0.35, bumpMap: M.rubber.bumpMap, bumpScale: 0.15 });
+M.brassT = phys({ color: 0xd9a548, metalness: 1, roughness: 0.28, envMapIntensity: 1.3 });
+M.inner = phys({ color: 0x8a3c10, roughness: 0.6, side: THREE.DoubleSide });
+M.steelS = phys({ color: 0xc9ced4, metalness: 1, roughness: 0.25 });
+const hatch = (base, line) => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = base; g.fillRect(0, 0, 64, 64); g.strokeStyle = line; g.lineWidth = 6;
+  for (let i = -64; i < 128; i += 20) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.12, 0.12); return t; };
+M.sec = phys({ color: 0xffffff, map: hatch('#c92a20', 'rgba(80,8,4,0.5)'), roughness: 0.5, side: THREE.DoubleSide });
+// brick wall texture
+const brickTex = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 1024; const g = c.getContext('2d'); g.fillStyle = '#bfb2a2'; g.fillRect(0, 0, 1024, 1024);
+  const bw = 128, bh = 48; let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let r = 0; r < 1024 / bh; r++) for (let i = -1; i < 1024 / bw + 1; i++) { const x = i * bw + (r % 2 ? bw / 2 : 0), y = r * bh; const h = 8 + rnd() * 10, l = 30 + rnd() * 12;
+    g.fillStyle = `hsl(${h},${45 + rnd() * 15}%,${l}%)`; g.fillRect(x + 4, y + 4, bw - 8, bh - 8);
+    for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(0,0,0,${rnd() * 0.12})`; g.fillRect(x + 4 + rnd() * (bw - 12), y + 4 + rnd() * (bh - 12), 4, 3); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); t.anisotropy = 4; return t; })();
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const latheG = (P, a0, len, seg = 96) => new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, len);
+const dbl = (mat) => { if (mat.side === THREE.DoubleSide) return mat; const c = mat.clone(); c.side = THREE.DoubleSide; return c; };
+const lathe = (P, mat, p, a0 = 0, len = 2 * Math.PI, seg = 96) => add(new THREE.Mesh(latheG(P, a0, len, seg), dbl(mat)), p);
+const capShape = (P) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(r, y) : sh.moveTo(r, y)); return sh; };
+// ---------- wall + tap ----------
+{ const w = add(new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), phys({ color: 0xffffff, map: brickTex, roughness: 0.9, bumpMap: brickTex, bumpScale: 0.6 }))); w.position.set(0, 100, -90); }
+const TAPY = 118;
+{ const f = lathe([[0.01, -90], [34, -90], [34, -84], [28, -80], [0.01, -80]], M.brassT, scene); f.rotation.x = Math.PI / 2; f.position.y = TAPY; }
+{ const b = lathe([[0.01, 0], [13, 0], [14, 4], [14, 70], [0.01, 70]], M.brassT, scene); b.rotation.x = Math.PI / 2; b.position.set(0, TAPY, -84); b.scale.set(1, 1, 1); }
+{ const sp = lathe([[0.01, 0], [12, 0], [12, 40], [0.01, 40]], M.brassT, scene); sp.position.set(0, 64, 0); const elb = add(new THREE.Mesh(new THREE.SphereGeometry(13.5, 32, 24), M.brassT)); elb.position.set(0, TAPY - 2, 0);
+  const z1 = add(new THREE.Mesh(new THREE.CylinderGeometry(13.5, 13.5, 30, 32), M.brassT)); z1.rotation.x = Math.PI / 2; z1.position.set(0, TAPY - 2, -15);
+  const v = lathe([[0.01, 0], [16, 0], [16, 22], [0.01, 22]], M.brassT, scene); v.position.set(0, TAPY + 6, -40);
+  const stem = add(new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 18, 16), M.steelS)); stem.position.set(0, TAPY + 36, -40);
+  const hdl = add(new THREE.Mesh(new K.RBox(70, 8, 16, 3, 6), phys({ color: 0x1e5fbf, roughness: 0.35, clearcoat: 0.6 }))); hdl.position.set(0, TAPY + 46, -40); }
+// male plug: thread nut (ribbed) 46..64, flange 40..46, nose 0..40 with groove + O-ring
+{ const P = [[0.01, 0], [G.RTIP, 0], [G.RN, G.TIPC], [G.RN, G.GY0 - 0.6], [G.RG, G.GY0], [G.RG, G.GY1], [G.RN, G.GY1 + 0.8], [G.RN, 40], [14, 40], [15, 41], [15, 45], [16.5, 46], [16.5, 64], [0.01, 64]];
+  lathe(P, M.plug, scene, 0, 2 * Math.PI, 128);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * 2 * Math.PI; const r = add(new THREE.Mesh(new K.RBox(3, 16, 3.4, 0.6, 2), M.plug)); r.position.set(17 * Math.sin(a), 55, 17 * Math.cos(a)); r.rotation.y = a; }
+  const o = add(new THREE.Mesh(new THREE.TorusGeometry(8.4, 0.9, 12, 64), M.oring)); o.rotation.x = Math.PI / 2; o.position.y = 26; }
+// ---------- female connector (group FEM at y = F) ----------
+const FEM = new THREE.Group(); scene.add(FEM);
+const BODYP = [[10.2, -6.5], [19.4, -6.5], [20, -7.1], [20, -38], [23.5, -38], [23.5, -42], [15, -56], [11.5, -58], [11.5, -66], [6, -66], [6, -44], [18.5, -44], [18.5, -12], [10.2, -12]];
+const COLP = [[9.4, -19.4], [10, -19.4], [10, -2.5], [20.2, -2.5], [20.2, -18], [23.6, -18], [24, -17], [24, -0.6], [23.4, 0], [9.4, 0]];
+const BODY = new THREE.Group(); FEM.add(BODY); const COL = new THREE.Group(); FEM.add(COL);
+let lastCut = -1;
+function build(cut) {
+  if (Math.abs(cut - lastCut) < 1e-4) return; lastCut = cut;
+  for (const g of [BODY, COL]) for (const c of [...g.children]) { g.remove(c); c.geometry.dispose(); }
+  const c = cut * 150 * D2R; const a0 = c / 2, len = 2 * Math.PI - c;
+  lathe(BODYP, M.orange, BODY, a0, len, 128); lathe(COLP, M.grey, COL, a0, len, 128);
+  for (let i = 0; i < 16; i++) { const a = a0 + (i + 0.5) / 16 * len; if (cut > 0.02 && Math.abs(((a + Math.PI) % (2 * Math.PI)) - Math.PI) < c / 2 + 0.1) continue;
+    const r = add(new THREE.Mesh(new K.RBox(1.6, 12, 2.4, 0.5, 2), M.grey), COL); r.position.set(24.2 * Math.sin(a), -9, 24.2 * Math.cos(a)); r.rotation.y = a; }
+  if (c > 1e-3) for (const ph of [a0, a0 + len]) for (const [P, g] of [[BODYP, BODY], [COLP, COL]]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P)), M.sec), g); m.rotation.y = ph - Math.PI / 2; }
+}
+build(0);
+// claw ring (fixed in the body) + 4 claws on pivots
+lathe([[9.6, -44], [14, -44], [14, -40.5], [9.6, -40.5]], M.claw, FEM, 0, 2 * Math.PI, 64);
+const CLAWP = [[G.CLAW_RI, G.ROOT_Y], [G.CLAW_RO, G.ROOT_Y], [G.CLAW_RO, G.RAMP_Y], [G.RAMP_R, G.RAMP_Y], [G.HOOK_IN, G.HOOK_Y1], [G.HOOK_IN, G.HOOK_Y0], [G.CLAW_RI, G.HOOK_Y0]];
+const CLAWS = [];
+for (const phi of [Math.PI / 2, -Math.PI / 2, Math.PI, 0]) {
+  const holder = new THREE.Group(); holder.rotation.y = phi - Math.PI / 2; FEM.add(holder);
+  const piv = new THREE.Group(); piv.position.set(G.ROOT_R, G.ROOT_Y, 0); holder.add(piv);
+  const sh = capShape(CLAWP.map(([r, y]) => [r - G.ROOT_R, y - G.ROOT_Y]));
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 7, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 2 }); geo.translate(0, 0, -3.5);
+  const m = add(new THREE.Mesh(geo, M.claw.clone()), piv); CLAWS.push({ piv, m, front: phi === 0 });
+}
+const LCLAW = G.RAMP_Y - G.ROOT_Y;
+// spring between the collar's bottom (-18 - c) and the body shoulder (-38)
+st.renderer.localClippingEnabled = true; M.sprClip = M.steelS.clone(); M.sprClip.clippingPlanes = [new THREE.Plane(V(0, 0, -1), 0)];
+const SPR = add(K.spring(M.steelS, { R: 21.8, wire: 0.9, turns: 4.5, len: 20 }), FEM); SPR.position.y = -38;
+// green ribbed hose
+{ const P = [[0.01, -60]]; for (let y = -60; y >= -420; y -= 4) P.push([((-y / 4) % 2 ? 14.6 : 15.2), y]); P.push([0.01, -420]); lathe(P, M.hose, FEM, 0, 2 * Math.PI, 64);
+  lathe([[11.6, -56], [16.2, -56], [16.4, -66], [11.6, -66]], M.grey, FEM); }
+S.shadowAll(scene);
+const RIG = K.lightRig(scene, V(0, 20, 0), 140, { key: 2.6, rim: 2.4, fill: 0.6 }); RIG.key.shadow.bias = -0.0004;
+{ const sun = new THREE.DirectionalLight(0xffe2b8, 1.6); sun.position.set(500, 600, 600); scene.add(sun); const sky = new THREE.HemisphereLight(0xcfe3ff, 0x6b4a30, 0.6); scene.add(sky); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+let KK = null;
+function setScene(t) {
+  const k = KK = kin(t); const F = k[1], d = k[2], c = k[3];
+  FEM.position.y = F; build(k[4]); SPR.material = k[4] > 0.05 ? M.sprClip : M.steelS; COL.position.y = -c; SPR.setLength(20 - c);
+  const ang = Math.atan2(d, LCLAW);
+  for (const C of CLAWS) { C.piv.rotation.z = -ang; C.m.visible = !(C.front && k[4] > 0.05); }
+  const act = (t >= T.bendA && t < T.snapB + 0.6) || (t >= T.colA && t < T.relA) || (t > T.hookA && t < T.hookB + 0.3);
+  for (const C of CLAWS) K.glow(C.m, act ? 0.5 : 0, 0x2f8cff);
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera (still during every key motion) ----------
+const ck = (t, p, dist, el, az) => [t, p[0], p[1], p[2], dist, el, az];
+const WIDE = [0, -10, 0], CLOSE = [0, -2, 0];
+const CAMK = [ck(0, WIDE, 360, 6, 24), ck(T.cutA, WIDE, 360, 6, 24), ck(T.cutB + 0.2, CLOSE, 190, 4, 16), ck(T.backA, CLOSE, 190, 4, 16), ck(T.backB, WIDE, 360, 6, 24), ck(LOOP, WIDE, 360, 6, 24)];
+// ---------- overlay ----------
+const sc = (v) => S.toScreen(camera, v);
+const fs = (x, y, z = 0) => sc(V(x, y + (KK ? KK[1] : 0), z));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function burst(g2, a, x, y) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = '#ffd21f'; g2.lineWidth = 9; g2.lineCap = 'round';
+  for (let i = 0; i < 8; i++) { const an = i / 8 * 2 * Math.PI + 0.2; g2.beginPath(); g2.moveTo(x + Math.cos(an) * 70, y + Math.sin(an) * 70); g2.lineTo(x + Math.cos(an) * 115, y + Math.sin(an) * 115); g2.stroke(); } g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const F = k[1];
+  K.TXT.flash(g2, 0.5 * Math.max(0, 1 - Math.abs(t - T.cutIn) / 0.09));
+  const s1 = hard(t, T.cutIn, T.s2), s2 = hard(t, T.s2, T.s3), s3 = hard(t, T.s3, T.s4), s4 = hard(t, T.s4, T.ans);
+  const R = sc(V(G.RN + 12, G.GY1, 0));   // right side reference
+  if (s1) { const [px, py] = fs(0, -70); const [qx, qy] = fs(0, -14); arrowC(g2, hard(t, T.insA - 0.2, T.insB), px + 150, py, px + 150, qy - 30, 26, '#ffffff');
+    S.tag(g2, hard(t, T.cutB, T.s2), 'PLUG (ON THE TAP)', ...sc(V(-G.RN, 8, 0)), -170, 60, 50, '#ffffff');
+    S.tag(g2, hard(t, T.cutB + 0.6, T.s2), 'CONNECTOR', ...fs(-23, -30, 0), -120, 120, 50, '#ff9a4a');
+    S.tag(g2, hard(t, T.vo1 + 1.8, T.s2), 'SPRINGY CLAWS', ...fs(-11.5, -30, 0), -130, -150, 52, '#ffd21f'); }
+  if (s2) { S.tag(g2, hard(t, T.s2 + 0.2, T.s3), 'ROUND NOSE', ...sc(V(-6, 1.5, 0)), -170, -170, 52, '#ffffff');
+    S.tag(g2, hard(t, T.bendA + 0.8, T.s3), 'CLAWS BEND OUT', ...fs(12.5 + k[2], -24, 0), 130, -40, 52, '#ffd21f');
+    const [x0, y0] = fs(-13, -22), [x1, y1] = fs(-13 - 30, -22); arrowC(g2, hard(t, T.bendA + 0.5, T.bendB) * Math.min(1, k[2] / 1.5), x0 - 10, y0, x1, y1, 18, '#ffd21f'); }
+  if (s3) { const lk = t >= T.snapB; S.tag(g2, hard(t, T.s3 + 0.1, T.s4), 'GROOVE', ...sc(V(G.RG, (G.GY0 + G.GY1) / 2, 0)), 170, -190, 52, '#7dff9a');
+    burst(g2, Math.max(0, 1 - Math.abs(t - T.snapB - 0.15) / 0.45), ...fs(0, -24, 0));
+    S.tag(g2, lk && t > T.snapB + 0.3 ? 1 : 0, 'CLICK: CLAWS IN THE GROOVE', ...fs(-6, -24, 0), -40, 300, 50, '#ffd21f');
+    const tug = t >= T.tugA - 0.3 && t < T.tugB + 0.6; const [ax, ay] = fs(-26, -62); arrowC(g2, tug ? 1 : 0, ax - 50, ay - 60, ax - 50, ay + 80, 24, '#ffffff');
+    S.tag(g2, tug ? 1 : 0, 'PULL: IT HOLDS', ax - 50, ay + 80, 60, 80, 52, '#ffffff'); }
+  if (s4) { const [cx, cy] = fs(24, -9); arrowC(g2, hard(t, T.colA - 0.4, T.colB + 0.3), cx + 70, cy - 60, cx + 70, cy + 60, 24, '#ffffff');
+    S.tag(g2, hard(t, T.s4 + 0.2, T.ans), 'COLLAR', ...fs(24, -12, 0), 110, 120, 54, '#ffffff');
+    S.tag(g2, hard(t, T.colA + 0.3, T.ans), 'ITS TUBE PUSHES THE CLAWS OPEN', ...fs(-10, -21, 0), -60, 330, 46, '#ffd21f');
+    const [ox, oy] = fs(-30, -60); arrowC(g2, hard(t, T.outA - 0.2, T.outB), ox - 70, oy - 40, ox - 70, oy + 100, 24, '#7dff9a'); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT', 'CLICK ON?', 104); const [cx, cy] = fs(24, -9, 0); K.TXT.circle(g2, 1, cx, cy, 70, [210, 170]);
+    burst(g2, Math.max(0, 1 - Math.abs(t - T.hookB - 0.1) / 0.35), ...fs(0, -10, 24)); }
+  K.TXT.step(g2, s1, 1, 'PUSH IT ON', 62);
+  K.TXT.step(g2, s2, 2, 'THE NOSE PUSHES THE CLAWS OUT', 54);
+  K.TXT.step(g2, s3, 3, 'GROOVE LINES UP: THEY SNAP IN', 54);
+  K.TXT.step(g2, s4, 4, 'PULL THE COLLAR: CLAWS OPEN', 56);
+  if (t >= T.ans) { const y = 465; g2.save(); g2.fillStyle = 'rgba(10,12,16,0.75)'; S.rrect(g2, 75, y - 120, 845, 250, 28); g2.fill(); g2.strokeStyle = '#ffd21f'; g2.lineWidth = 5; g2.stroke();
+    S.outlined(g2, 'SPRINGY CLAWS', S.CX, y - 10, 66, '#ffffff'); S.outlined(g2, 'SNAP INTO THE GROOVE', S.CX, y + 85, 74, '#ffd21f'); g2.restore(); }
+  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>
