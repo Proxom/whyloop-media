@@ -52,7 +52,7 @@
   "https://kindseed.com/hose-quick-connect-fittings"
  ],
  "version": "v2",
- "status": "ready (HARD GATE v2 PASS; fresh review v1: clarity YES, 14yo YES, visual 6 -> one fix pass done, no re-score)",
+ "status": "scheduled",
  "mediaUrls": [
   "https://raw.githubusercontent.com/Proxom/whyloop-media/main/media/p107/connector_reel_v2.mp4"
  ],
@@ -76,5 +76,7 @@
   "text": "PASS v2: US English; pyspellchecker flags agcenter, lsu, howitworks, hq, whyloop = justified; hook 104 px, steps 54-62 px, tags 46-54 px; all labels >= 60 px from the edges, no label on another label (checked fr 17, 26, 32-40, 48)",
   "audio": "PASS v2: -15.1 LUFS, -3.1 dBTP, 4 kHz high-pass gap 20.7 dB; low thumps on the snaps, tug, collar pull/release; no hiss/beeps/clinks",
   "look": "PASS v2: 6 stills + 0.5 s safe-zone frame checked"
- }
+ },
+ "scheduledAt": "2026-11-27T17:00:00 Europe/London",
+ "metricoolPostId": 436110043
 }
