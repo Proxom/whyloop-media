@@ -1,0 +1,32 @@
+[
+ {
+  "i": 0,
+  "text": "How does a flask keep coffee hot for hours?",
+  "dur": 2.133
+ },
+ {
+  "i": 1,
+  "text": "Cut it open. There are two steel walls, and the gap between them has almost no air. It's a vacuum.",
+  "dur": 5.163
+ },
+ {
+  "i": 2,
+  "text": "Heat needs something to travel through. If the gap had air, the air would carry the heat out.",
+  "dur": 4.501
+ },
+ {
+  "i": 3,
+  "text": "But a vacuum has nothing to carry it, so the heat stays in, and the outside stays cool.",
+  "dur": 4.736
+ },
+ {
+  "i": 4,
+  "text": "Shiny walls bounce heat rays back, and the lid seals the top.",
+  "dur": 3.349
+ },
+ {
+  "i": 5,
+  "text": "No air in the gap, so the heat can't get out.",
+  "dur": 2.197
+ }
+]

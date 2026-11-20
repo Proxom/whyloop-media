@@ -1,0 +1,153 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p104 vacuum flask "HOW DOES IT KEEP / COFFEE HOT?" (group E, track A). Built from kit/kit.js. Units mm, flask base centre at y 0.
+// kin.json rows: [t, px, py, theta, sy, srot]
+import * as K from '/kit/kit.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const KN = await (await fetch('kin.json')).json();
+const LOOP = G.LOOP, T = G.T, H = G.H, X = G.X;
+const st = K.makeKit({ fov: 30, bg: 0x1d2129, envIntensity: 1.15, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+M.body = phys({ color: 0xd9dde2, metalness: 1, roughness: 0.3, roughnessMap: M.steel.roughnessMap, envMapIntensity: 1.35 });
+M.mirror = phys({ color: 0xf2f4f7, metalness: 1, roughness: 0.07, envMapIntensity: 1.5 });
+M.coffee = phys({ color: 0x3a2113, roughness: 0.12, clearcoat: 0.8, emissive: 0x1a0700, emissiveIntensity: 1 });
+M.coffeeCut = phys({ color: 0x4a2a16, roughness: 0.5, side: THREE.DoubleSide });
+M.cap = phys({ color: 0x17181b, roughness: 0.45, clearcoat: 0.25, clearcoatRoughness: 0.5 });
+M.wood = phys({ color: 0xffffff, map: S.woodTex(5, 10), roughness: 0.55, clearcoat: 0.2 }); M.wood.map.repeat.set(1.2, 0.6);
+const hatch = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#c92a20'; g.fillRect(0, 0, 64, 64); g.strokeStyle = 'rgba(80,8,4,0.5)'; g.lineWidth = 6;
+  for (let i = -64; i < 128; i += 20) { g.beginPath(); g.moveTo(i, 64); g.lineTo(i + 64, 0); g.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.3, 0.3); return t; })();
+M.sec = phys({ color: 0xffffff, map: hatch, roughness: 0.5, side: THREE.DoubleSide });
+const add = (m, p = scene) => { m.castShadow = m.receiveShadow = true; p.add(m); return m; };
+const L2 = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
+const lathe = (P, mat, p, a0 = 0, a1 = 2 * Math.PI, seg = 120) => { const m = new THREE.Mesh(new THREE.LatheGeometry(L2([...P, P[0]]), seg, a0, a1 - a0), mat.side === THREE.DoubleSide ? mat : (() => { const c = mat.clone(); c.side = THREE.DoubleSide; return c; })()); return add(m, p); };
+const capShape = (P, sx) => { const sh = new THREE.Shape(); P.forEach(([r, y], i) => i ? sh.lineTo(sx * r, y) : sh.moveTo(sx * r, y)); return sh; };
+// ---------- table ----------
+{ const tb = add(new THREE.Mesh(new THREE.BoxGeometry(1600, 24, 800), M.wood)); tb.position.set(0, -12, -80); }
+K.backdrop(scene, { floorY: -24, R: 200, zBack: -900, h: 5000, width: 9000, wall: '#2b3240', floor: '#2a2e36', pool: true, catcher: 3000, shadowOpacity: 0.5 });
+// ---------- flask ----------
+const FL = new THREE.Group(); scene.add(FL);
+const FULL = new THREE.Group(), CUT = new THREE.Group(); FL.add(FULL); FL.add(CUT);
+lathe(G.OUTER, M.body, FULL); lathe(G.INNER, M.mirror, FULL); lathe(G.LIP, M.body, FULL);
+for (let i = 0; i < 3; i++) { const r = add(new THREE.Mesh(new THREE.TorusGeometry(25.6, 0.5, 8, 80), M.body), FULL); r.rotation.x = Math.PI / 2; r.position.y = 233 + i * 3.2; }   // thread
+const OWC = new THREE.Group(); CUT.add(OWC);
+const half = (P, mat, parent, capMat) => { lathe(P, mat, parent, Math.PI / 2, 3 * Math.PI / 2); for (const sx of [1, -1]) { const m = add(new THREE.Mesh(new THREE.ShapeGeometry(capShape(P, sx)), capMat), parent); m.position.z = 0.03; } };
+half(G.OUTER, M.body, OWC, M.sec); half(G.INNER, M.mirror, CUT, M.sec); half(G.LIP, M.body, CUT, M.sec);
+const COF = new THREE.Group(); CUT.add(COF); half(G.COFFEE, M.coffee, COF, M.coffeeCut);
+// ---------- stopper (in the flask: half when cut) ----------
+const STP = new THREE.Group(); FL.add(STP); const STF = new THREE.Group(), STC = new THREE.Group(); STP.add(STF); STP.add(STC);
+lathe(G.STOPPER, M.cap, STF); for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; const r = add(new THREE.Mesh(new THREE.BoxGeometry(1.6, 13, 1.6), M.cap), STF); r.position.set(24.6 * Math.cos(a), 254.5, 24.6 * Math.sin(a)); }
+half(G.STOPPER, M.cap, STC, M.sec);
+// stopper lying on the table in the hook
+const STT = new THREE.Group(); scene.add(STT); lathe(G.STOPPER.map(([r, y]) => [r, y - 222]), M.cap, STT); STT.rotation.z = Math.PI / 2; STT.position.set(92, 24.5, 125);
+// ---------- cup (the flask's own cup) with coffee ----------
+const C = G.CUP;
+const CUPG = new THREE.Group(); scene.add(CUPG); CUPG.position.set(C.x, 0, 0);
+lathe([[0.01, 0], [C.R - 3, 0], [C.R, 3], [C.R + 2, C.H], [C.R + 2 - C.t, C.H], [C.R - C.t, 3 + C.t], [0.01, 3 + C.t]], M.cap, CUPG);
+{ const m = add(new THREE.Mesh(new THREE.CircleGeometry(C.R - 0.3 + 2 * C.level / C.H, 64), M.coffee), CUPG); m.rotation.x = -Math.PI / 2; m.position.y = C.level; }
+const STREAM = add(new THREE.Mesh(new THREE.CylinderGeometry(3.6, 4.2, 1, 24), M.coffee));
+S.shadowAll(scene);
+const RIG = K.lightRig(scene, V(20, 120, 0), 260, { key: 2.5, rim: 3.0, fill: 0.6 }); RIG.key.shadow.bias = -0.0004;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(300, 500, 700); scene.add(f); const g = new THREE.DirectionalLight(0xcfe0ff, 1.2); g.position.set(-600, 300, -400); scene.add(g); }
+// ---------- kinematics ----------
+const DT = 1 / G.FPS_K;
+function kin(t) { t = Math.max(0, Math.min(LOOP - 1e-6, t)); const i = Math.min(KN.length - 2, Math.floor(t / DT)), u = (t - KN[i][0]) / DT; const a = KN[i], b = KN[i + 1]; return a.map((v, j) => v + (b[j] - v) * u); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+const ramp = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+const inside = (t) => t >= T.cutIn && t < T.outA;
+const outerGlow = (t) => t < T.s2 ? 0 : t < T.s3 ? 0.9 * ramp(t, T.s2 + 1.2, T.s2 + 4.0) : t < T.s4 ? 0.9 * (1 - ramp(t, T.s3, T.s3 + 1.6)) : 0;
+function setScene(t) {
+  const k = kin(t); FL.position.set(k[1], k[2], 0); FL.rotation.z = k[3];
+  const ins = inside(t); FULL.visible = !ins; CUT.visible = ins;
+  STP.visible = k[4] < 500; STP.position.y = k[4]; STP.rotation.y = k[5]; STF.visible = !ins; STC.visible = ins; STT.visible = t < T.cutIn;
+  CUPG.visible = !ins;
+  K.glow(OWC, outerGlow(t), 0xff7a1a); K.glow(STC, ins && t > T.stA && t < T.stB + 0.3 ? 0.4 : 0);
+  // pour stream: from the mouth straight down into the cup
+  const pour = t < H.pourEnd + 0.05; STREAM.visible = pour;
+  if (pour) { FL.updateMatrixWorld(true); const m = FL.localToWorld(V(0, 245.5, 0)); const y1 = C.level, L = m.y - y1; STREAM.scale.set(1, L, 1); STREAM.position.set(m.x + 4, y1 + L / 2, 0); }
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera ----------
+const kk = (t, x, y, dist, el, az) => [t, x, y, 0, dist, el, az];
+const HERO = (t) => kk(t, 30, 165, 1250, 9, 14);
+const CAMK = [HERO(0), kk(T.cutIn - 0.01, 30, 160, 1180, 9, 12),
+  kk(T.cutIn, 8, 128, 900, 5, 6), kk(T.cutIn + 1.5, 18, 128, 760, 4, 4), kk(T.cutIn + 2.6, 30, 128, 430, 3, 2), kk(T.s2 - 0.01, 31, 128, 420, 3, 2),
+  kk(T.s2, 30, 122, 255, 2, 0), kk(T.s4 - 0.01, 30, 122, 255, 2, 0),
+  kk(T.s4, 26, 124, 255, 2, 0), kk(T.neck - 0.01, 26, 126, 260, 2, 0),
+  kk(T.neck, 8, 236, 330, 9, 6), kk(T.outA - 0.01, 8, 238, 320, 9, 6),
+  HERO(T.outA), HERO(LOOP)];
+// ---------- overlay ----------
+const pf = (x, y, z = 0.6) => S.toScreen(camera, FL.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+const rnd = (() => { let s = 1104; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const AIRD = Array.from({ length: 26 }, () => [rnd(), rnd(), rnd(), rnd()]);
+const HEATD = Array.from({ length: 14 }, () => [rnd(), rnd()]);
+const heatX = (phase, u) => phase === 'air' ? 18 + u * 44 : 18 + 11.3 * (1 - Math.abs(1 - 2 * u));
+const Y0 = 96, Y1 = 146;            // dot band (mm) in the macro shots
+function dot(g2, x, y, r, fill, a = 1) { g2.save(); g2.globalAlpha = a; g2.fillStyle = fill; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.strokeStyle = 'rgba(20,10,0,0.75)'; g2.lineWidth = 2.5; g2.stroke(); g2.restore(); }
+function airDots(g2, t, amt, warm) {
+  if (amt <= 0) return; const mid = (X.iwOut + X.owIn) / 2, hw = (X.owIn - X.iwOut) / 2 - 0.9;
+  for (const [a, b, c, d] of AIRD) { const x = mid + hw * Math.sin(t * (2.2 + 2 * a) + 6.28 * b); const y = Y0 + (Y1 - Y0) * ((c + 0.04 * Math.sin(t * (1.5 + d) + 9 * a)) % 1);
+    const [sx, sy] = pf(x, y); const col = `rgb(${Math.round(120 + 135 * warm)},${Math.round(200 - 80 * warm)},${Math.round(255 - 215 * warm)})`; dot(g2, sx, sy, 10 * amt, col, amt); }
+}
+function heatDots(g2, t, phase, amt) {
+  if (amt <= 0) return;
+  for (const [a, b] of HEATD) { const u = (t * 0.32 + a) % 1; const x = heatX(phase, u); const y = Y0 + 4 + (Y1 - Y0 - 8) * b; const [sx, sy] = pf(x, y);
+    const fade = phase === 'air' ? Math.min(1, (62 - x) / 6) : 1; dot(g2, sx, sy, 12, '#ff8a1f', amt * Math.max(0, fade)); }
+}
+function wavy(g2, a, x0, y0, x1, y1, col) { if (a <= 0) return; const L = Math.hypot(x1 - x0, y1 - y0), ang = Math.atan2(y1 - y0, x1 - x0); g2.save(); g2.globalAlpha = a; g2.translate(x0, y0); g2.rotate(ang);
+  g2.strokeStyle = col; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8; g2.beginPath(); for (let s = 0; s <= L - 26; s += 4) { const y = 13 * Math.sin(s / 15); s ? g2.lineTo(s, y) : g2.moveTo(s, y); } g2.stroke();
+  g2.fillStyle = col; g2.beginPath(); g2.moveTo(L, 0); g2.lineTo(L - 34, -20); g2.lineTo(L - 34, 20); g2.closePath(); g2.fill(); g2.restore(); }
+function steam(g2, a, t) { if (a <= 0) return; const p = S.toScreen(camera, V(C.x, C.H + 6, 0)); g2.save();
+  for (let i = 0; i < 9; i++) { const ph = (t * 0.45 + i / 9) % 1; const x = p[0] + Math.sin(ph * 5 + i * 1.7) * 26 + (i % 3 - 1) * 14, y = p[1] - ph * 260; const r = 16 + ph * 46;
+    const gr = g2.createRadialGradient(x, y, 0, x, y, r); const al = a * 0.32 * Math.sin(Math.PI * Math.min(1, ph * 1.25)); gr.addColorStop(0, `rgba(255,255,255,${al})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = gr; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); }
+  g2.restore(); }
+function gapBand(g2, airA, vacA) { const pts = [pf(X.iwOut, 60), pf(X.owIn, 60), pf(X.owIn, 190), pf(X.iwOut, 190)]; g2.save();
+  for (const [a, col] of [[airA, 'rgba(90,170,255,0.45)'], [vacA, 'rgba(8,10,14,0.78)']]) { if (a <= 0) continue; g2.globalAlpha = a; g2.fillStyle = col; g2.beginPath(); pts.forEach(([x, y], i) => i ? g2.lineTo(x, y) : g2.moveTo(x, y)); g2.closePath(); g2.fill(); }
+  g2.restore(); }
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0);
+  { let fx = 0; for (const c of [T.cutIn, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.35 * Math.max(0, fx)); }
+  const s1 = hard(t, T.cutIn, T.s2), s2 = hard(t, T.s2, T.s3), s3 = hard(t, T.s3, T.s4), s4 = hard(t, T.s4, T.outA);
+  if (!inside(t)) steam(g2, 1, t);
+  if (s1) { const a = hard(t, T.cutIn + 2.7, T.s2);
+    S.tag(g2, hard(t, T.cutIn + 0.5, T.s2), 'HOT COFFEE', ...pf(12, 150), -60, 150, 52, '#ff9a3a');
+    S.tag(g2, a, 'INNER WALL', ...pf(30.8, 112), -230, 110, 50, '#ffffff'); S.tag(g2, a, 'OUTER WALL', ...pf(37.3, 150), 120, -60, 50, '#ffffff');
+    S.tag(g2, hard(t, T.cutIn + 3.6, T.s2), 'VACUUM: NO AIR', ...pf(34, 92), 90, 170, 52, '#7dff9a'); }
+  if (s2) { gapBand(g2, ramp(t, T.s2, T.s2 + 0.5), 0); airDots(g2, t, 1, ramp(t, T.s2 + 1.2, T.s2 + 3.5)); heatDots(g2, t, 'air', ramp(t, T.s2 + 0.4, T.s2 + 1.2));
+    S.tag(g2, hard(t, T.s2 + 0.3, T.s3), 'IF IT HAD AIR', ...pf(34, Y0 - 2), -60, 200, 52, '#78c8ff');
+    S.tag(g2, hard(t, T.s2 + 2.2, T.s3), 'HEAT ESCAPES', ...pf(50, Y1 - 6), -20, -120, 52, '#ff9a3a'); S.tag(g2, hard(t, T.s2 + 3.4, T.s3), 'OUTSIDE GETS HOT', ...pf(38.2, Y1 - 4), 40, 120, 48, '#ffffff'); }
+  if (s3) { const amt = 1 - ramp(t, T.s3, T.airOutB); gapBand(g2, amt, 1 - amt); airDots(g2, t, amt, 0.6 * amt); heatDots(g2, t, 'vac', 1);
+    S.tag(g2, hard(t, T.s3 + 0.9, T.s4), 'NOTHING TO CARRY IT', ...pf(34, Y0 - 2), 40, 300, 52, '#7dff9a');
+    S.tag(g2, hard(t, T.s3 + 2.6, T.s4), 'HEAT STAYS IN', ...pf(14, Y0 + 2), -30, 190, 52, '#ff9a3a');
+    S.tag(g2, hard(t, T.s3 + 3.6, T.s4), 'OUTSIDE STAYS COOL', ...pf(38.2, Y1 - 4), 40, 120, 48, '#ffffff'); }
+  if (s4) { if (t < T.neck) { gapBand(g2, 0, 1); for (let i = 0; i < 2; i++) { const ph = ramp(t, T.s4 + 0.2 + i * 0.5, T.s4 + 1.0 + i * 0.5); const y = 112 + i * 18;
+        const [ax, ay] = pf(8, y), [bx, by] = pf(X.iwIn - 0.2, y + 5), [cx, cy] = pf(8, y + 10);
+        wavy(g2, ph > 0 ? 1 : 0, ax, ay, ax + (bx - ax) * Math.min(1, ph * 2), ay + (by - ay) * Math.min(1, ph * 2), '#ff7a1a');
+        if (ph > 0.5) wavy(g2, 1, bx, by, bx + (cx - bx) * (ph - 0.5) * 2, by + (cy - by) * (ph - 0.5) * 2, '#ffd21f'); }
+      S.tag(g2, hard(t, T.s4 + 0.9, T.neck), 'SHINY WALL BOUNCES IT BACK', ...pf(X.iwIn, 140), -60, 200, 48, '#ffd21f'); }
+    else S.tag(g2, hard(t, T.stA + 0.5, T.outA), 'LID SEALS THE TOP', ...pf(-23, 252 + kin(t)[4]), -120, 150, 52, '#ffd21f'); }
+  if (t < T.cutIn) { K.TXT.hook(g2, 1, 'HOW DOES IT KEEP', 'COFFEE HOT?', 104); const [cx, cy] = pf(0, 150); K.TXT.circle(g2, 1, cx, cy, 92, [-220, 200]); }
+  K.TXT.step(g2, s1, 1, 'TWO WALLS, NO AIR BETWEEN', 58);
+  K.TXT.step(g2, s2, 2, 'AIR WOULD CARRY HEAT OUT', 60);
+  K.TXT.step(g2, s3, 3, 'A VACUUM CARRIES NOTHING', 60);
+  K.TXT.step(g2, s4, 4, 'SHINY WALLS + A TIGHT LID', 60);
+  if (t >= T.ans) K.TXT.answer(g2, 1, 'NO AIR IN THE GAP', "SO HEAT CAN'T GET OUT", 560);
+  if (t >= LOOP - 1.4) K.TXT.follow(g2, 1);
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

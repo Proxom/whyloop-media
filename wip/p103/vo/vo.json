@@ -1,0 +1,32 @@
+[
+ {
+  "i": 0,
+  "text": "Why does this little tab stop the glare?",
+  "dur": 1.835
+ },
+ {
+  "i": 1,
+  "text": "The mirror glass is a wedge. It's thicker at the top, with silver on the back.",
+  "dur": 3.925
+ },
+ {
+  "i": 2,
+  "text": "In day mode, the bright silver back sends the headlights straight into your eyes.",
+  "dur": 3.691
+ },
+ {
+  "i": 3,
+  "text": "Flip the tab, and the whole wedge tilts. Now the bright silver beam misses your eyes.",
+  "dur": 4.501
+ },
+ {
+  "i": 4,
+  "text": "You only see the plain glass front. It reflects about four percent, so the lights look dim.",
+  "dur": 4.608
+ },
+ {
+  "i": 5,
+  "text": "One flip: you see the weak glass, not the bright silver.",
+  "dur": 2.816
+ }
+]
