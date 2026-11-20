@@ -2,6 +2,15 @@
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
 
+## TOP OVERRIDE (Erkan, 20 Nov 2026 22:34): 1 POST A DAY AT 17:00 ONLY + QUEUE LIMIT 3 + RESCHEDULE THE QUEUE + 2 RUNS A DAY — overrides EVERY older slot, schedule, queue and run-count rule in this file (incl. the 19 Nov "3 a day" and "QUEUE TARGET = 20" blocks and the 18 Nov "2 a day / 5 runs a day" block)
+- From now on exactly 1 Instagram Reel a day, at 17:00 Europe/London (Metricool brand 7675089). The 01:00 and 21:00 slots are CLOSED: never schedule anything at 01:00 or 21:00.
+- QUEUE = future non-draft posts in Metricool for this account + finished, gate-passed Instagram Reels not yet scheduled.
+  - QUEUE 3 or more: do NOT make a new Instagram Reel. Short check only (max 10 min: the next 17:00 slots are filled, the last posts PUBLISHED, metrics note for the daily report), then end the run.
+  - QUEUE 0, 1 or 2: make Instagram Reels until QUEUE is 3, each to the full existing quality gate, each scheduled at the next empty 17:00. Never lower the gate.
+- RESCHEDULE NOW (first run after this note, before anything else): every already-scheduled future post at 01:00 or 21:00, and any day with more than one post, is moved so that there is exactly one post per day at 17:00, in the current order, on consecutive days starting from the first free 17:00. Use updateScheduledPost (keep the media, caption and settings exactly as they are; only change the date/time). Do NOT delete any already-made video. Verify afterwards with getScheduledPosts (small date ranges) that no future post remains at 01:00 or 21:00 and no day has two posts; record the new calendar (date → title) in the run log. With the existing queue of ~20 this fills about 20 days, so no new Instagram Reels will be made until QUEUE drops below 3 — that is intended (it saves Claude credits).
+- The routine now runs 2 times a day (Erkan changes the schedule himself). Do the work of a run in one run; never rely on a later same-day run.
+- Daily report: note "1 a day at 17:00 from 21 Nov"; keep comparing views per post and followers per day against the 3-a-day period.
+
 ## TOP OVERRIDE (Erkan, 19 Nov 2026 18:07): 3 POSTS A DAY — 01:00, 17:00 AND 21:00 (21:00 OPEN AGAIN FROM TODAY) — overrides "21:00 CLOSED" and "2 a day" everywhere below; QUEUE TARGET stays 20
 - Slots: 01:00, 17:00 and 21:00 Europe/London, one post each. No other slot.
 - Fill empty slots in date order, nearest first (today's 21:00 included if a gate-passed video can be scheduled in time; never rush a video past the gate for it).
