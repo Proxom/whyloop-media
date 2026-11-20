@@ -16,14 +16,14 @@ Sources:
 Slate, What's That Thing: Why are there holes in airplane windows? (GKN Aerospace: the bleed hole in the middle pane lets pressure equalize between the cabin and the air gap, so cabin pressure in flight is applied only to the outer pane): https://slate.com/human-interest/2015/05/whats-that-thing-why-are-there-holes-in-airplane-windows.html
 ScienceAlert, Here's Why There's a Tiny Hole in Airplane Windows (three panes; the outer pane takes the cabin pressure, the middle pane is the backup; the hole also helps keep the panes from fogging up): https://www.sciencealert.com/here-s-why-there-s-a-tiny-hole-in-airplane-windows
 AFAR, Why Is There a Tiny Hole in the Airplane Window? (three layers of stretched acrylic; the bleed hole equalizes pressure and helps prevent condensation or fog between the panes): https://www.afar.com/magazine/why-airplane-windows-have-tiny-holes"""
-alt = ("3D animation of an airplane cabin window, with a voiceover. Under the question Why is there a hole in the window? a rounded cabin window in a beige wall panel shows a tiny dark hole near the bottom, circled in red, with soft rings pulsing around it. "
+alt = ("3D animation of an airplane cabin window, with a voiceover. Under the question Why is there a hole in the window? a rounded cabin window in a beige wall panel, with blue sky and clouds outside, shows a tiny dark hole near the bottom, circled in red, with soft rings pulsing around it. "
        "The camera turns to the side and the window is cut in half, showing three acrylic panes with gaps between them, the cabin on the left and the outside on the right; the panes are labeled inner, middle and outer one at a time. "
-       "2, up high, cabin air pushes out: yellow arrows push from the cabin toward the window, and white air dots fill the cabin side. "
+       "2, up high, cabin air pushes out: yellow arrows push from the cabin through the window toward the outside; many white air dots fill the cabin side, while only a few float outside, labeled outside: thin air. "
        "3, the hole lets cabin air in: close up, air dots stream through the tiny hole in the middle pane and fill the gap in front of the outer pane, tagged cabin air in the gap. "
        "4, same push on both sides: equal white arrows push on both faces of the middle pane; then only the outer pane takes it: big yellow arrows push only on the outer pane, tagged outer pane full load, and the middle pane is tagged backup. "
        "5, it also lets moisture out: blue droplets from the outer pane drift down and out through the hole. "
-       "The camera turns back to the window, the payoff reads One tiny hole: outer pane does the work, a follow line appears and the video loops.")
-on = ['INSIDE IT', 'WHY IS THERE A', 'HOLE IN THE WINDOW?', 'THREE PANES', 'CABIN', 'OUTSIDE', 'INNER', 'MIDDLE', 'OUTER', 'UP HIGH: CABIN AIR PUSHES OUT', 'THE HOLE LETS CABIN AIR IN', 'TINY HOLE',
+       "The camera turns back to the window, the hole is circled again, the payoff reads One tiny hole: outer pane does the work, a follow line appears and the video loops.")
+on = ['INSIDE IT', 'WHY IS THERE A', 'HOLE IN THE WINDOW?', 'THREE PANES', 'CABIN', 'OUTSIDE', 'OUTSIDE: THIN AIR', 'INNER', 'MIDDLE', 'OUTER', 'UP HIGH: CABIN AIR PUSHES OUT', 'THE HOLE LETS CABIN AIR IN', 'TINY HOLE',
       'CABIN AIR IN THE GAP', 'SAME PUSH ON BOTH SIDES', 'ONLY THE OUTER PANE TAKES IT', 'OUTER PANE: FULL LOAD', 'MIDDLE PANE: BACKUP', 'IT ALSO LETS MOISTURE OUT', 'MOISTURE OUT',
       'ONE TINY HOLE:', 'OUTER PANE DOES THE WORK', 'FOLLOW → A NEW MACHINE EVERY DAY']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]

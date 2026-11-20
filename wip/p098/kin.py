@@ -15,7 +15,7 @@ T['fillA'] = T['vo5'] + 0.35; T['fillB'] = T['vo5'] + D[5] - 0.2             # r
 T['outA'] = T['vo6'] - 0.15                                                   # cut to the dash gauge for the answer card
 LOOP = round(T['vo6'] + D[6] + 1.25, 2); T['LOOP'] = LOOP
 H = {'sweepA': 0.25, 'sweepB': 1.25}                                          # hook: needle F -> E (payoff flash), back to F at the loop seam
-TOP, FLOOR, XL, XR, WALL = 240.0, 0.0, -330.0, 330.0, 5.0
+TOP, FLOOR, XL, XR, WALL = 240.0, 0.0, -95.0, 305.0, 5.0
 P = (140.0, 165.0); L = 170.0; RW = 56.0; STRIP_R = (50.0, 62.0); A_GND, A_END = 22.0, -76.0
 FL_W, FL_H = 44.0, 24.0; FLOAT_DIP = 4.0                                    # float centre sits 4 mm below the surface (top sticks out 8 mm)
 LV_FULL, LV_EMPTY = 205.0, 20.0

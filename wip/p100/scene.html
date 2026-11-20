@@ -132,14 +132,14 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const HOOK = [12, 46, 0, 360, 12, -24];
+const HOOK = [22, 46, 0, 360, 12, -24];
 const WIDE = (ty = -38, d = 560, az = -16) => [9, ty, 0, d, 7, az];
 const MID = (d = 395, az = -16, ty = -8) => [10, ty, 0, d, 6, az];
 const HERO = [8, -12, 0, 650, 10, -26];
 const pbAt = (t) => PB0 - kin(t)[1];
 const LOW = (d = 175, az = -14) => [4, G.LO_Y0 + 6, 0, d, 6, az];
 const TOPV = (t, d = 175, az = -14) => [4, pbAt(t) + 11, 0, d, 6, az];
-const CAMK = [k_(0, HOOK), k_(T.cutIn - 0.01, [12, 44, 0, 345, 12, -24]),
+const CAMK = [k_(0, HOOK), k_(T.cutIn - 0.01, [22, 44, 0, 345, 12, -24]),
   k_(T.cutIn, WIDE(-40, 500, -12)), k_(T.vo2 - 0.3, MID(415, -18, -12)),
   k_(T.vo2 + 0.4, MID(400, -16)), k_(T.lowA - 0.6, MID(395, -16)), k_(T.lowA, LOW(180)), k_(T.topA - 0.5, LOW(170, -18)), k_(T.topA, TOPV(T.topA)), k_(T.outM - 0.5, TOPV(T.outM - 0.5, 170, -18)), k_(T.outM, MID(395, -16)), k_(T.vo3 - 0.01, MID(385, -20)),
   k_(T.vo3, MID(380, -14, -14)), k_(T.vo4 + 0.9, MID(376, -16, -14)), k_(T.top2, TOPV(T.top2)), k_(T.low2 - 0.4, TOPV(T.low2 - 0.4, 170, -18)), k_(T.low2, LOW(180)), k_(T.vo5 - 0.2, LOW(170, -18)),

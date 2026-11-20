@@ -32,7 +32,7 @@ M.tank = phys({ color: 0x8d949c, metalness: 0.85, roughness: 0.42, roughnessMap:
 M.back = phys({ color: 0x9aa0a7, metalness: 0.7, roughness: 0.55, roughnessMap: M.alu.roughnessMap, side: THREE.DoubleSide });
 M.fuel = phys({ color: 0xe39a2a, roughness: 0.08, transparent: true, opacity: 0.3, depthWrite: false, envMapIntensity: 1.2, side: THREE.DoubleSide });
 M.fuelTop = phys({ color: 0xffd27a, roughness: 0.05, transparent: true, opacity: 0.55, depthWrite: false, envMapIntensity: 1.6, side: THREE.DoubleSide });
-M.float = phys({ color: 0xece6d8, roughness: 0.62, roughnessMap: M.plastic.roughnessMap, clearcoat: 0.1 });
+M.float = phys({ color: 0x34373d, roughness: 0.88, bumpMap: M.alu.bumpMap, bumpScale: 1.2 });   // closed-cell foam float
 M.ceramic = phys({ color: 0xf2efe7, roughness: 0.5, clearcoat: 0.2, clearcoatRoughness: 0.5 });
 M.strip = phys({ color: 0x2c2b30, roughness: 0.7, bumpMap: M.rubber.bumpMap, bumpScale: 0.15 });
 M.dash = phys({ color: 0x1b1d21, roughness: 0.7, bumpMap: M.rubber.bumpMap, bumpScale: 0.25 });
@@ -40,7 +40,7 @@ M.needle = phys({ color: 0xff5a1a, roughness: 0.35, emissive: 0x7a1c00, emissive
 // ---------- tank: back half (walls extruded z -180..0, red cut face at z = 0), opening for the filler neck ----------
 const ZB = -180;
 function slab(x0, y0, x1, y1, mats = [M.sec, M.tank]) { const sh = S.shapeOf([[x0, y0], [x1, y0], [x1, y1], [x0, y1]]); const g = new THREE.ExtrudeGeometry(sh, { depth: -ZB, bevelEnabled: false }); g.translate(0, 0, ZB); return add(new THREE.Mesh(g, mats)); }
-const XL = -150, XR = 300, W = 5, NECK = [-132, -88];
+const XL = -90, XR = 300, W = 5, NECK = [-132, -88];
 slab(XL - W, -W, XR + W, 0);                 // floor
 slab(XL - W, 0, XL, G.TOP);                  // left wall
 slab(XR, 0, XR + W, G.TOP);                  // right wall
@@ -55,7 +55,7 @@ for (const y of [-W - 3, G.TOP + W]) { const f = slab(XL - W - 10, y, XR + W + 1
 // ---------- fuel ----------
 const FUEL = new THREE.Group(); scene.add(FUEL);
 const fuelBox = new THREE.Mesh(new THREE.BoxGeometry(XR - XL - 1, 1, -ZB - 1).translate(0, 0.5, 0), M.fuel); fuelBox.position.set((XL + XR) / 2, 0.1, ZB / 2); FUEL.add(fuelBox);
-const fuelTop = new THREE.Mesh(new THREE.PlaneGeometry(XR - XL - 1, -ZB - 1), M.fuelTop); fuelTop.rotation.x = -Math.PI / 2; fuelTop.position.set((XL + XR) / 2, 0, ZB / 2); FUEL.add(fuelTop);
+const fuelTop = new THREE.Mesh(new THREE.PlaneGeometry(XR - XL - 1, -ZB - 1, 60, 24), M.fuelTop); const FT0 = fuelTop.geometry.attributes.position.array.slice(); fuelTop.rotation.x = -Math.PI / 2; fuelTop.position.set((XL + XR) / 2, 0, ZB / 2); FUEL.add(fuelTop);
 const STREAM = new THREE.Mesh(new THREE.CylinderGeometry(7, 9, 1, 24).translate(0, 0.5, 0), phys({ color: 0xf0b048, roughness: 0.05, transparent: true, opacity: 0.75, envMapIntensity: 1.5 })); STREAM.position.set(240, 0, -60); scene.add(STREAM);
 // ---------- sender unit ----------
 const SND = new THREE.Group(); scene.add(SND);
@@ -67,7 +67,10 @@ const SND = new THREE.Group(); scene.add(SND);
 function sectorShape(r0, r1, a0, a1, n = 48) { const pts = []; for (let i = 0; i <= n; i++) { const q = (a0 + (a1 - a0) * i / n) * D2R; pts.push([PX - r1 * Math.cos(q), PY + r1 * Math.sin(q)]); }
   for (let i = 0; i <= n; i++) { const q = (a1 + (a0 - a1) * i / n) * D2R; pts.push([PX - r0 * Math.cos(q), PY + r0 * Math.sin(q)]); } return S.shapeOf(pts); }
 { const g = new THREE.ExtrudeGeometry(sectorShape(34, 76, G.A_END - 6, G.A_GND + 6), { depth: 3, bevelEnabled: true, bevelSize: 0.8, bevelThickness: 0.6, bevelSegments: 2 }); g.translate(0, 0, -15); add(new THREE.Mesh(g, M.ceramic), SND); }
-const STRIP = add(new THREE.Mesh(new THREE.ShapeGeometry(sectorShape(G.STRIP_R[0], G.STRIP_R[1], G.A_END, G.A_GND, 80)), M.strip), SND); STRIP.position.z = -11.35;
+const STRIP_ = 0; const STRIP = add(new THREE.Mesh(new THREE.ShapeGeometry(sectorShape(G.STRIP_R[0], G.STRIP_R[1], G.A_END, G.A_GND, 80)), M.strip), SND); STRIP.position.z = -11.35;
+{ const n = 70, im = new THREE.InstancedMesh(new THREE.BoxGeometry(14, 0.9, 0.5), phys({ color: 0xc9c2b4, metalness: 1, roughness: 0.3, envMapIntensity: 1.3 }), n); const o = new THREE.Object3D();
+  for (let i = 0; i < n; i++) { const q = (G.A_END + 1 + (G.A_GND - G.A_END - 2) * i / (n - 1)) * D2R; o.position.set(PX - 56 * Math.cos(q), PY + 56 * Math.sin(q), -11.0); o.rotation.set(0, 0, Math.PI - q * -1 + 0); o.rotation.z = -q; o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
+  SND.add(im); }
 const dir = (a, r) => [PX - r * Math.cos(a * D2R), PY + r * Math.sin(a * D2R)];
 const GND = dir(G.A_GND + 3, 56);
 { const rv = add(new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, 3, 20), M.brass), SND); rv.rotation.x = Math.PI / 2; rv.position.set(GND[0], GND[1], -10.5); }
@@ -121,6 +124,7 @@ let KK = null;
 function setScene(t) {
   const k = KK = kin(t); const lv = k[1], a = k[2];
   fuelBox.scale.y = lv; fuelTop.position.y = lv;
+  { const pa = fuelTop.geometry.attributes.position, A = pa.array; for (let i = 0; i < A.length; i += 3) { const x = FT0[i], y = FT0[i + 1]; A[i + 2] = 0.9 * Math.sin(0.045 * x + 2.2 * t) + 0.6 * Math.sin(0.08 * y - 1.7 * t + 0.03 * x); } pa.needsUpdate = true; fuelTop.geometry.computeVertexNormals(); }
   ARM.rotation.z = -a * D2R;
   const fx = PX - G.L * Math.cos(a * D2R), fy = PY + G.L * Math.sin(a * D2R); FLOAT.position.set(fx, fy, -22);
   const sOn = k[6] && t >= T.fillA - 0.25; STREAM.visible = !!sOn; if (sOn) { const top = G.TOP + 70; STREAM.position.y = lv; STREAM.scale.y = top - lv; }
@@ -132,16 +136,16 @@ function setScene(t) {
 }
 // ---------- camera keys [t, tx, ty, tz, dist, elev, azim] ----------
 const k_ = (t, a) => [t, ...a];
-const OUTK = (d = 700, az = 0, el = 4) => [GX, GY + 22, GZ, d, el, az];
-const WIDE = (d = 1394, az = 8, el = 6) => [115, 100, -60, d, el, az];
-const MAC = (d = 640, az = 10, el = 4) => [112, 168, -12, d, el, az];
-const CAMK = [k_(0, OUTK(700, -4)), k_(T.cutIn - 0.01, OUTK(680, -2)),
-  k_(T.cutIn, WIDE(1480, 12)), k_(T.vo2 - 0.01, WIDE(1394, 8)),
+const OUTK = (d = 770, az = 0, el = 4) => [GX, GY + 10, GZ, d, el, az];
+const WIDE = (d = 1672, az = 4, el = 4) => [82, 100, -60, d, el, az];
+const MAC = (d = 640, az = 10, el = 4) => [112, 195, -12, d, el, az];
+const CAMK = [k_(0, OUTK(780, -3)), k_(T.cutIn - 0.01, OUTK(765, -2)),
+  k_(T.cutIn, WIDE(1740, 6)), k_(T.vo2 - 0.01, WIDE(1672, 4)),
   k_(T.vo2, MAC(700, 14)), k_(T.vo3 - 0.01, MAC(640, 8)),
-  k_(T.vo3, WIDE(1430, 10)), k_(T.vo4 - 0.01, WIDE(1394, 6)),
+  k_(T.vo3, WIDE(1700, 5)), k_(T.vo4 - 0.01, WIDE(1672, 3)),
   k_(T.vo4, MAC(690, 12)), k_(T.vo5 - 0.01, MAC(630, 6)),
-  k_(T.vo5, WIDE(1430, 8)), k_(T.outA - 0.01, WIDE(1394, 6)),
-  k_(T.outA, OUTK(680, 3)), k_(LOOP, OUTK(700, -4))];
+  k_(T.vo5, WIDE(1700, 5)), k_(T.outA - 0.01, WIDE(1672, 3)),
+  k_(T.outA, OUTK(760, 2)), k_(LOOP, OUTK(780, -3))];
 // ---------- overlay ----------
 const sp = (x, y, z) => S.toScreen(camera, V(x, y, z));
 function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
@@ -159,21 +163,30 @@ function drawCurrent(g2, a, k, t, alpha, pre = null) {
   g2.save(); g2.globalAlpha = alpha; g2.strokeStyle = 'rgba(255,210,31,0.35)'; g2.lineWidth = 6; g2.lineJoin = 'round'; g2.beginPath(); P.forEach(([x, y], i) => i ? g2.lineTo(x, y) : g2.moveTo(x, y)); g2.stroke();
   const L = polyLen(P), gap = 46; const off = (t * 260 * k[4]) % gap;
   g2.fillStyle = '#ffe27a'; g2.shadowColor = 'rgba(255,190,40,0.9)'; g2.shadowBlur = 14;
-  for (let s = off; s < L; s += gap) { const [x, y] = along(P, s); g2.beginPath(); g2.arc(x, y, 8, 0, Math.PI * 2); g2.fill(); }
+  for (let s = off; s < L; s += gap) { const [x, y] = along(P, s); if (Math.hypot(x - IG.x, y - IG.y) < IG.r + 6 || Math.abs(x - BAT.x) < 46 && Math.abs(y - BAT.y) < 44) continue; g2.beginPath(); g2.arc(x, y, 8, 0, Math.PI * 2); g2.fill(); }
   g2.restore(); }
 // highlighted strip path (wiper -> grounded end)
 function drawPath(g2, a, alpha, color, wpx = 14) { if (alpha <= 0) return; g2.save(); g2.globalAlpha = alpha; g2.strokeStyle = color; g2.lineWidth = wpx; g2.lineCap = 'round'; g2.shadowColor = color; g2.shadowBlur = 18; g2.beginPath();
   const n = 40; for (let i = 0; i <= n; i++) { const q = a + (G.A_GND + 3 - a) * i / n; const [x, y] = sp(...dir(q, 56), -11); i ? g2.lineTo(x, y) : g2.moveTo(x, y); } g2.stroke(); g2.restore(); }
 // inset dash gauge (2D), lower action area
-const IG = { x: 495, y: 1330, r: 100 };
+const IG = { x: 230, y: 1305, r: 95 }; const BAT = { x: 815, y: 1305 }; const WY = 1322;
 function insetGauge(g2, a, n, I) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const { x, y, r } = IG; const cy = y + r * 0.34;
   g2.fillStyle = 'rgba(10,12,16,0.9)'; g2.beginPath(); g2.arc(x, y, r, 0, Math.PI * 2); g2.fill(); g2.strokeStyle = '#d9dde2'; g2.lineWidth = 6; g2.stroke();
   for (let i = 0; i <= 8; i++) { const th = (-50 + 100 * i / 8) * D2R, big = i % 4 === 0, R = r * 0.9; g2.strokeStyle = i === 0 ? '#ff4a2a' : '#f4f4f4'; g2.lineWidth = big ? 7 : 4;
     g2.beginPath(); g2.moveTo(x + R * (big ? 0.78 : 0.85) * Math.sin(th), cy - R * (big ? 0.78 : 0.85) * Math.cos(th)); g2.lineTo(x + R * Math.sin(th), cy - R * Math.cos(th)); g2.stroke(); }
-  g2.font = '48px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ff6a4a'; g2.fillText('E', x + r * 0.55 * Math.sin(-44 * D2R), cy - r * 0.55 * Math.cos(-44 * D2R)); g2.fillStyle = '#f4f4f4'; g2.fillText('F', x + r * 0.55 * Math.sin(44 * D2R), cy - r * 0.55 * Math.cos(44 * D2R));
-  const th = (-50 + 100 * n) * D2R; g2.strokeStyle = '#ff5a1a'; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(255,90,26,0.8)'; g2.shadowBlur = 12; g2.beginPath(); g2.moveTo(x, cy); g2.lineTo(x + r * 0.86 * Math.sin(th), cy - r * 0.86 * Math.cos(th)); g2.stroke();
+  g2.font = '48px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ff6a4a'; g2.fillText('E', x + r * 0.66 * Math.sin(-74 * D2R), cy - r * 0.66 * Math.cos(-74 * D2R) - 4); g2.fillStyle = '#f4f4f4'; g2.fillText('F', x + r * 0.66 * Math.sin(74 * D2R), cy - r * 0.66 * Math.cos(74 * D2R) - 4);
+  const th = (-50 + 100 * n) * D2R; g2.strokeStyle = '#ff5a1a'; g2.lineWidth = 9; g2.lineCap = 'round'; g2.shadowColor = 'rgba(255,90,26,0.8)'; g2.shadowBlur = 12; g2.beginPath(); g2.moveTo(x, cy); g2.lineTo(x + r * 0.74 * Math.sin(th), cy - r * 0.74 * Math.cos(th)); g2.stroke();
   g2.shadowBlur = 0; g2.fillStyle = '#2b2f36'; g2.beginPath(); g2.arc(x, cy, 12, 0, Math.PI * 2); g2.fill();
   g2.restore(); }
+function battery(g2) { const { x, y } = BAT; g2.save(); g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10; g2.fillStyle = '#2b2f36'; S.rrect(g2, x - 45, y - 38, 90, 76, 10); g2.fill(); g2.strokeStyle = '#d9dde2'; g2.lineWidth = 4; g2.stroke();
+  g2.fillStyle = '#c23a2a'; g2.fillRect(x - 32, y - 50, 18, 12); g2.fillStyle = '#9aa0a7'; g2.fillRect(x + 14, y - 50, 18, 12); g2.shadowBlur = 0;
+  g2.font = '44px Anton'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#ff6a4a'; g2.fillText('+', x - 18, y + 4); g2.fillStyle = '#d9dde2'; g2.fillText('−', x + 20, y + 2); g2.restore(); }
+function groundSym(g2, x, y, up) { g2.save(); g2.strokeStyle = '#d9dde2'; g2.lineWidth = 5; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 6;
+  if (!up) { g2.beginPath(); g2.moveTo(BAT.x + 23, BAT.y - 44); g2.lineTo(x, BAT.y - 44); g2.lineTo(x, y); g2.stroke(); }
+  const s = up ? -1 : 1; g2.beginPath(); for (const [w, d] of [[22, 0], [14, 9], [6, 18]]) { g2.moveTo(x - w, y + s * d); g2.lineTo(x + w, y + s * d); } if (up) { g2.moveTo(x, y + 6); g2.lineTo(x, y); } g2.stroke(); g2.restore(); }
+function timeLapse(g2, x, y) { g2.save(); g2.fillStyle = '#ffd21f'; g2.strokeStyle = '#000'; g2.lineWidth = 4; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 8;
+  for (const dx of [0, 26]) { g2.beginPath(); g2.moveTo(x - 120 + dx, y - 34); g2.lineTo(x - 92 + dx, y - 17); g2.lineTo(x - 120 + dx, y); g2.closePath(); g2.stroke(); g2.fill(); }
+  g2.restore(); S.outlined(g2, 'TIME-LAPSE', x + 18, y, 44, '#ffd21f'); }
 function overlay(t) {
   const g2 = st.g2; S.vignette(g2, 0); const k = KK || kin(t); const a = k[2];
   { let fx = 0; for (const c of [T.cutIn, T.vo2, T.vo3, T.vo4, T.vo5, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.08); K.TXT.flash(g2, 0.3 * Math.max(0, fx)); }
@@ -189,9 +202,11 @@ function overlay(t) {
   const wideOn = s1 || s3 || s5;
   // inset gauge + wire from the sender terminal (wide shots)
   if (wideOn) { const [tx, ty] = sp(PX - 14, G.TOP + W + 24, -24);
-    const pre = [[IG.x - IG.r, IG.y], [100, IG.y], [100, ty - 40], [tx, ty - 40], [tx, ty]];
+    battery(g2); const [gx, gy] = sp(PX + 34, G.TOP + W + 2, -14); groundSym(g2, gx, gy - 6, true); groundSym(g2, BAT.x + 70, WY + 20, false);
+    const pre = [[BAT.x - 45, WY], [IG.x, WY], [100, WY], [100, ty - 40], [tx, ty - 40], [tx, ty]];
     g2.save(); g2.strokeStyle = '#c23a2a'; g2.lineWidth = 7; g2.lineJoin = 'round'; g2.beginPath(); pre.forEach(([x, y], i) => i ? g2.lineTo(x, y) : g2.moveTo(x, y)); g2.stroke(); g2.restore();
-    drawCurrent(g2, a, k, t, 1, pre); insetGauge(g2, 1, k[5], k[4]); S.outlined(g2, 'GAUGE', IG.x + IG.r + 90, IG.y + 14, 48, '#ffffff'); }
+    drawCurrent(g2, a, k, t, 1, pre); insetGauge(g2, 1, k[5], k[4]); S.outlined(g2, 'GAUGE', 420, 1398, 44, '#ffffff'); S.outlined(g2, 'BATTERY', BAT.x, 1405, 44, '#ffffff');
+    if (k[7]) timeLapse(g2, 300, 520); }
   if (s1) { S.tag(g2, hard(t, T.vo1 + 0.5, T.vo2), 'FLOAT', ...fp(), -40, 170, 52, '#ffd21f');
     S.tag(g2, hard(t, T.vo1 + 1.5, T.vo2), 'ARM', ...sp(PX - G.L * 0.55 * Math.cos(a * D2R), PY + G.L * 0.55 * Math.sin(a * D2R), -3), 60, 150, 50, '#ffffff');
     S.tag(g2, hard(t, T.vo1 + 2.3, T.vo2), 'HINGE', ...sp(PX, PY, 0), 150, -60, 50, '#ffffff');
@@ -203,12 +218,10 @@ function overlay(t) {
     if (s4) { S.tag(g2, hard(t, T.vo4 + 0.3, T.vo5), 'LONG PATH', ...sp(...dir((a + G.A_GND) / 2, 62), -11), -120, -160, 54, '#ff6a4a'); S.tag(g2, hard(t, T.vo4 + 2.6, T.vo5), 'MORE RESISTANCE', wx, wy, 120, 210, 50, '#ffffff');
       S.tag(g2, hard(t, T.vo4 + 3.6, T.vo5), 'LESS CURRENT', ...sp(PX, PY + 60, -16), 150, -60, 50, '#ffd21f'); } }
   if (s3) { const [x, y] = fp(); const on = hard(t, T.drainA, T.drainB); arrowC(g2, on, x, y - 160, x, y - 60, 26, '#ffd21f');
-    if (on) S.outlined(g2, 'SPED UP', 800, 700, 46, '#ffd21f');
     S.tag(g2, hard(t, T.drainA + 1.4, T.vo4), 'WIPER SLIDES', ...sp(...dir(a, G.RW), -10), 150, 150, 48, '#ffd21f');
-    S.tag(g2, hard(t, T.drainB - 1.4, T.vo4), 'NEEDLE DROPS', IG.x - IG.r * 0.5, IG.y - 40, -60, -190, 48, '#ff6a4a'); }
-  if (s5) { const [x, y] = fp(); const on = hard(t, T.fillA, T.fillB); arrowC(g2, on, x, y + 70, x, y - 30, 26, '#7dff9a'); if (on) S.outlined(g2, 'SPED UP', 640, 700, 46, '#ffd21f');
-    S.tag(g2, hard(t, T.vo5 - 0.05, T.fillB), 'FUEL IN', ...sp(240, G.TOP - 40, -60), -150, 60, 50, '#ffb21f');
-    S.tag(g2, hard(t, T.fillB - 0.6, T.outA), 'BACK TO FULL', IG.x + IG.r * 0.5, IG.y - 40, 60, -190, 48, '#7dff9a'); }
+    S.tag(g2, hard(t, T.drainB - 1.4, T.vo4), 'NEEDLE DROPS', IG.x + IG.r * 0.55, IG.y - 30, 120, -22, 48, '#ff6a4a'); }
+  if (s5) { const [x, y] = fp(); const on = hard(t, T.fillA, T.fillB); arrowC(g2, on, x, y + 70, x, y - 30, 26, '#7dff9a');     S.tag(g2, hard(t, T.vo5 - 0.05, T.fillB), 'FUEL IN', ...sp(240, G.TOP + 62, -60), -150, 0, 50, '#ffb21f');
+    S.tag(g2, hard(t, T.fillB - 0.6, T.outA), 'BACK TO FULL', IG.x + IG.r * 0.55, IG.y - 30, 120, -22, 48, '#7dff9a'); }
   K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'A FLOAT + A RESISTOR', 'MOVE THE NEEDLE', 560);
   K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
 }

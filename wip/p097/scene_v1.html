@@ -1,0 +1,180 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Anton'; src: url('/tools/render/node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+html,body{margin:0;background:#000;overflow:hidden} canvas{display:block}
+</style>
+<script type="importmap">{"imports":{"three":"/tools/render/node_modules/three/build/three.module.js","three/addons/":"/tools/render/node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+// p097 pepper grinder "HOW DOES IT / CRUSH PEPPER?" (group E, track A voice). Built from kit/kit.js. Units mm, y up.
+// Lathe phi: x = r sin(phi), z = r cos(phi); camera on +z. Cutaway keeps the BACK half (phi pi/2 .. 3pi/2), section planes at z = 0.
+// Ring (fixed) bore rR(y) = 10 + 0.25(y-4), y 4..30 (grooves outward); cone rC(y) = 7.5 - 0.15(y - dz - 4) (grooves inward), turns with the shaft.
+import * as K from '/kit/kit.js';
+import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+const { THREE, S } = K;
+const G = await (await fetch('geom.json')).json();
+const T = G.T, LOOP = G.LOOP, PI = Math.PI;
+const st = K.makeKit({ fov: 30, bg: 0x2a211b, envIntensity: 1.1, near: 2, far: 20000 });
+const { scene, camera } = st;
+const M = K.materials();
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+const grain = K.grainTex(31, 40);
+M.wood = phys({ color: 0x8a5230, roughness: 0.38, clearcoat: 0.7, clearcoatRoughness: 0.25, bumpMap: grain, bumpScale: 0.6, side: THREE.DoubleSide });
+M.woodIn = phys({ color: 0x8a5a36, roughness: 0.8, side: THREE.DoubleSide });
+M.woodCut = phys({ color: 0xc89a6a, roughness: 0.75, bumpMap: grain, bumpScale: 0.4, side: THREE.DoubleSide });
+M.burr = phys({ color: 0xc9ccd1, metalness: 0.9, roughness: 0.3, envMapIntensity: 1.3, side: THREE.DoubleSide });
+M.ringM = phys({ color: 0x5d636b, metalness: 0.85, roughness: 0.45, envMapIntensity: 1.2, side: THREE.DoubleSide });
+M.corn = phys({ color: 0x2b1e17, roughness: 0.75, bumpMap: K.grainTex(7, 90), bumpScale: 1.6 });
+M.bit = phys({ color: 0x3a2a20, roughness: 0.85 });
+const secTex = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 256; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#d8392d'); gr.addColorStop(0.5, '#b8231a'); gr.addColorStop(1, '#8e1610'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+M.sec = phys({ color: 0xffffff, map: secTex, roughness: 0.4, clearcoat: 0.3, side: THREE.DoubleSide });
+const rR = (y) => 10 + 0.25 * (y - 4);
+const rCl = (yl) => 7.5 - 0.15 * (yl - 4);          // cone radius in cone-local y (world y = yl + dz)
+// ---------- builders ----------
+const lathePts = (P) => P.map(([r, y]) => new THREE.Vector2(r, y));
+function cutPair(P, mat) {   // two flat section caps (the profile polygon) in the plane z = 0, at +x and -x
+  const g = new THREE.Group(); for (const s of [1, -1]) { const shp = new THREE.Shape(P.map(([r, y]) => new THREE.Vector2(s * r, y))); const m = new THREE.Mesh(new THREE.ShapeGeometry(shp), mat); m.position.z = 0.02; g.add(m); } return g; }
+function solid(P, mat, cut, capMat = M.sec) {  // lathe of a closed profile; cut = degrees removed from the front (0 = whole, 180 = back half)
+  const g = new THREE.Group(); const c = cut * PI / 180; const ph0 = c / 2, len = 2 * PI - c;
+  const m = new THREE.Mesh(new THREE.LatheGeometry(lathePts([...P, P[0]]), 160, ph0, len), mat); m.castShadow = m.receiveShadow = true; g.add(m);
+  if (c > 0.01) { const caps = new THREE.Group(); for (const ph of [ph0, ph0 + len]) { const shp = new THREE.Shape(P.map(([r, y]) => new THREE.Vector2(r, y))); const cm = new THREE.Mesh(new THREE.ShapeGeometry(shp), capMat); cm.rotation.y = ph - PI / 2; caps.add(cm); } g.add(caps); }
+  return g; }
+// body (fixed lower part) and head (turns): closed profiles (r, y)
+const BODY = [[13, 0], [19.5, 0], [22, 4], [22.5, 14], [20, 40], [17.5, 75], [18.5, 105], [22, 118], [22, 125], [14, 125], [14, 30], [18, 30], [18, 4], [13, 4]];
+const HEAD = [[2.6, 126], [22, 126], [23, 138], [20.5, 158], [15, 174], [9, 181], [2.6, 181]];
+const RINGP = [[18, 4], [18, 30], [rR(30), 30], [rR(4), 4]];
+const ROOT = new THREE.Group(); scene.add(ROOT);
+let bodyG = null, headG = null, ringG = null, curCut = -1;
+const HEADPIV = new THREE.Group(); ROOT.add(HEADPIV);
+function setCut(cut) {
+  cut = Math.round(cut / 3) * 3; if (cut === curCut) return; curCut = cut;
+  for (const g of [bodyG, ringG]) if (g) { ROOT.remove(g); g.traverse(o => o.geometry && o.geometry.dispose()); }
+  if (headG) { HEADPIV.remove(headG); headG.traverse(o => o.geometry && o.geometry.dispose()); }
+  bodyG = solid(BODY, M.wood, cut, M.woodCut); ROOT.add(bodyG);
+  headG = solid(HEAD, M.wood, cut, M.woodCut); HEADPIV.add(headG);
+  ringG = solid(RINGP, M.ringM, cut);
+  // grooved bore (grooves cut outward: radius >= rR)
+  const c = cut * PI / 180;
+  const bore = new ParametricGeometry((u, v, tg) => { const y = 4 + 26 * u, ph = c / 2 + (2 * PI - c) * v; const r = rR(y) + 0.7 * Math.pow(Math.max(0, Math.cos(18 * ph)), 6); tg.set(r * Math.sin(ph), y, r * Math.cos(ph)); }, 24, 360);
+  const bm = new THREE.Mesh(bore, M.ringM); bm.castShadow = bm.receiveShadow = true; ringG.add(bm); ROOT.add(ringG);
+  S.shadowAll(scene);
+}
+// cone (whole, turns): grooved helical surface, local y -6..34
+const CONE = new THREE.Group(); ROOT.add(CONE);
+{ const geo = new ParametricGeometry((u, v, tg) => { const y = -6 + 40 * u, ph = 2 * PI * v; const gr = Math.pow(Math.max(0, Math.cos(12 * ph + 0.16 * y)), 4);
+    const r = Math.max(2.2, rCl(y) - 0.9 * gr); tg.set(r * Math.sin(ph), y, r * Math.cos(ph)); }, 60, 384);
+  const m = new THREE.Mesh(geo, M.burr); m.castShadow = m.receiveShadow = true; CONE.add(m);
+  const cap = new THREE.Mesh(new THREE.CircleGeometry(rCl(34), 48), M.burr); cap.rotation.x = -PI / 2; cap.position.y = 34; CONE.add(cap);
+  const bot = new THREE.Mesh(new THREE.CircleGeometry(rCl(-6) - 0.9, 48), M.burr); bot.rotation.x = PI / 2; bot.position.y = -6; CONE.add(bot);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 158, 24), M.steel); sh.position.y = 34 + 79; CONE.add(sh);
+  const nut = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 4, 6), M.steel); nut.position.y = -8; CONE.add(nut); }
+// knob (chrome finial on the shaft thread, sits on the head)
+const KNOB = new THREE.Group(); ROOT.add(KNOB); KNOB.position.y = 181;
+{ const k1 = new THREE.Mesh(new THREE.CylinderGeometry(7, 8, 8, 40), M.chrome); k1.position.y = 4; KNOB.add(k1);
+  for (let i = 0; i < 16; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, 7, 1.2), M.chrome); const a = i / 16 * 2 * PI; r.position.set(7.6 * Math.sin(a), 4, 7.6 * Math.cos(a)); r.rotation.y = a; KNOB.add(r); }
+  const b = new THREE.Mesh(new THREE.SphereGeometry(5.5, 32, 20), M.chrome); b.position.y = 12.5; KNOB.add(b); }
+// peppercorns in the chamber (from kin.py, no overlaps)
+const CORNS = new THREE.Group(); ROOT.add(CORNS);
+const cornGeo = new THREE.IcosahedronGeometry(G.RC, 3); { const p = cornGeo.attributes.position; for (let i = 0; i < p.count; i++) { const v = V(p.getX(i), p.getY(i), p.getZ(i)); const n = 1 - 0.06 * Math.abs(Math.sin(v.x * 3.1) * Math.cos(v.y * 2.7 + v.z * 1.9)); v.multiplyScalar(n); p.setXYZ(i, v.x, v.y, v.z); } cornGeo.computeVertexNormals(); }
+for (const [x, y, z] of G.corns) { const m = new THREE.Mesh(cornGeo, M.corn); m.position.set(x, y, z); m.rotation.set(x, y, z); m.castShadow = true; CORNS.add(m); }
+// flying pieces: NC corns x 4 pieces in the gap; exit bits below
+const NP = G.NC * 4; const pieceGeo = new THREE.IcosahedronGeometry(1, 1);
+const PIECES = []; for (let i = 0; i < NP; i++) { const m = new THREE.Mesh(pieceGeo, M.corn); m.castShadow = true; ROOT.add(m); PIECES.push(m); }
+const NB = 140; const BITS = []; for (let i = 0; i < NB; i++) { const m = new THREE.Mesh(pieceGeo, M.bit); ROOT.add(m); BITS.push(m); }
+const DIRS = [[0.9, 0.5, 0.2], [-0.8, 0.4, -0.3], [0.1, -0.9, 0.4], [-0.2, -0.3, -0.9]].map(a => V(...a).normalize());
+// counter + backdrop + light
+
+
+K.backdrop(scene, { floorY: -50, R: 400, zBack: -1600, h: 20000, width: 30000, wall: '#4a3a2e', floor: '#5b4a3c', pool: true, catcher: 3000 });
+const RIG = K.lightRig(scene, V(0, 70, 0), 160); RIG.key.shadow.bias = -0.0004; RIG.rim.intensity = 3.2;
+{ const f = new THREE.DirectionalLight(0xfff1e0, 0.8); f.position.set(300, 400, 600); scene.add(f); const g = new THREE.DirectionalLight(0xdbe8ff, 1.2); g.position.set(-500, 300, -200); scene.add(g); }
+// mill stands on a small stand above the counter? no: it stands on the counter top at y = -50 -> lift the mill so its base sits on y = -50 + 10
+
+ROOT.position.y = -5;   // the mill is held 45 mm above the counter while grinding   // mill base (y=0 local) 10 mm above the counter? keep the exit visible: mill on 3 small feet
+
+// ---------- kinematics (same formulas as kin.py) ----------
+const dzOf = (t) => { if (t < T.knobA || t >= T.outA) return 0; const u = Math.min(1, (t - T.knobA) / (T.knobB - T.knobA)); return G.DZMAX * u * u * (3 - 2 * u); };
+const thOf = (t) => 2 * PI * G.REVS * t / LOOP;
+const gap = (y, d) => rR(y) - rCl(y - d);
+const yfl = (s) => 31 - 27.5 * Math.pow(s, 1.25);
+function piece(y, d) { const g = gap(Math.min(Math.max(y, 4), 30), d); const p = (31 - y) / 27.5; return [Math.min(1.6, 0.2 * g), Math.min(0.27 * g, 0.9 + 2.0 * p)]; }
+const cutOf = (t) => { if (t < T.cutA || t >= T.outA) return 0; return 180 * S.smooth((t - T.cutA) / (T.cutB - T.cutA)); };
+let ST = {};
+function setScene(t) {
+  const d = dzOf(t), th = thOf(t), cut = cutOf(t); setCut(cut);
+  CONE.position.y = d; CONE.rotation.y = th; HEADPIV.rotation.y = th;
+  const kt = (t >= T.knobA && t < T.knobB + 0.3) ? S.smooth((t - T.knobA) / (T.knobB - T.knobA)) : (t >= T.knobB + 0.3 && t < T.outA ? 1 : 0);
+  KNOB.rotation.y = th - kt * 3.0 * PI;
+  const showIn = cut > 150;
+  // flight pieces (visible in the back half while the mill is open)
+  let n = 0;
+  for (let i = 0; i < G.NC; i++) { const s = ((t / G.P) + i / G.NC) % 1; const y = yfl(s); const ph = 2.2 + i * 2 * PI / G.NC + 0.3 * th;
+    const vis = showIn && Math.cos(ph) < -0.12 && y <= 31.5; const [r, sp] = piece(y, d); const rm = (rR(Math.min(Math.max(y, 4), 30)) + rCl(Math.min(Math.max(y, 4), 30) - d)) / 2;
+    const c = V(rm * Math.sin(ph), y, rm * Math.cos(ph)); const tg = V(Math.cos(ph), 0, -Math.sin(ph)), rad = V(Math.sin(ph), 0, Math.cos(ph));
+    for (let k = 0; k < 4; k++) { const m = PIECES[n++]; m.visible = vis; if (!vis) continue; const D = DIRS[k];
+      m.position.copy(c).addScaledVector(tg, D.x * sp).addScaledVector(V(0, 1, 0), D.y * sp).addScaledVector(rad, D.z * sp * 0.9); m.scale.setScalar(r); m.rotation.set(k + s * 5, k * 2, s * 3); } }
+  // exit bits: fall from the bottom gap ring (y 4) down to the counter (local y -10), size from the current bottom gap
+  const gB = gap(4, d), rb = 0.2 * gB * 1.25;
+  for (let i = 0; i < NB; i++) { const ph = i * 2.399; const u = ((t * 1.4) + i / NB) % 1; const y = 3.5 - 50 * u * u; const rr = (rR(4) + rCl(4 - d)) / 2 + u * 6 * Math.sin(i * 7.1);
+    const m = BITS[i]; m.visible = y > -44; m.position.set(rr * Math.sin(ph), y, rr * Math.cos(ph)); m.scale.setScalar(rb * (0.7 + 0.5 * ((i * 37) % 10) / 10)); m.rotation.set(i, i * 2, u * 4); }
+  CORNS.children.forEach(m => m.visible = showIn || cut > 10);
+  ST = { d, th, cut, kt };
+  K.shoot(st, CAMK, t);
+}
+// ---------- camera keys [t, tx, ty, tz, dist, elev, azim] (ROOT y offset -40) ----------
+const Y0 = -5; const k_ = (t, a) => [t, ...a];
+const HOOK = (az = 18) => [0, Y0 + 50, 0, 470, 8, az];
+const FULL = (az = 22) => [0, Y0 + 100, 0, 640, 10, az];
+const IN = (az = 0, d = 255, ty = 16, el = 6) => [0, Y0 + ty, 0, d, el, az];
+const CAMK = [k_(0, HOOK(14)), k_(T.hookEnd, HOOK(18)), k_(T.hookEnd + 0.01, FULL(26)), k_(T.cutA, FULL(18)), k_(T.cutB, IN(-8, 270)),
+  k_(T.vo2, IN(4, 255)), k_(T.vo3, IN(-6, 250, 18)), k_(T.vo4, IN(6, 245, 14)), k_(T.wideA - 0.01, IN(-4, 240, 12)),
+  k_(T.wideA, [0, Y0 + 96, 0, 700, 8, -4]), k_(T.pushA, [0, Y0 + 96, 0, 690, 8, 4]), k_(T.pushB, IN(-4, 250, 14)), k_(T.outA - 0.01, IN(4, 240, 12)),
+  k_(T.outA, HOOK(22)), k_(LOOP, HOOK(14))];
+// ---------- overlay ----------
+const wp = (x, y, z = 0) => S.toScreen(camera, ROOT.localToWorld(V(x, y, z)));
+function arrowC(g2, a, x0, y0, x1, y1, w, color) { if (a <= 0) return; g2.save(); g2.globalAlpha = a; const ang = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0); g2.translate(x0, y0); g2.rotate(ang);
+  g2.shadowColor = 'rgba(0,0,0,0.55)'; g2.shadowBlur = 14; g2.fillStyle = color; g2.strokeStyle = '#1c0f00'; g2.lineWidth = 5; g2.beginPath(); g2.moveTo(0, -w / 2); g2.lineTo(L - w * 2, -w / 2); g2.lineTo(L - w * 2, -w * 1.25); g2.lineTo(L, 0); g2.lineTo(L - w * 2, w * 1.25); g2.lineTo(L - w * 2, w / 2); g2.lineTo(0, w / 2); g2.closePath(); g2.stroke(); g2.fill(); g2.restore(); }
+function dbl(g2, a, p0, p1, color = '#ffd21f') { if (a <= 0) return; const [x0, y0] = p0, [x1, y1] = p1; const L = Math.hypot(x1 - x0, y1 - y0); const ang = Math.atan2(y1 - y0, x1 - x0);
+  g2.save(); g2.globalAlpha = a; g2.translate(x0, y0); g2.rotate(ang); g2.strokeStyle = '#1c0f00'; g2.lineWidth = 12; g2.beginPath(); g2.moveTo(0, 0); g2.lineTo(L, 0); g2.stroke(); g2.strokeStyle = color; g2.lineWidth = 7; g2.stroke();
+  g2.fillStyle = color; for (const [x, s] of [[0, 1], [L, -1]]) { g2.beginPath(); g2.moveTo(x, 0); g2.lineTo(x + s * 18, -12); g2.lineTo(x + s * 18, 12); g2.closePath(); g2.fill(); } g2.restore(); }
+function spin(g2, a, cx, cy, R, color = '#ffd21f') { if (a <= 0) return; g2.save(); g2.globalAlpha = a; g2.strokeStyle = color; g2.lineWidth = 10; g2.lineCap = 'round'; g2.shadowColor = 'rgba(0,0,0,0.6)'; g2.shadowBlur = 10;
+  g2.beginPath(); g2.ellipse(cx, cy, R, R * 0.28, 0, 0.15 * PI, 0.85 * PI); g2.stroke(); const ex = cx + R * Math.cos(0.85 * PI), ey = cy + R * 0.28 * Math.sin(0.85 * PI);
+  g2.fillStyle = color; g2.beginPath(); g2.moveTo(ex - 22, ey - 4); g2.lineTo(ex + 6, ey - 20); g2.lineTo(ex + 6, ey + 14); g2.closePath(); g2.fill(); g2.restore(); }
+function compare(g2, a) { if (a <= 0) return; g2.save(); g2.globalAlpha = a;
+  for (const [x, label, rs, col] of [[90, 'BEFORE: COARSE', 15, '#ffffff'], [575, 'AFTER: FINE', 6, '#ffd21f']]) { g2.fillStyle = 'rgba(12,14,20,0.82)'; S.rrect(g2, x, 1210, 350, 210, 22); g2.fill(); g2.strokeStyle = col; g2.lineWidth = 4; g2.stroke();
+    S.outlined(g2, label, x + 175, 1268, 44, col); g2.fillStyle = '#7a5640'; g2.strokeStyle = '#d9c2a8'; g2.lineWidth = 2;
+    for (let i = 0; i < (rs > 10 ? 9 : 40); i++) { const px = x + 45 + ((i * 97) % 260), py = 1310 + ((i * 53) % 90); g2.beginPath(); g2.arc(px, py, rs * (0.8 + 0.4 * ((i * 31) % 10) / 10), 0, 7); g2.fill(); g2.stroke(); } }
+  g2.restore(); }
+const hard = (t, a, b) => (t >= a && t < b) ? 1 : 0;
+function overlay(t) {
+  const g2 = st.g2; S.vignette(g2, 0); const d = ST.d;
+  { let fx = 0; for (const c of [T.hookEnd, T.wideA, T.outA]) fx = Math.max(fx, 1 - Math.abs(t - c) / 0.1); K.TXT.flash(g2, 0.6 * Math.max(0, fx)); }
+  const hk = t < 3 ? 1 - S.smooth((t - (T.vo1 - 0.3)) / 0.2) : 0;
+  if (hk > 0) { K.TXT.hook(g2, hk, 'HOW DOES IT', 'CRUSH PEPPER?', 100); const [cx, cy] = wp(0, 0); K.TXT.circle(g2, hard(t, 0, T.hookEnd + 0.6) * hk, cx, cy + 5, 100, [-250, -190]); }
+  if (t >= T.hookEnd && t < T.cutA) { const [hx, hy] = wp(0, 150); spin(g2, 1, hx, hy, 190); S.tag(g2, hard(t, T.vo1 - 0.2, T.cutA), 'TWIST THE TOP', hx + 60, hy + 10, 160, 150, 50, '#ffd21f'); }
+  const s1 = hard(t, T.cutB, T.vo2), s2 = hard(t, T.vo2, T.vo3), s3 = hard(t, T.vo3, T.vo4), s4 = hard(t, T.vo4, T.wideA), s5 = hard(t, T.wideA, T.outA);
+  K.TXT.step(g2, s1, 1, 'A GROOVED CONE TURNS IN A RING', 54);
+  K.TXT.step(g2, s2, 2, 'WIDE AT THE TOP, NARROW AT THE BOTTOM', 48);
+  K.TXT.step(g2, s3, 3, 'PEPPERCORNS CRACK SMALLER AND SMALLER', 48);
+  K.TXT.step(g2, s4, 4, 'ONLY TINY BITS FIT OUT', 56);
+  if (t < T.pushA) S.caption(g2, s5, 'TIGHTEN THE KNOB: SMALLER GAP', 380, 52, '#ffffff', 5); else K.TXT.step(g2, s5, 5, 'TIGHTEN THE KNOB: SMALLER GAP', 54);
+  if (s1) { const [cx, cy] = wp(0, 12 + d); spin(g2, 1, cx, cy, 120); S.tag(g2, hard(t, T.cutB, T.vo2), 'CONE (TURNS)', ...wp(-4, 20 + d, -4), -150, 260, 48, '#ffd21f');
+    S.tag(g2, hard(t, T.cutB + 0.6, T.vo2), 'RING (FIXED)', ...wp(16, 24), 150, -150, 48, '#ffffff'); }
+  if (s2) { dbl(g2, hard(t, T.vo2, T.vo3), wp(-rR(28), 28), wp(-rCl(28 - d), 28)); S.tag(g2, hard(t, T.vo2 + 0.2, T.vo3), 'WIDE GAP', ...wp(-rR(28) - 1, 28), -120, -130, 50, '#ffd21f');
+    dbl(g2, hard(t, T.vo2 + 1.4, T.vo3), wp(-rR(5), 5), wp(-rCl(5 - d), 5)); S.tag(g2, hard(t, T.vo2 + 1.6, T.vo3), 'NARROW GAP', ...wp(-rR(5) - 1, 5), -120, 150, 50, '#ffd21f'); }
+  if (s3) { const s = ((t / G.P) + 0) % 1; S.tag(g2, 1, 'CRACKED', ...wp((rR(17) + rCl(17 - d)) / 2, 17, -3), 150, 110, 50, '#ffd21f'); arrowC(g2, 1, ...wp(-25, 30), ...wp(-25, 8), 22, '#ffd21f'); void s; }
+  if (s4) { dbl(g2, 1, wp(-rR(4.5), 4.5), wp(-rCl(4.5 - d), 4.5)); S.tag(g2, 1, 'GAP', ...wp(-rR(4.5) - 1, 4.5), -150, 130, 52, '#ffd21f'); S.tag(g2, hard(t, T.vo4 + 0.8, T.wideA), 'TINY BITS FALL OUT', ...wp(0, -8), 140, 120, 48, '#ffffff'); }
+  if (s5) { if (t < T.pushA) { const [kx, ky] = wp(0, 186); spin(g2, hard(t, T.knobA - 0.2, T.knobB + 0.1), kx, ky, 80); S.tag(g2, 1, 'TIGHTEN THE KNOB', kx + 30, ky + 10, 150, 130, 50, '#ffd21f');
+      const [ax, ay] = wp(-30, 40); arrowC(g2, hard(t, T.knobA, T.pushA), ax, ay + 70, ax, ay - 70, 22, '#ffd21f'); S.tag(g2, hard(t, T.knobA + 0.3, T.pushA), 'CONE MOVES UP', ax, ay, -60, 200, 48, '#ffffff'); }
+    else { dbl(g2, 1, wp(-rR(4.5), 4.5), wp(-rCl(4.5 - d), 4.5)); S.tag(g2, 1, 'SMALLER GAP', ...wp(-rR(4.5) - 1, 4.5), -150, -160, 50, '#ffd21f'); compare(g2, hard(t, T.cmpA, T.outA)); } }
+  K.TXT.answer(g2, hard(t, T.outA, LOOP + 1), 'A NARROWING GAP', 'CRUSHES THE PEPPER', 560);
+  K.TXT.follow(g2, hard(t, LOOP - 1.4, LOOP + 1));
+}
+window.motionPx = (t) => 0;
+S.install(st, setScene, overlay); window.ready = false;
+await document.fonts.load('40px Anton');
+window.ready = true;
+</script></body></html>

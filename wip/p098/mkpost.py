@@ -19,13 +19,13 @@ HowStuffWorks, How Fuel Gauges Work (float on a thin metal rod, wiper sliding on
 Delphi Technologies, Diagnosing a bad fuel sending unit (float, metal rod/arm, variable resistor; the direction depends on the maker): https://www.delphiautoparts.com/resource-center/article/what's-wrong-with-my-fuel-gauge-diagnosing-a-bad-fuel-sending-unit
 Tanks Inc., Universal fuel sender questions (sender ohm ranges by maker, e.g. 73 ohms empty to 10 ohms full): https://www.tanksinc.com/index.cfm/page/ptype=results/category_id=159/mode=cat/cat159.htm"""
 alt = ("3D animation of a car fuel gauge, with a voiceover. Under the question How does the car know it's empty? a round dash fuel gauge needle swings from F to E, with a red circle on the E. "
-       "Then a gas tank is shown cut in half with red cut edges, with a small gauge drawn below it. 1, a float on a hinged arm: a white float rides on the orange fuel, on a thin metal arm hinged on the sender. "
-       "2, the arm moves a wiper: close up, a brass wiper at the hinge touches a dark resistor strip on a white card; glowing dots show the current taking a short path to ground. "
-       "3, fuel used, the float sinks: the fuel level drops (sped up), the float goes down, the wiper slides along the strip and the needle drops to E. "
+       "Then a whole gas tank is shown cut in half with red cut edges, with a small gauge and a battery drawn below it and a wire loop from the battery through the gauge to the sender and to ground. 1, a float on a hinged arm: a dark foam float rides on the orange fuel, on a thin metal arm hinged on the sender. "
+       "2, the arm moves a wiper: close up, a brass wiper at the hinge touches a resistor strip wound with fine wire on a white card; glowing dots show the current taking a short path to ground. "
+       "3, fuel used, the float sinks: the fuel level drops (time-lapse), the float goes down, the wiper slides along the strip and the needle drops to E. "
        "4, long path equals less current: close up, the current now runs a long way through the strip, more resistance, and the dots slow down. "
        "5, fill up, short path again: fuel pours in, the float rises and the needle goes back to F. The payoff reads A float plus a resistor move the needle, a follow line appears and the video loops.")
 on = ['INSIDE IT', 'HOW DOES THE CAR', "KNOW IT'S EMPTY?", 'A FLOAT ON A HINGED ARM', 'FLOAT', 'ARM', 'HINGE', 'FUEL', 'GAUGE', 'THE ARM MOVES A WIPER', 'WIPER', 'RESISTOR STRIP', 'SHORT PATH', 'TO GROUND',
-      'FUEL USED: THE FLOAT SINKS', 'SPED UP', 'WIPER SLIDES', 'NEEDLE DROPS', 'LONG PATH = LESS CURRENT', 'LONG PATH', 'MORE RESISTANCE', 'LESS CURRENT', 'FILL UP: SHORT PATH AGAIN', 'FUEL IN', 'BACK TO FULL',
+      'FUEL USED: THE FLOAT SINKS', 'TIME-LAPSE', 'BATTERY', '+', 'WIPER SLIDES', 'NEEDLE DROPS', 'LONG PATH = LESS CURRENT', 'LONG PATH', 'MORE RESISTANCE', 'LESS CURRENT', 'FILL UP: SHORT PATH AGAIN', 'FUEL IN', 'BACK TO FULL',
       'A FLOAT + A RESISTOR', 'MOVE THE NEEDLE', 'FOLLOW → A NEW MACHINE EVERY DAY', 'E', 'F', '1/2']
 vo = [d['text'] for d in json.load(open('vo/vo.json'))]
 P = dict(id='p098', track='A', group='V', slot='2026-11-25T21:00 Europe/London (planned, coordinator schedules)', topicKey='fuel gauge',
