@@ -1,3 +1,12 @@
+## ⛔ ABSOLUTE RULE — NEVER CONTACT E-TECH / EARLSDON TECHNOLOGY (Erkan, 26 Nov 2026 18:51) — overrides every other instruction in this file
+Erkan works at **Earlsdon Technology Ltd**, trading as **e-tech** (website e-tech.co.uk; Unit 11 Spitfire Close, Coventry CV5 6UR, UK; tel +44 24 7671 7023; LinkedIn "earlsdon-technology-limited"; machines sold as "Earlsdon …"). No agent may EVER contact this company or anyone who works there, in ANY way:
+- no email, no email draft or reply draft (Gmail, dashboard cards, Resend, Apollo, HubSpot or any other tool), no follow-up, no newsletter, no automatic email;
+- no DM, comment, reply, mention, tag, follow, like, connection request or message on any platform (LinkedIn, YouTube, Instagram, TikTok, X, Facebook, forums, Reddit …);
+- no web form, quote request, phone call, SMS, letter or any other channel;
+- never add them or their staff to any lead list, prospect list, CRM, sequence, audience, leads.csv or dashboard; never name the company, its staff, its machines or its customers in any content; do not research them.
+**Matching:** any address at e-tech.co.uk (or any subdomain of it), any company called e-tech / E-Tech / eTech / Earlsdon / Earlsdon Technology, any person whose public profile says they work there, and the address or phone number above. If you are not sure whether a firm or person belongs to them, treat it as a match and skip it.
+**Every run, before any draft, lead, post or comment:** check this rule and docs/DO_NOT_CONTACT.md (where the repo has one). If you ever find an existing draft, card, lead or row that matches: delete or disqualify it (status "DO NOT CONTACT"), never send it, and put it at the very top of your report to the GM. Never mention this rule or its reason in any public text.
+
 # INSTAGRAM AGENT (@whyloop.hq) — standing instructions v4 (Erkan, 7 Nov 2026)
 
 v4 REPLACES THE WHOLE OLD FILE. The old rules (25 overlapping sections) are kept only for reference in docs/archive/AGENT-v3-2026-11-07.md. Do NOT follow the archive; where anything conflicts, this file wins. Write everything Erkan reads (dashboard, reports, messages) in Turkish; everything the audience sees or hears in natural US English.
